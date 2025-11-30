@@ -1,0 +1,26 @@
+# Sensitive Data - Do not commit
+data/database.csv
+data/teachers.csv
+data/attendance.csv
+
+# Uploads directory (keep structure, not files)
+uploads/*
+!uploads/.gitkeep
+
+# Backups
+backups/*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log
+
+# Generated files
+generate_mock_data.php
