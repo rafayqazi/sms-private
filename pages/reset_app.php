@@ -1,6 +1,12 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('reset_app.php')) {
+    header("Location: index.php");
+    exit;
+}
 
 $error = '';
 $success = '';
@@ -32,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
@@ -69,11 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="password" type="password" name="password" required placeholder="Enter 'admin' password">
                 </div>
                 
-                <div class="flex items-center justify-between">
-                    <a href="index.php" class="text-gray-600 hover:text-gray-800 text-sm font-bold">
+                <div class="flex flex-col-reverse md:flex-row items-center justify-between gap-4">
+                    <a href="../index.php" class="w-full md:w-auto text-center text-gray-600 hover:text-gray-800 text-sm font-bold py-2">
                         Cancel
                     </a>
-                    <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300" type="submit">
+                    <button class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 flex items-center justify-center" type="submit">
                         <i class="fas fa-trash-alt mr-2"></i> Reset Everything
                     </button>
                 </div>
@@ -82,4 +88,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
 $db = new Database();
 
 $id = isset($_GET['id']) ? $_GET['id'] : null;
@@ -16,18 +16,18 @@ if (!$student) {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center no-print">
-    <div>
-        <h1 class="text-3xl font-bold">Student Profile</h1>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div class="text-center md:text-left">
+        <h1 class="text-2xl font-bold">Student Profile</h1>
         <p class="text-green-100 mt-1">Detailed student information</p>
     </div>
-    <div class="flex gap-3">
-        <button onclick="window.print()" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 font-medium">
+    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <button onclick="window.print()" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium">
             <i class="fas fa-print"></i> Print Profile
         </button>
-        <a href="students.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 font-medium">
+        <a href="students.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium">
             <i class="fas fa-arrow-left"></i> Back to List
         </a>
     </div>
@@ -140,12 +140,31 @@ if (!$student) {
                 </div>
                 <?php endif; ?>
 
-<div class="hidden print:block certificate-container font-sans">
+<style>
+    @media print {
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+</style>
+
+<!-- Print visibility control -->
+<div class="print:hidden">
+    <?php include '../includes/footer.php'; ?>
+</div>
+
+<!-- Certificate Container (Visible only in print) -->
+<div class="hidden print:block print:fixed print:inset-0 print:w-full print:h-full print:bg-white print:z-[99999] print:p-[0.5cm] font-sans">
     <div class="border-4 border-black p-8 h-full relative">
         <!-- Header -->
         <div class="flex justify-between items-start mb-12">
             <div class="flex items-center gap-6">
-                <img src="GBPS_LOGO.png" alt="Logo" class="w-28 h-28 object-contain">
+                <img src="../GBPS_LOGO.png" alt="Logo" class="w-28 h-28 object-contain">
                 <div>
                     <h1 class="text-3xl font-extrabold uppercase tracking-wide text-black leading-tight">Government Boys Primary<br>School</h1>
                     <h2 class="text-2xl font-bold mt-2 text-black">Ali Bux Jarwar</h2>
@@ -255,76 +274,3 @@ if (!$student) {
         </div>
     </div>
 </div>
-
-<style>
-    @media print {
-        @page {
-            margin: 0;
-            size: A4;
-        }
-        
-        body {
-            background: white !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-        
-        /* Hide all unwanted elements */
-        .no-print, 
-        nav, 
-        aside, 
-        footer,
-        .sidebar,
-        header,
-        .print\:hidden,
-        .app-container > aside,
-        #chat-widget-btn,
-        #chat-widget-window {
-            display: none !important;
-        }
-        
-        /* Hide the regular profile view */
-        .bg-white.shadow-lg.rounded-lg {
-            display: none !important;
-        }
-
-        /* Show and position certificate container */
-        .certificate-container {
-            display: block !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            background: white !important;
-            z-index: 99999 !important;
-            padding: 0.5cm !important;
-        }
-        
-        /* Ensure borders and colors print */
-        .certificate-container * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        /* Reset main content wrapper */
-        .main-content,
-        main,
-        .app-container {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-            display: block !important;
-        }
-        
-        /* Ensure images print */
-        img {
-            max-width: 100% !important;
-            page-break-inside: avoid !important;
-        }
-    }
-</style>
-
-<?php include 'includes/footer.php'; ?>

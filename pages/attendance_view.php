@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
 $db = new Database();
 
 $date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
@@ -25,14 +25,14 @@ if ($class) {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center no-print">
-    <div>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div class="text-center md:text-left">
         <h1 class="text-3xl font-bold">Attendance Reports</h1>
         <p class="text-green-100 mt-1">View and print attendance records</p>
     </div>
-    <a href="attendance.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 font-medium">
+    <a href="attendance.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
         <i class="fas fa-calendar-check"></i> Mark Attendance
     </a>
 </div>
@@ -41,23 +41,23 @@ if ($class) {
     <!-- Print Header -->
     <div class="hidden print:block text-center mb-6 border-b pb-4">
         <div class="flex flex-col items-center justify-center">
-            <img src="GBPS_LOGO.png" alt="School Logo" class="w-24 h-24 object-contain mb-2">
+            <img src="../GBPS_LOGO.png" alt="School Logo" class="w-24 h-24 object-contain mb-2">
             <h2 class="text-2xl font-bold text-gray-800">GBPS Ali Bux Jarwar</h2>
             <p class="text-gray-600">Attendance Report</p>
         </div>
     </div>
 
-    <form class="flex flex-wrap gap-4 mb-6 items-end print:hidden">
-        <div class="flex flex-col gap-2 min-w-[200px]">
+    <form class="flex flex-col md:flex-row flex-wrap gap-4 mb-6 items-end print:hidden">
+        <div class="flex flex-col gap-2 w-full md:w-auto md:min-w-[200px]">
             <label class="text-sm font-medium text-gray-700">Date</label>
             <input type="date" id="dateInput" value="<?php echo $date; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" required>
         </div>
-        <div class="flex flex-col gap-2 min-w-[200px]">
+        <div class="flex flex-col gap-2 w-full md:w-auto md:min-w-[200px]">
             <label class="text-sm font-medium text-gray-700">Class</label>
             <select id="classSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" required>
                 <option value="">Select Class</option>
                 <?php
-                $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+                $classes = getAssignedClasses(); // Get classes based on user role
                 foreach ($classes as $c) {
                     $selected = ($class == $c) ? 'selected' : '';
                     echo "<option value=\"$c\" $selected>$c</option>";
@@ -65,7 +65,7 @@ if ($class) {
                 ?>
             </select>
         </div>
-        <button type="button" onclick="window.print()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-auto flex items-center gap-2">
+        <button type="button" onclick="window.print()" class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 md:ml-auto flex items-center justify-center gap-2">
             <i class="fas fa-print"></i> Print
         </button>
     </form>
@@ -155,7 +155,7 @@ if ($class) {
                 reportContainer.classList.add('hidden');
                 noDataMessage.classList.add('hidden');
 
-                fetch(`api/get_attendance_report.php?class=${encodeURIComponent(className)}&date=${encodeURIComponent(date)}`)
+                fetch(`../api/get_attendance_report.php?class=${encodeURIComponent(className)}&date=${encodeURIComponent(date)}`)
                     .then(response => response.json())
                     .then(data => {
                         loadingMessage.classList.add('hidden');
@@ -178,8 +178,8 @@ if ($class) {
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
                                     <td class="p-4 text-gray-700">${student.gr_no}</td>
-                                    <td class="p-4 font-medium text-gray-800">${student.student_name}</td>
-                                    <td class="p-4 text-gray-600">${student.father_name}</td>
+                                    <td class="p-4 font-medium text-gray-800 capitalize">${student.student_name}</td>
+                                    <td class="p-4 text-gray-600 capitalize">${student.father_name}</td>
                                     <td class="p-4 text-center">${statusBadge}</td>
                                 `;
                                 tableBody.appendChild(row);
@@ -223,4 +223,4 @@ if ($class) {
     }
 </style>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

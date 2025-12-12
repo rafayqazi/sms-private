@@ -1,6 +1,13 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('student_form.php')) {
+    header("Location: students.php");
+    exit;
+}
+
 $db = new Database();
 
 $student = null;
@@ -145,20 +152,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden my-10">
-    <div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 flex justify-between items-center">
-        <div>
+<div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden my-6 md:my-10">
+    <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-center md:text-left">
             <h1 class="text-2xl font-bold"><?php echo $id ? 'Edit Student Record' : 'New Student Admission'; ?></h1>
             <p class="text-green-100 text-sm mt-1">Please fill in the details carefully</p>
         </div>
-        <a href="students.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 text-sm font-medium">
+        <a href="students.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 text-sm font-medium w-full md:w-auto">
             <i class="fas fa-arrow-left"></i> Back to List
         </a>
     </div>
 
-    <form action="" method="POST" enctype="multipart/form-data" class="p-8">
+    <form action="" method="POST" enctype="multipart/form-data" class="p-4 md:p-8">
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
@@ -169,7 +176,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">GR No <span class="text-red-500">*</span></label>
-                <input type="text" name="gr_no" required value="<?php echo $student ? htmlspecialchars($student['gr_no']) : ''; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <?php 
+                $defaultGr = '';
+                if ($student) {
+                    $defaultGr = htmlspecialchars($student['gr_no']);
+                } else {
+                    // Start of autofill logic
+                    $defaultGr = $db->getNextGrNo();
+                }
+                ?>
+                <input type="text" name="gr_no" required value="<?php echo $defaultGr; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
             
             <div class="flex flex-col space-y-2">
@@ -384,7 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             cnicStatus.textContent = 'Checking...';
             
             debounceTimer = setTimeout(() => {
-                fetch(`api/get_parent.php?cnic=${encodeURIComponent(cnic)}`)
+                fetch(`../api/get_parent.php?cnic=${encodeURIComponent(cnic)}`)
                     .then(response => {
                         if (response.ok) {
                             return response.json();
@@ -470,4 +486,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

@@ -1,6 +1,12 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('promote_students.php')) {
+    header("Location: index.php");
+    exit;
+}
 $db = new Database();
 
 $selectedClass = isset($_GET['class']) ? $_GET['class'] : '';
@@ -11,10 +17,10 @@ if ($selectedClass) {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
-    <div>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="text-center md:text-left">
         <h1 class="text-3xl font-bold">Promote Students</h1>
         <p class="text-green-100 mt-1">Manage student promotions for the academic year</p>
     </div>
@@ -37,9 +43,9 @@ if ($selectedClass) {
 
     <?php if ($selectedClass && !empty($students)): ?>
     <div id="promotionSection">
-        <div class="mb-4 flex justify-between items-center">
-            <h2 class="text-xl font-bold text-gray-800">Students in Class <?php echo htmlspecialchars($selectedClass); ?></h2>
-            <button onclick="applyPromotions()" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-accent transition-colors font-semibold">
+        <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h2 class="text-xl font-bold text-gray-800 text-center md:text-left">Students in Class <?php echo htmlspecialchars($selectedClass); ?></h2>
+            <button onclick="applyPromotions()" class="w-full md:w-auto bg-primary text-white px-6 py-2 rounded-lg hover:bg-accent transition-colors font-semibold flex items-center justify-center">
                 <i class="fas fa-check-circle mr-2"></i> Apply Promotions
             </button>
         </div>
@@ -143,14 +149,18 @@ function applyPromotions() {
     let errors = 0;
 
     promotions.forEach(promotion => {
-        fetch('api/promote_student.php', {
+        fetch('../api/promote_student.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(promotion)
         })
-        .then(response => response.json())
+        .then(response => response.text())
+        .then(text => {
+            console.log('Raw response:', text);
+            return JSON.parse(text);
+        })
         .then(data => {
             processed++;
             if (data.error) errors++;
@@ -183,4 +193,4 @@ function applyPromotions() {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

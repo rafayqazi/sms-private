@@ -1,6 +1,12 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('alumni.php')) {
+    header("Location: index.php");
+    exit;
+}
 $db = new Database();
 
 // Get all alumni students
@@ -15,14 +21,14 @@ usort($alumniStudents, function($a, $b) {
 });
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
-    <div>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="text-center md:text-left">
         <h1 class="text-3xl font-bold">Alumni Students</h1>
         <p class="text-green-100 mt-1">Graduates who successfully completed their primary education</p>
     </div>
-    <div class="text-right">
+    <div class="text-center md:text-right w-full md:w-auto p-3 bg-white/10 rounded-lg">
         <div class="text-4xl font-bold"><?php echo count($alumniStudents); ?></div>
         <div class="text-sm text-green-100">Total Alumni</div>
     </div>
@@ -71,10 +77,10 @@ usort($alumniStudents, function($a, $b) {
                                     <?php echo strtoupper(substr($student['student_name'], 0, 1)); ?>
                                 </div>
                             <?php endif; ?>
-                            <?php echo htmlspecialchars($student['student_name']); ?>
+                            <span class="capitalize"><?php echo htmlspecialchars($student['student_name']); ?></span>
                         </div>
                     </td>
-                    <td class="p-4 text-gray-600"><?php echo htmlspecialchars($student['father_name']); ?></td>
+                    <td class="p-4 text-gray-600 capitalize"><?php echo htmlspecialchars($student['father_name']); ?></td>
                     <td class="p-4">
                         <span class="px-2 py-1 rounded-full text-xs font-medium <?php echo $student['gender'] == 'Male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'; ?>">
                             <?php echo htmlspecialchars($student['gender']); ?>
@@ -103,4 +109,4 @@ usort($alumniStudents, function($a, $b) {
     <?php endif; ?>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

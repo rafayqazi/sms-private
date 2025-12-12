@@ -1,6 +1,12 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('teacher_profile.php')) {
+    header("Location: index.php");
+    exit;
+}
 $db = new Database();
 
 $teacher = null;
@@ -13,30 +19,30 @@ if ($id) {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
-    <div>
-        <h1 class="text-3xl font-bold">Teacher Profile</h1>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="text-center md:text-left">
+        <h1 class="text-2xl font-bold">Teacher Profile</h1>
         <p class="text-green-100 mt-1">Manage teaching staff details</p>
     </div>
-    <a href="index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 font-medium">
+    <a href="../index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
         <i class="fas fa-arrow-left"></i> Dashboard
     </a>
 </div>
 
 <?php if ($id && $teacher): ?>
     <!-- Detailed Profile View -->
-    <div class="bg-white shadow-lg rounded-lg p-6 max-w-7xl mx-auto">
-        <div class="mb-4 flex justify-between items-center">
-            <a href="teacher_profile.php" class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-md transition duration-200 flex items-center gap-2 inline-flex">
+    <div class="bg-white shadow-lg rounded-lg p-4 md:p-6 max-w-7xl mx-auto">
+        <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <a href="teacher_profile.php" class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-md transition duration-200 flex items-center justify-center gap-2 w-full md:w-auto">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
-            <div class="flex gap-2">
-                <a href="teacher_form.php?edit=<?php echo $teacher['id']; ?>" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition duration-200 flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <a href="teacher_form.php?edit=<?php echo $teacher['id']; ?>" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition duration-200 flex items-center justify-center gap-2">
                     <i class="fas fa-edit"></i> Edit Profile
                 </a>
-                <a href="actions/delete_teacher.php?id=<?php echo $teacher['id']; ?>" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 flex items-center gap-2" onclick="return confirm('Are you sure you want to delete this teacher? This action cannot be undone.');">
+                <a href="../api/delete_teacher.php?id=<?php echo $teacher['id']; ?>" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 flex items-center justify-center gap-2" onclick="return confirm('Are you sure you want to delete this teacher? This action cannot be undone.');">
                     <i class="fas fa-trash"></i> Delete Profile
                 </a>
             </div>
@@ -130,8 +136,8 @@ if ($id) {
                                         <?php echo htmlspecialchars($t['name']); ?>
                                     </div>
                                 </td>
-                                <td class="p-3"><?php echo htmlspecialchars($t['designation']); ?></td>
-                                <td class="p-3"><?php echo htmlspecialchars($t['department']); ?></td>
+                                <td class="p-3 capitalize"><?php echo htmlspecialchars($t['designation']); ?></td>
+                                <td class="p-3 capitalize"><?php echo htmlspecialchars($t['department']); ?></td>
                                 <td class="p-3"><?php echo htmlspecialchars($t['contact']); ?></td>
                                 <td class="p-3">
                                     <div class="flex items-center gap-2">
@@ -141,7 +147,7 @@ if ($id) {
                                         <a href="teacher_form.php?edit=<?php echo $t['id']; ?>" class="text-yellow-500 hover:text-yellow-700 transition-colors" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="actions/delete_teacher.php?id=<?php echo $t['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this teacher?');">
+                                        <a href="../api/delete_teacher.php?id=<?php echo $t['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this teacher?');">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
@@ -159,4 +165,4 @@ if ($id) {
     </div>
 <?php endif; ?>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

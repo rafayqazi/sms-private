@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const searchVal = filterSearch.value;
 
         // Updated path to API
-        let url = `api/get_students.php?class=${encodeURIComponent(classVal)}&gender=${encodeURIComponent(genderVal)}&search=${encodeURIComponent(searchVal)}`;
+        const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : 'api/';
+        let url = `${baseUrl}get_students.php?class=${encodeURIComponent(classVal)}&gender=${encodeURIComponent(genderVal)}&search=${encodeURIComponent(searchVal)}`;
 
         if (currentSortBy) {
             url += `&sort_by=${encodeURIComponent(currentSortBy)}&order=${encodeURIComponent(currentOrder)}`;

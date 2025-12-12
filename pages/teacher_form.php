@@ -1,6 +1,13 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('teacher_form.php')) {
+    header("Location: index.php");
+    exit;
+}
+
 $db = new Database();
 
 $editMode = false;
@@ -72,20 +79,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden my-10">
-    <div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 flex justify-between items-center">
-        <div>
+<div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden my-6 md:my-10">
+    <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-center md:text-left">
             <h1 class="text-2xl font-bold"><?php echo $editMode ? 'Edit Teacher Record' : 'Add New Teacher'; ?></h1>
             <p class="text-green-100 text-sm mt-1">Please fill in the details carefully</p>
         </div>
-        <a href="teacher_profile.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 text-sm font-medium">
+        <a href="teacher_profile.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 text-sm font-medium w-full md:w-auto">
             <i class="fas fa-arrow-left"></i> Back to List
         </a>
     </div>
 
-    <form action="" method="POST" enctype="multipart/form-data" class="p-8" id="teacherForm">
+    <form action="" method="POST" enctype="multipart/form-data" class="p-4 md:p-8" id="teacherForm">
         
         <!-- Personal Information -->
         <div class="border-b pb-2 mb-6">
@@ -288,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if (cnic.length >= 15) { // Full CNIC entered
             cnicDebounceTimer = setTimeout(() => {
-                fetch(`api/check_teacher_cnic.php?cnic=${encodeURIComponent(cnic)}&exclude_id=${editId}`)
+                fetch(`../api/check_teacher_cnic.php?cnic=${encodeURIComponent(cnic)}&exclude_id=${editId}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.exists) {
@@ -330,4 +337,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

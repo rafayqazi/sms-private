@@ -62,7 +62,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Helper Functions
     function addMessage(text, type) {
         const div = document.createElement('div');
-        div.classList.add('message', type);
+        // Base classes
+        div.className = 'max-w-[80%] p-3 rounded-xl text-sm leading-relaxed relative break-words';
+        
+        if (type === 'user') {
+            div.classList.add('self-end', 'bg-green-700', 'text-white', 'rounded-br-sm');
+        } else if (type === 'ai') {
+            div.classList.add('self-start', 'bg-white', 'border', 'border-gray-200', 'text-gray-800', 'rounded-bl-sm');
+        } else if (type === 'error') {
+            div.classList.add('self-center', 'bg-red-100', 'text-red-600', 'text-xs');
+        }
 
         // Simple Markdown parsing for bold text
         const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -75,11 +84,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function showTyping() {
         const div = document.createElement('div');
         div.id = 'typing-indicator';
-        div.classList.add('typing-indicator');
+        div.className = 'flex gap-1 p-3 bg-white rounded-xl w-fit border border-gray-200';
         div.innerHTML = `
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: -0.32s"></div>
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: -0.16s"></div>
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
         `;
         messagesContainer.appendChild(div);
         scrollToBottom();

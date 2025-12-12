@@ -59,7 +59,7 @@ if (empty($students)) {
                     <a href="student_form.php?id=<?php echo $student['id']; ?>" class="text-yellow-500 hover:text-yellow-700 transition-colors" title="Edit">
                         <i class="fas fa-edit"></i>
                     </a>
-                    <a href="actions/delete_student.php?id=<?php echo $student['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this student?');">
+                    <a href="../api/delete_student.php?id=<?php echo $student['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this student?');">
                         <i class="fas fa-trash"></i>
                     </a>
                 </div>

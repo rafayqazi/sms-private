@@ -13,13 +13,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Hardcoded credentials
+    // Check if it's admin login
     if ($username === 'GBPSalibuxjarwar' && $password === 'admin') {
         $_SESSION['user'] = $username;
+        $_SESSION['user_type'] = 'admin';
+        $_SESSION['user_role'] = 'Admin';
+        $_SESSION['username'] = $username;
+        $_SESSION['teacher_id'] = null;
+        $_SESSION['assigned_classes'] = [];
+        $_SESSION['show_welcome_animation'] = true; // Trigger animation
         header("Location: index.php");
         exit;
     } else {
-        $error = "Invalid Username or Password";
+        // Check teacher login
+        $db = new Database();
+        $userRole = $db->getUserRoleByUsername($username);
+        
+        if ($userRole && password_verify($password, $userRole['password_hash'])) {
+            // Get teacher details
+            $teacher = $db->getTeacher($userRole['teacher_id']);
+            
+            $_SESSION['user'] = $username;
+            $_SESSION['user_type'] = 'teacher';
+            $_SESSION['user_role'] = $userRole['role']; // Admin or Editor
+            $_SESSION['username'] = $username;
+            $_SESSION['teacher_id'] = $userRole['teacher_id'];
+            $_SESSION['teacher_name'] = $teacher ? $teacher['name'] : 'Teacher';
+            $_SESSION['assigned_classes'] = $userRole['assigned_classes'] ? $userRole['assigned_classes'] : [];
+            $_SESSION['show_welcome_animation'] = true; // Trigger animation
+            header("Location: index.php");
+            exit;
+        } else {
+            $error = "Invalid Username or Password";
+        }
     }
 }
 ?>
@@ -54,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="absolute top-[-50px] left-[-50px] w-72 h-72 bg-white/10 rounded-full blur-sm z-0"></div>
     <div class="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-white/10 rounded-full blur-sm z-0"></div>
 
-    <div class="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-10 relative z-10 animate-[slideUp_0.6s_ease-out]">
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-6 md:p-10 relative z-10 animate-[slideUp_0.6s_ease-out]">
         <div class="text-center mb-8">
             <img src="GBPS_LOGO.png" alt="GBPS Logo" class="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md hover:scale-105 transition-transform duration-300">
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">School Management System</h1>

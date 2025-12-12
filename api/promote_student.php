@@ -3,6 +3,8 @@ require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
 header('Content-Type: application/json');
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['error' => 'Invalid request method']);

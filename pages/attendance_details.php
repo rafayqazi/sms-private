@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
 
 $status = isset($_GET['status']) ? $_GET['status'] : 'Absent';
 $statusMap = [
@@ -16,14 +16,14 @@ $students = $result['students'];
 $date = $result['date'];
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
-    <div>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="text-center md:text-left">
         <h1 class="text-3xl font-bold">Students - <?php echo htmlspecialchars($status); ?></h1>
         <p class="text-green-100 mt-1">Date: <?php echo htmlspecialchars($date); ?></p>
     </div>
-    <a href="index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center gap-2 font-medium">
+    <a href="../index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
         <i class="fas fa-arrow-left"></i> Dashboard
     </a>
 </div>
@@ -45,8 +45,8 @@ $date = $result['date'];
                     <?php foreach ($students as $student): ?>
                         <tr>
                             <td class="p-4 text-gray-700"><?php echo htmlspecialchars($student['gr_no']); ?></td>
-                            <td class="p-4 font-medium text-gray-800"><?php echo htmlspecialchars($student['student_name']); ?></td>
-                            <td class="p-4 text-gray-600"><?php echo htmlspecialchars($student['father_name']); ?></td>
+                            <td class="p-4 font-medium text-gray-800 capitalize"><?php echo htmlspecialchars($student['student_name']); ?></td>
+                            <td class="p-4 text-gray-600 capitalize"><?php echo htmlspecialchars($student['father_name']); ?></td>
                             <td class="p-4 text-gray-600"><?php echo htmlspecialchars($student['current_class']); ?></td>
                             <td class="p-4 text-gray-600"><?php echo htmlspecialchars(isset($student['father_contact']) ? $student['father_contact'] : ''); ?></td>
                         </tr>
@@ -66,4 +66,4 @@ $date = $result['date'];
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

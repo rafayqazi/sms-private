@@ -1,6 +1,13 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('students.php')) {
+    header("Location: index.php");
+    exit;
+}
+
 $db = new Database();
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -16,21 +23,21 @@ $filters = [
 $students = $db->filterStudents($filters);
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
-    <div>
-        <h1 class="text-3xl font-bold">Students Directory</h1>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="text-center md:text-left">
+        <h1 class="text-2xl md:text-3xl font-bold">Students Directory</h1>
         <p class="text-green-100 mt-1">Manage student records and admissions</p>
     </div>
-    <a href="student_form.php" class="bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center gap-2 font-semibold">
+    <a href="student_form.php" class="w-full md:w-auto bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
         <i class="fas fa-plus-circle"></i> New Admission
     </a>
 </div>
 
 <div class="bg-white rounded-lg shadow-lg p-6">
     <div class="mb-6">
-        <form id="filterForm" action="" method="GET" class="flex flex-wrap gap-4 items-end" onsubmit="return false;">
+        <form id="filterForm" action="" method="GET" class="flex flex-col md:flex-row flex-wrap gap-4 items-end" onsubmit="return false;">
             <div class="flex flex-col gap-1 min-w-[150px]">
                 <label class="text-sm font-medium text-gray-700">Class</label>
                 <select name="class" id="filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm">
@@ -100,7 +107,7 @@ $students = $db->filterStudents($filters);
                     <?php foreach ($students as $student): ?>
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="p-4 text-gray-700 font-medium"><?php echo htmlspecialchars($student['gr_no']); ?></td>
-                        <td class="p-4 text-gray-800 font-semibold">
+                        <td class="p-4 text-gray-800 font-semibold capitalize">
                             <div class="flex items-center gap-3">
                                 <?php if (!empty($student['profile_image'])): ?>
                                     <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-8 h-8 rounded-full object-cover">
@@ -112,7 +119,7 @@ $students = $db->filterStudents($filters);
                                 <?php echo htmlspecialchars($student['student_name']); ?>
                             </div>
                         </td>
-                        <td class="p-4 text-gray-600"><?php echo htmlspecialchars($student['father_name']); ?></td>
+                        <td class="p-4 text-gray-600 capitalize"><?php echo htmlspecialchars($student['father_name']); ?></td>
                         <td class="p-4">
                             <span class="px-2 py-1 rounded-full text-xs font-medium <?php echo $student['gender'] == 'Male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'; ?>">
                                 <?php echo htmlspecialchars($student['gender']); ?>
@@ -144,7 +151,7 @@ $students = $db->filterStudents($filters);
                                 <a href="student_form.php?id=<?php echo $student['id']; ?>" class="text-yellow-500 hover:text-yellow-700 transition-colors" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="actions/delete_student.php?id=<?php echo $student['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this student?');">
+                                <a href="../api/delete_student.php?id=<?php echo $student['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this student?');">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
@@ -157,6 +164,9 @@ $students = $db->filterStudents($filters);
     </div>
 </div>
 
-<script src="assets/js/main.js"></script>
+<script>
+    const API_BASE_URL = '../api/';
+</script>
+<script src="../assets/js/main.js?v=<?php echo time(); ?>"></script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

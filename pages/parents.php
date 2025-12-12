@@ -1,6 +1,12 @@
 <?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
+require_once '../includes/auth_session.php';
+require_once '../includes/db.php';
+
+// Check if user can access this page
+if (!canAccessPage('parents.php')) {
+    header("Location: index.php");
+    exit;
+}
 $db = new Database();
 
 // Fetch all students
@@ -44,15 +50,22 @@ foreach ($students as $student) {
 }
 ?>
 
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex justify-between items-center">
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div>
         <h1 class="text-3xl font-bold">Parents Directory</h1>
         <p class="text-green-100 mt-1">View parent details and enrolled children</p>
     </div>
-    <div class="hidden md:block">
-        <!-- Placeholder for potential future actions -->
+    <div class="w-full md:w-auto">
+        <div class="relative text-gray-600 focus-within:text-gray-400">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-2">
+                <button type="submit" class="p-1 focus:outline-none focus:shadow-outline">
+                    <i class="fas fa-search"></i>
+                </button>
+            </span>
+            <input type="search" id="parentSearchInput" class="py-2 text-sm text-gray-900 bg-white rounded-md pl-10 focus:outline-none focus:bg-white focus:text-gray-900 w-full md:w-64" placeholder="Search by Name, Contact, CNIC..." autocomplete="off">
+        </div>
     </div>
 </div>
 
@@ -78,7 +91,7 @@ foreach ($students as $student) {
                 <?php else: ?>
                     <?php foreach ($parents as $key => $parent): ?>
                     <tr class="hover:bg-gray-50 transition duration-150">
-                        <td class="p-4 text-left whitespace-nowrap font-medium text-gray-800"><?php echo htmlspecialchars($parent['father_name']); ?></td>
+                        <td class="p-4 text-left whitespace-nowrap font-medium text-gray-800 capitalize"><?php echo htmlspecialchars($parent['father_name']); ?></td>
                         <td class="p-4 text-left text-gray-600"><?php echo htmlspecialchars($parent['father_contact']); ?></td>
                         <td class="p-4 text-left text-gray-600"><?php echo htmlspecialchars($parent['father_cnic']); ?></td>
                         <td class="p-4 text-center">
@@ -277,6 +290,47 @@ document.addEventListener('keydown', function(event) {
         closeParentModal();
     }
 });
+
+// Search functionality
+document.getElementById('parentSearchInput').addEventListener('keyup', function() {
+    let searchValue = this.value.toLowerCase();
+    let table = document.querySelector('table tbody');
+    let rows = table.getElementsByTagName('tr');
+    let hasVisibleRow = false;
+
+    // Remove any existing "no results" row
+    let noResultsRow = document.getElementById('noResultsRow');
+    if (noResultsRow) {
+        noResultsRow.remove();
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+        let row = rows[i];
+        
+        // Skip if it is the "no parents found" message from PHP
+        if (row.cells.length === 1 && row.cells[0].colSpan === 7) {
+            continue;
+        }
+
+        let name = row.cells[0].textContent.toLowerCase();
+        let contact = row.cells[1].textContent.toLowerCase();
+        let cnic = row.cells[2].textContent.toLowerCase();
+
+        if (name.includes(searchValue) || contact.includes(searchValue) || cnic.includes(searchValue)) {
+            row.style.display = "";
+            hasVisibleRow = true;
+        } else {
+            row.style.display = "none";
+        }
+    }
+
+    if (!hasVisibleRow) {
+        let noRow = document.createElement('tr');
+        noRow.id = 'noResultsRow';
+        noRow.innerHTML = '<td colspan="7" class="p-8 text-center text-gray-500">No matching parents found.</td>';
+        table.appendChild(noRow);
+    }
+});
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

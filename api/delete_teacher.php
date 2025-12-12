@@ -15,12 +15,12 @@ if (isset($_GET['id'])) {
             unlink('../' . $teacher['profile_image']);
         }
         
-        header("Location: ../teacher_profile.php?msg=deleted");
+        header("Location: ../pages/teacher_profile.php?msg=deleted");
     } else {
-        header("Location: ../teacher_profile.php?error=delete_failed");
+        header("Location: ../pages/teacher_profile.php?error=delete_failed");
     }
 } else {
-    header("Location: ../teacher_profile.php");
+    header("Location: ../pages/teacher_profile.php");
 }
 exit;
 ?>

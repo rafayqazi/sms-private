@@ -9,6 +9,6 @@ if ($id) {
     $db->deleteStudent($id);
 }
 
-header("Location: ../students.php");
+header("Location: ../pages/students.php");
 exit;
 ?>

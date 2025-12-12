@@ -1,3 +1,4 @@
+            </div> <!-- End Page Content Wrapper -->
             <footer class="mt-8 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
                 <p>Application created by <span class="font-semibold text-indigo-600">Abdul Rafay Qazi</span> and all rights reserved 2025 &copy;</p>
             </footer>
@@ -5,39 +6,38 @@
     </div>
 
     <!-- Chat Widget -->
-    <div id="chat-widget-btn" class="chat-widget-btn">
-        <i class="fas fa-robot fa-lg"></i>
+    <div id="chat-widget-btn" class="fixed bottom-5 right-5 w-14 h-14 bg-gradient-to-br from-green-700 to-green-800 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform z-50 text-2xl">
+        <i class="fas fa-robot"></i>
     </div>
 
-    <div id="chat-widget-window" class="chat-widget-window">
-        <div class="chat-header">
-            <h3><i class="fas fa-robot mr-2"></i> Ali Bux Jarwar AI</h3>
-            <div id="chat-close" class="chat-close"><i class="fas fa-times"></i></div>
+    <div id="chat-widget-window" class="fixed bottom-24 right-5 w-[350px] h-[500px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 transition-all duration-300 transform translate-y-5 opacity-0 pointer-events-none [&.open]:translate-y-0 [&.open]:opacity-100 [&.open]:pointer-events-auto">
+        <div class="bg-green-700 text-white p-4 flex items-center justify-between">
+            <h3 class="m-0 text-base font-semibold flex items-center"><i class="fas fa-robot mr-2"></i> Ali Bux Jarwar AI</h3>
+            <div id="chat-close" class="cursor-pointer opacity-80 hover:opacity-100"><i class="fas fa-times"></i></div>
         </div>
-        <div id="chat-messages" class="chat-messages">
-            <div class="message ai">
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col gap-3">
+            <div class="max-w-[80%] p-3 rounded-xl text-sm leading-relaxed relative break-words self-start bg-white border border-gray-200 text-gray-800 rounded-bl-sm">
                 Hello! I am the school's AI assistant. I have access to all student, teacher, and attendance records. How can I help you today?
             </div>
-            <div class="chat-suggestions">
+            <div class="mt-2 mb-2">
                 <p class="text-xs text-gray-400 mb-2 px-2">Suggested Questions:</p>
                 <div class="flex flex-wrap gap-2 px-2">
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">Check today's attendance</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">Total students count</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">List absent students</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">Recent admissions</button>
-                    <button class="suggestion-chip" onclick="sendSuggestion(this)">Teacher list</button>
+                    <button class="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-green-700 cursor-pointer hover:bg-green-700 hover:text-white hover:border-green-700 transition-colors" onclick="sendSuggestion(this)">Check today's attendance</button>
+                    <button class="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-green-700 cursor-pointer hover:bg-green-700 hover:text-white hover:border-green-700 transition-colors" onclick="sendSuggestion(this)">Total students count</button>
+                    <button class="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-green-700 cursor-pointer hover:bg-green-700 hover:text-white hover:border-green-700 transition-colors" onclick="sendSuggestion(this)">List absent students</button>
+                    <button class="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-green-700 cursor-pointer hover:bg-green-700 hover:text-white hover:border-green-700 transition-colors" onclick="sendSuggestion(this)">Recent admissions</button>
+                    <button class="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-green-700 cursor-pointer hover:bg-green-700 hover:text-white hover:border-green-700 transition-colors" onclick="sendSuggestion(this)">Teacher list</button>
                 </div>
             </div>
         </div>
-        <div class="chat-input-area">
-            <input type="text" id="chat-input" placeholder="Ask about students, attendance...">
-            <button id="chat-send-btn" class="chat-send-btn">
+        <div class="p-4 border-t border-gray-200 bg-white flex gap-2">
+            <input type="text" id="chat-input" placeholder="Ask about students, attendance..." class="flex-1 p-2 border border-gray-300 rounded-full focus:outline-none focus:border-green-700 text-sm">
+            <button id="chat-send-btn" class="bg-green-700 text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-green-800 transition-colors">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
     </div>
 
-    <link rel="stylesheet" href="assets/css/chat.css?v=<?php echo time(); ?>">
     <script src="assets/js/chat.js?v=<?php echo time(); ?>"></script>
     <!-- Global Notification Modal -->
     <div id="globalModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
