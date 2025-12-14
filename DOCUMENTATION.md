@@ -17,32 +17,30 @@
 ## Project Overview
 
 ### Purpose
-A comprehensive web-based School Management System designed specifically for **Government Boys Primary School Ali Bux Jarwar** to manage student records, attendance, teacher information, and academic progression.
+A comprehensive web-based School Management System designed specifically for **Government Boys Primary School Ali Bux Jarwar** to manage student records, attendance, examinations, ID cards, and academic progression.
 
 ### Technology Stack
 - **Backend**: PHP 7.4+
-- **Database**: CSV-based file storage
-- **Frontend**: HTML5, TailwindCSS 3.0
+- **Database**: CSV-based file storage (NoSQL approach)
+- **Frontend**: HTML5, TailwindCSS 3.4 (CDN)
 - **JavaScript**: Vanilla JS, Chart.js
 - **Icons**: Font Awesome 6.4.0
-- **Fonts**: Google Fonts (Inter)
+- **Fonts**: Google Fonts (Roboto)
 
 ### Key Features
-- Student admission and profile management
-- Annual student promotion system with Alumni tracking
-- Attendance management with real-time statistics
-- Teacher and parent management
-- AI-powered chatbot assistant
-- Interactive dashboard with analytics
-- Document upload and management
-- Print-friendly student profiles
+- **Student Management**: Admission, Profiles, Promotion, Alumni Tracking.
+- **Examinations**: Mark Entry, Result Cards, Tabulation Sheets, Exam Slip Generation.
+- **ID Cards**: Auto-generate printable Student ID Cards with barcodes/QR.
+- **Attendance**: Daily marking with visual insights and dashboards.
+- **Dashboard**: Real-time analytics, gender-wise counts, and attendance status.
+- **Data Security**: Backup and Restore functionality, Password-protected critical actions.
 
 ---
 
 ## System Architecture
 
 ### Architecture Pattern
-The system follows a **Model-View-Controller (MVC)** inspired pattern:
+The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored for flat-file storage:
 
 ```
 ┌─────────────┐
@@ -55,7 +53,7 @@ The system follows a **Model-View-Controller (MVC)** inspired pattern:
 │   PHP Pages (Controllers)    │
 │  - index.php                 │
 │  - students.php              │
-│  - attendance.php            │
+│  - pages/generate_id_card.php│
 └──────────┬──────────────────┘
            │
            ↓
@@ -63,664 +61,147 @@ The system follows a **Model-View-Controller (MVC)** inspired pattern:
 │   Database Class (Model)     │
 │  - includes/db.php           │
 │  - CRUD operations           │
-│  - Business logic            │
+│  - Data validation           │
 └──────────┬──────────────────┘
            │
            ↓
 ┌─────────────────────────────┐
 │   CSV Files (Data Layer)     │
 │  - data/database.csv         │
-│  - data/teachers.csv         │
+│  - data/results.csv          │
 │  - data/attendance.csv       │
 └─────────────────────────────┘
 ```
-
-### Request Flow
-
-1. **User Request** → Browser sends HTTP request
-2. **Session Check** → `auth_session.php` validates user session
-3. **Controller** → Page-specific PHP file processes request
-4. **Model** → `Database` class interacts with CSV files
-5. **View** → HTML is rendered with Tailwind CSS
-6. **Response** → Complete page sent to browser
 
 ---
 
 ## Database Schema
 
-### Students Table (database.csv)
+### Students Table (`database.csv`)
+| Field | Description |
+|-------|-------------|
+| `id` | Unique Primary Key |
+| `gr_no` | General Register Number (Unique) |
+| `student_name` | Full Name |
+| `father_name` | Father's Name |
+| `gender` | Male/Female |
+| `date_of_birth` | YYYY-MM-DD |
+| `current_class` | Kachi, One, Two, Three, Four, Five |
+| `father_cnic` | 13-digit CNIC (unique parent identifier) |
+| `father_contact` | Mobile Number |
+| `profile_image` | Path to student photo |
+| `student_status` | 'Active' or 'Alumni' |
+| `semis_code` | School SEMIS Code (Fixed/Configurable) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | Integer | Primary key, auto-increment |
-| `gr_no` | String | General Register number (unique) |
-| `student_name` | String | Full name of student |
-| `father_name` | String | Father's full name |
-| `gender` | Enum | Male/Female |
-| `date_of_birth` | Date | YYYY-MM-DD format |
-| `admission_date` | Date | Date of admission |
-| `current_class` | String | Kachi/One/Two/Three/Four/Five |
-| `age` | Integer | Calculated from DOB |
-| `b_form_no` | String | B-Form number (format: xxxxx-xxxxxxx-x) |
-| `father_cnic` | String | Father's CNIC (format: xxxxx-xxxxxxx-x) |
-| `father_contact` | String | Phone number |
-| `district` | String | District name |
-| `taluka` | String | Taluka/Tehsil name |
-| `school_name` | String | School name |
-| `semis_code` | String | SEMIS code |
-| `is_active` | Boolean | 1=Active, 0=Inactive |
-| `created_at` | DateTime | Record creation timestamp |
-| `updated_at` | DateTime | Last modification timestamp |
-| `father_cnic_front` | String | Path to CNIC front image |
-| `father_cnic_back` | String | Path to CNIC back image |
-| `b_form_img` | String | Path to B-Form image |
-| `profile_image` | String | Path to profile photo |
-| `previous_school` | String | Previous school name (if transfer) |
-| `slc_img` | String | School Leaving Certificate image |
-| `student_status` | Enum | Active/Alumni |
-| `is_repeater` | Boolean | 0=Normal, 1=Repeating class |
-
-### Teachers Table (teachers.csv)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | Integer | Primary key |
-| `name` | String | Teacher's full name |
-| `father_name` | String | Father's name |
-| `gender` | Enum | Male/Female |
-| `cnic` | String | CNIC number |
-| `dob` | Date | Date of birth |
-| `age` | Integer | Calculated age |
-| `contact` | String | Phone number |
-| `email` | String | Email address |
-| `address` | String | Residential address |
-| `designation` | String | Job title |
-| `department` | String | Department name |
-| `posting` | String | Current posting location |
-| `basic_scale` | String | BPS grade (e.g., BPS-14) |
-| `retirement_date` | Date | Expected retirement date |
-| `payment_type` | String | Bank Account/Mobile Banking |
-| `payment_no` | String | Account/mobile number |
-| `iban` | String | Bank IBAN |
-| `profile_image` | String | Path to profile photo |
-
-### Attendance Table (attendance.csv)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `date` | Date | Attendance date |
-| `class` | String | Class name |
-| `student_id` | Integer | Foreign key to students |
-| `status` | Char | P=Present, A=Absent, L=Leave |
-| `created_at` | DateTime | Record timestamp |
+### Results Table (`results.csv`)
+| Field | Description |
+|-------|-------------|
+| `id` | Record ID |
+| `student_id` | Foreign Key to Students |
+| `class` | Class at time of exam |
+| `exam_type` | Mid Term / Annual |
+| `year` | Exam Year (e.g., 2025) |
+| `english`, `math`, `urdu`, `sindhi`... | Subject Marks |
+| `total_obtained` | Sum of marks |
+| `grade` | A1, A, B, C, D, F |
+| `other_subjects` | JSON string for extra subjects |
 
 ---
 
 ## Features & Modules
 
 ### 1. Dashboard (`index.php`)
-
-**Purpose**: Central hub showing school overview and statistics
-
-**Features**:
-- Total student count (excluding Alumni)
-- Gender-based statistics (Male/Female)
-- Recent admissions list
-- Class-wise attendance chart (interactive)
-- Quick navigation to all modules
-
-**Interactivity**:
-- Clicking "Total Students" → Redirects to full student list
-- Clicking "Male"/"Female" → Filters students by gender
-- Clicking chart bars → Filters attendance by class
+**Central Hub**:
+- **Attendance Insights**: Doughnut chart for daily status, bar chart for class-wise attendance.
+- **Smart Date Logic**: Displays "Attendance Unmarked" if no data exists for the current day.
+- **Quick Actions**: Add Student, Add Teacher, Backup Data.
 
 ### 2. Student Management
+- **Admission (`pages/student_form.php`)**: 
+  - Comprehensive form with image preview.
+  - Parents auto-fill based on Father's CNIC.
+  - Drag-and-drop style image uploads.
+- **ID Cards (`pages/print_id_card.php`)**:
+  - Enter GR Number to generate a standard credit-card sized ID.
+  - Includes Photo, Details, and SEMIS Code.
+  - Print-ready CSS for exact dimensions.
+- **Promotion (`pages/promote_students.php`)**:
+  - Bulk promote students to the next class.
+  - Logic to handle "Pass", "Fail" (Repeater), and "Double Promotion".
+  - Auto-moves Class 5 students to **Alumni**.
 
-#### Student List (`students.php`)
-- **Filters**: Class, Gender, Search (Name/GR No)
-- **Sorting**: GR Number (ascending/descending)
-- **Display**: Profile photos, badges for repeaters and alumni
-- **Actions**: View, Edit, Delete
+### 3. Examination System
+- **Exam Slips (`pages/exam_slips.php`)**:
+  - Generate printable date sheets for specific classes.
+  - **Auto-fill Time**: Setting time for one subject auto-fills others.
+  - **Smart Date**: Auto-increments dates for subsequent subjects.
+- **Results Entry (`pages/results.php`)**:
+  - Enter marks for core and optional subjects.
+  - Auto-calculation of Total, Percentage, and Grade.
+- **Print Marksheets (`pages/print_all_results.php`)**:
+  - Bulk print result cards for an entire class.
+  - formatted A4 layout (2 per page or 1 per page).
 
-#### Student Form (`student_form.php`)
-- **Fields**: All student information fields
-- **Validation**: 
-  - Unique GR Number
-  - Unique B-Form Number
-  - CNIC format validation
-  - Required field checks
-- **File Uploads**: 
-  - Profile photo
-  - Father's CNIC (front & back)
-  - B-Form image
-  - School Leaving Certificate (for transfers)
-- **Dynamic Fields**: Previous school info (only for non-Kachi admissions)
+### 4. Data Security & Backup
+- **Backup (`api/backup_data.php`)**:
+  - Downloads the entire `data/` directory and `uploads/` as a ZIP file.
+  - **Security**: Requires Admin Password validation before download.
+- **Restore**: Manual restoration via replacing the `data` folder (currently manual).
 
-#### Student Profile (`student_profile.php`)
-- Complete student information display
-- Document gallery
-- Print-friendly format (A4 certificate style)
-- Linked parent information
-
-#### Student Promotion (`promote_students.php`)
-- **Class Filter**: Select class to promote
-- **Bulk Actions**: Process multiple students at once
-- **Options**:
-  - **Pass**: Promote to next class
-  - **Fail**: Mark as repeater (stay in same class)
-  - **Stay**: Remain in class without repeater flag
-- **Special Handling**: Class Five → Alumni status
-- **Confirmation**: Requires user confirmation before applying
-
-#### Alumni (`alumni.php`)
-- Display all graduated students
-- Shows graduation year
-- Completely separate from active student lists
-- View-only access to profiles
-
-### 3. Attendance System
-
-#### Mark Attendance (`attendance.php`)
-- **Class Selection**: Choose class to mark attendance
-- **Student List**: All students in selected class
-- **Quick Marking**: 
-  - Present (P)
-  - Absent (A)
-  - Leave (L)
-- **Bulk Actions**: Mark All Present/Absent
-- **Auto-save**: Stores attendance records
-
-#### View Attendance (`attendance_view.php`)
-- **Date Filter**: Select specific date
-- **Class Filter**: Filter by class
-- **Report Generation**: 
-  - Present count
-  - Absent count
-  - Leave count
-  - Attendance percentage
-- **Student Details**: Click to view individual profiles
-- **Export Ready**: Formatted for printing
-
-### 4. Teacher Management
-
-#### Teacher Registration (`teacher_form.php`)
-- Complete teacher information
-- CNIC validation
-- Retirement date calculation
-- Payment details (bank/mobile)
-- Profile photo upload
-
-#### Teacher Profile (`teacher_profile.php`)
-- Display all teacher information
-- Edit functionality
-- Profile photo display
-
-### 5. Parent Management (`parents.php`)
-
-- Link parents to multiple children
-- Father's CNIC as unique identifier
-- Display all children of a parent
-- Click child name → Navigate to student profile
-
-### 6. AI Chatbot
-
-**Location**: Fixed bottom-right corner on all pages
-
-**Features**:
-- Natural language queries about school data
-- Suggested questions:
-  - "Check today's attendance"
-  - "Total students count"
-  - "List absent students"
-  - "Recent admissions"
-  - "Teacher list"
-- Context-aware responses
-- Access to all student/teacher/attendance data
-
-**Integration**: `api/chat.php` with AI context from `includes/ai_context.php`
+### 5. Attendance
+- **Daily Marking (`pages/attendance.php`)**:
+  - Mark Present/Absent/Leave for whole class.
+  - Quick "Mark All Present" button.
+- **Reports**: View monthly and daily reports.
 
 ---
 
 ## API Documentation
 
-### 1. Chat API (`api/chat.php`)
+### 1. Get Parent Info
+- **Endpoint**: `GET /api/get_parent.php?cnic=XXXXX`
+- **Use**: Autofills father's name and contact if the parent already exists in the system.
 
-**Endpoint**: `POST /api/chat.php`
+### 2. Promote Student
+- **Endpoint**: `POST /api/promote_student.php`
+- **Payload**: `{ student_ids: [], action: 'promote' }`
+- **Logic**: Updates `current_class` and `is_repeater` flags.
 
-**Request Body**:
-```json
-{
-  "message": "How many students are there?"
-}
-```
-
-**Response**:
-```json
-{
-  "response": "There are 81 active students currently enrolled."
-}
-```
-
-### 2. Student Data API (`api/get_students.php`)
-
-**Endpoint**: `GET /api/get_students.php?class={class}&gender={gender}`
-
-**Parameters**:
-- `class` (optional): Filter by class
-- `gender` (optional): Filter by gender
-
-**Response**: JSON array of student objects
-
-### 3. Attendance Data API (`api/get_attendance_data.php`)
-
-**Endpoint**: `GET /api/get_attendance_data.php?date={date}&class={class}`
-
-**Response**: Attendance records in JSON format
-
-### 4. Attendance Report API (`api/get_attendance_report.php`)
-
-**Endpoint**: `GET /api/get_attendance_report.php?date={date}&class={class}`
-
-**Response**:
-```json
-{
-  "date": "2025-11-30",
-  "class": "One",
-  "present": 12,
-  "absent": 2,
-  "leave": 0,
-  "total": 14,
-  "percentage": 85.7
-}
-```
-
-### 5. Parent Lookup API (`api/get_parent.php`)
-
-**Endpoint**: `GET /api/get_parent.php?cnic={cnic}`
-
-**Response**: Parent information with enrolled children
-
-### 6. Student Promotion API (`api/promote_student.php`)
-
-**Endpoint**: `POST /api/promote_student.php`
-
-**Request Body**:
-```json
-{
-  "id": 123,
-  "action": "pass|fail|stay"
-}
-```
-
-**Response**:
-```json
-{
-  "success": true,
-  "message": "Student promoted successfully"
-}
-```
-
-### 7. CNIC Check API (`api/check_teacher_cnic.php`)
-
-**Endpoint**: `GET /api/check_teacher_cnic.php?cnic={cnic}&exclude_id={id}`
-
-**Purpose**: Validate unique teacher CNIC during registration
-
----
-
-## File Structure
-
-```
-school-management-system/
-│
-├── actions/
-│   ├── delete_student.php         # Delete student record
-│   ├── delete_teacher.php         # Delete teacher record
-│   └── logout.php                 # User logout
-│
-├── api/
-│   ├── chat.php                   # AI chatbot endpoint
-│   ├── check_teacher_cnic.php     # CNIC validation
-│   ├── get_attendance_data.php    # Attendance data
-│   ├── get_attendance_report.php  # Attendance reports
-│   ├── get_parent.php             # Parent lookup
-│   ├── get_students.php           # Student data
-│   └── promote_student.php        # Promotion processing
-│
-├── assets/
-│   ├── css/
-│   │   └── chat.css              # Chatbot styles
-│   ├── js/
-│   │   ├── chat.js               # Chatbot logic
-│   │   └── main.js               # Common JavaScript
-│   └── img/
-│       └── logo.jpg              # School logo
-│
-├── data/
-│   ├── database.csv              # Students database
-│   ├── teachers.csv              # Teachers database
-│   ├── attendance.csv            # Attendance records
-│   └── *.xlsx                    # Original Excel data
-│
-├── includes/
-│   ├── db.php                    # Database class
-│   ├── auth_session.php          # Session management
-│   ├── functions.php             # Helper functions
-│   ├── header.php                # Common header
-│   ├── footer.php                # Common footer
-│   └── ai_context.php            # AI context builder
-│
-├── uploads/                      # User uploaded files
-│   ├── *.png, *.jpg              # Profile photos
-│   └── GR-{number}-*.png         # Document images
-│
-├── index.php                     # Dashboard
-├── students.php                  # Student list
-├── student_form.php             # Add/Edit student
-├── student_profile.php          # Student details
-├── promote_students.php         # Annual promotion
-├── alumni.php                   # Alumni directory
-├── attendance.php               # Mark attendance
-├── attendance_view.php          # View attendance
-├── parents.php                  # Parent management
-├── teacher_form.php             # Add/Edit teacher
-├── teacher_profile.php          # Teacher details
-├── login.php                    # Login page
-├── reset_app.php                # Reset application
-├── .gitignore                   # Git ignore rules
-└── README.md                    # Project README
-```
+### 3. Backup Data
+- **Endpoint**: `POST /api/backup_data.php`
+- **Payload**: `{ password: 'admin_password' }`
+- **Response**: ZIP file download or 403 Forbidden.
 
 ---
 
 ## Installation Guide
 
-### Prerequisites
-- **Web Server**: Apache 2.4+ (XAMPP recommended)
-- **PHP**: Version 7.4 or higher
-- **Browser**: Modern browser (Chrome, Firefox, Edge)
-
-### Step-by-Step Installation
-
-1. **Install XAMPP**
-   ```
-   Download from: https://www.apachefriends.org/
-   Install to: C:\xampp
-   ```
-
-2. **Clone Repository**
-   ```bash
-   cd C:\xampp\htdocs
-   git clone https://github.com/rafayqazi/SMS-GBPS-ALI-BUX-JARWAR.git
-   ```
-
-3. **Configure Permissions** (Windows)
-   - Right-click on project folder
-   - Properties → Security
-   - Add write permissions for `data/` and `uploads/` folders
-
-4. **Start Apache**
-   - Open XAMPP Control Panel
-   - Start Apache
-
-5. **Access Application**
-   ```
-   http://localhost/SMS-GBPS-ALI-BUX-JARWAR
-   ```
-
-6. **Initialize Data** (Optional)
-   - Visit: `http://localhost/SMS-GBPS-ALI-BUX-JARWAR/generate_mock_data.php`
-   - This creates sample students and teachers
-
-### Configuration
-
-**Database Files**: Located in `data/` folder
-- Automatically created on first run
-- CSV format for easy backup and portability
-
-**Upload Directory**: `uploads/`
-- Ensure write permissions
-- Stores profile photos and documents
-
----
-
-## User Guide
-
-### For Administrators
-
-#### Adding Students
-1. Navigate to **Students → Admission**
-2. Fill in all required fields (marked with *)
-3. Upload profile photo and documents
-4. Click "Save Student"
-
-#### Managing Attendance
-1. Go to **Attendance → Mark Attendance**
-2. Select class from dropdown
-3. Mark each student as Present/Absent/Leave
-4. Click "Save Attendance"
-
-#### Promoting Students (Annual)
-1. Navigate to **Students → Promote Students**
-2. Select class (e.g., "One")
-3. For each student, choose:
-   - **Pass**: Student moves to next class
-   - **Fail**: Student repeats, marked as repeater
-   - **Stay**: Student stays without repeater mark
-4. Click "Apply Promotions"
-5. Confirm action
-
-#### Viewing Alumni
-1. Go to **Students → Alumni**
-2. View all graduates
-3. Click eye icon to view profile
-
-### For Teachers/Users
-
-#### Using AI Assistant
-1. Click chat icon (bottom-right)
-2. Type question or click suggested question
-3. Get instant information about students, attendance, etc.
-
-#### Printing Student Profiles
-1. Go to student profile
-2. Click Print icon or Ctrl+P
-3. Profile formatted as A4 certificate
+1. **Setup Server**: Install XAMPP or any PHP environment.
+2. **Clone Project**: Place files in `htdocs` or `www`.
+3. **Permissions**: Ensure `data/` and `uploads/` folders are writable (777 or Read/Write).
+4. **Access**: Navigate to `http://localhost/school-management-system`.
 
 ---
 
 ## Developer Guide
 
-### Adding New Features
+### Adding a New Subject
+To add a new subject to the Result system:
+1. Update `pages/results.php` HTML form.
+2. Update `includes/db.php` -> `addResult()` method to handle the new field.
+3. Update `pages/print_result.php` to display the new column.
 
-#### 1. Creating a New Page
-
-```php
-<?php
-require_once 'includes/auth_session.php';
-require_once 'includes/db.php';
-$db = new Database();
-
-// Your logic here
-
-include 'includes/header.php';
-?>
-
-<!-- Your HTML here -->
-
-<?php include 'includes/footer.php'; ?>
-```
-
-#### 2. Database Operations
-
-```php
-// Read all students
-$students = $db->readData();
-
-// Filter students
-$filtered = $db->filterStudents([
-    'class' => 'One',
-    'gender' => 'Male'
-]);
-
-// Add student
-$db->addStudent($studentData);
-
-// Update student
-$db->updateStudent($id, $updatedData);
-
-// Delete student
-$db->deleteStudent($id);
-```
-
-#### 3. Creating API Endpoints
-
-```php
-<?php
-require_once '../includes/auth_session.php';
-require_once '../includes/db.php';
-
-header('Content-Type: application/json');
-
-$db = new Database();
-// Process request
-$data = /* your data */;
-
-echo json_encode($data);
-```
-
-### Code Standards
-
-- **Indentation**: 4 spaces
-- **Naming**: camelCase for variables, PascalCase for classes
-- **Comments**: Document complex logic
-- **Security**: Always sanitize user input with `htmlspecialchars()`
-
-### Database Class Methods
-
-| Method | Parameters | Returns | Description |
-|--------|-----------|---------|-------------|
-| `readData()` | - | Array | Get all students |
-| `writeData($data)` | Array | void | Write all students |
-| `addStudent($data)` | Array | Boolean | Add new student |
-| `updateStudent($id, $data)` | Integer, Array | Boolean | Update student |
-| `getStudent($id)` | Integer | Array | Get single student |
-| `deleteStudent($id)` | Integer | Boolean | Delete student |
-| `filterStudents($filters)` | Array | Array | Filter students |
-| `getStudentsByClass($class)` | String | Array | Get class students |
-| `promoteStudent($id, $action)` | Integer, String | Boolean | Promote student |
-| `getAttendance($date, $class)` | String, String | Array | Get attendance |
-| `saveAttendance($date, $class, $data)` | String, String, Array | Boolean | Save attendance |
-| `getAttendanceStats()` | - | Array | Get statistics |
+### Customizing ID Card
+Edit `pages/generate_id_card.php`:
+- **CSS `@page`**: Controls the PDF page size (currently ID-1).
+- **Layout**: Tailwind classes control the design. Update HTML structure here.
 
 ---
 
 ## Security & Privacy
-
-### Data Protection
-
-1. **Sensitive Data Exclusion**
-   - Student/teacher databases not committed to Git
-   - Uploads folder excluded from version control
-   - `.gitignore` configured appropriately
-
-2. **Session Management**
-   - `auth_session.php` validates all page access
-   - Session timeout after inactivity
-   - Logout functionality available
-
-3. **Input Validation**
-   - CNIC format validation
-   - B-Form uniqueness check
-   - GR Number uniqueness check
-   - SQL injection prevention (not applicable for CSV)
-   - XSS prevention via `htmlspecialchars()`
-
-4. **File Upload Security**
-   - File type validation (images only)
-   - File size limits
-   - Sanitized filenames
-   - Stored outside web root (recommended)
-
-### Privacy Considerations
-
-- Student data should only be accessible to authorized school staff
-- Regular backups recommended for data safety
-- CNIC and personal information should be handled according to local data protection laws
-
-### Backup Strategy
-
-```php
-// Automated backup (recommended to run daily)
-$db->backupData();
-// Creates timestamped backup in /backups/ folder
-```
+- **Authentication**: Session-based login for Admin and Teachers.
+- **Passwords**: Hashed storage (if implemented) or hardcoded for specific admin access.
+- **Access Control**: Critical features (Backup, Reset) are protected by secondary password verification.
 
 ---
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: Students not showing
-- **Solution**: Check if `student_status != 'Alumni'` filter is active
-
-**Issue**: Attendance not saving
-- **Solution**: Verify write permissions on `data/attendance.csv`
-
-**Issue**: Images not uploading
-- **Solution**: Check `uploads/` folder permissions
-
-**Issue**: Login not working
-- **Solution**: Verify session configuration in `php.ini`
-
-### Performance Optimization
-
-- CSV files efficient up to ~10,000 records
-- For larger schools, consider MySQL migration
-- Enable PHP OpCache for better performance
-- Use CDN for TailwindCSS in production
-
----
-
-## Future Enhancements
-
-### Planned Features
-- [ ] Fee management module
-- [ ] Report card generation
-- [ ] SMS notifications to parents
-- [ ] Multi-language support (Urdu/English)
-- [ ] Mobile app version
-- [ ] MySQL database migration option
-- [ ] Advanced analytics dashboard
-- [ ] PDF export for reports
-- [ ] Email integration
-- [ ] Role-based access control
-
-### Migration to MySQL
-
-For schools with >5000 students, MySQL is recommended:
-- Convert CSV to MySQL tables
-- Update `db.php` to use PDO/MySQLi
-- Add indexes on GR Number, CNIC fields
-- Implement proper relationships
-
----
-
-## Support & Contact
-
-For issues, suggestions, or contributions:
-- **Repository**: https://github.com/rafayqazi/SMS-GBPS-ALI-BUX-JARWAR
-- **Developer**: Rafay Qazi
-
----
-
-## License
-
-This project is developed for Government Boys Primary School Ali Bux Jarwar.
-Free to use and modify for educational institutions.
-
----
-
-*Documentation Version: 1.0*
-*Last Updated: November 30, 2025*
+*Last Updated: December 14, 2025*

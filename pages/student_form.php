@@ -174,6 +174,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <h3 class="text-xl font-semibold text-gray-800">Personal Information</h3>
             </div>
 
+            <!-- Profile Image Upload (Centered) -->
+            <div class="col-span-full flex flex-col items-center justify-center mb-6">
+                <div class="relative group">
+                    <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <?php if ($student && !empty($student['profile_image'])): ?>
+                            <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400">
+                        <?php endif; ?>
+                    </div>
+                    <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
+                        <i class="fas fa-camera"></i>
+                        <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" <?php echo ($student && !empty($student['profile_image'])) ? '' : 'required'; ?> onchange="previewImage(this)">
+                    </label>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">Upload Student Photo <span class="text-red-500">*</span></p>
+            </div>
+
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">GR No <span class="text-red-500">*</span></label>
                 <?php 
@@ -215,7 +233,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Date of Birth</label>
-                <input type="date" name="date_of_birth" value="<?php echo $student ? date('Y-m-d', strtotime($student['date_of_birth'])) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="date" name="date_of_birth" id="date_of_birth" value="<?php echo $student ? date('Y-m-d', strtotime($student['date_of_birth'])) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Date of Birth (in words)</label>
+                <input type="text" id="dob_words" readonly disabled class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600 italic font-medium cursor-not-allowed">
             </div>
 
             <div class="flex flex-col space-y-2">
@@ -294,13 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <h3 class="text-xl font-semibold text-gray-800">Documents Upload</h3>
             </div>
 
-            <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Student Picture <span class="text-red-500">*</span></label>
-                <input type="file" name="profile_image" accept="image/*" <?php echo ($student && !empty($student['profile_image'])) ? '' : 'required'; ?> class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                <?php if ($student && !empty($student['profile_image'])): ?>
-                    <small class="text-gray-500">Current: <a href="<?php echo $student['profile_image']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
-                <?php endif; ?>
-            </div>
+
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Father CNIC (Front) <span class="text-red-500">*</span></label>
@@ -387,6 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const cnicStatus = document.getElementById('cnic_status');
 
         let debounceTimer;
+        let lastRequestTime = 0;
 
         cnicInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
@@ -398,16 +416,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             cnicStatus.textContent = 'Checking...';
+            cnicStatus.className = 'text-xs text-gray-500'; // Reset color
             
             debounceTimer = setTimeout(() => {
+                const currentRequestTime = Date.now();
+                lastRequestTime = currentRequestTime;
+
                 fetch(`../api/get_parent.php?cnic=${encodeURIComponent(cnic)}`)
                     .then(response => {
+                        // If this is not the latest request, ignore the response completely
+                        if (lastRequestTime !== currentRequestTime) return null;
+
                         if (response.ok) {
                             return response.json();
                         }
                         throw new Error('Parent not found');
                     })
                     .then(data => {
+                        if (!data) return; // Request was outdated
+
                         cnicStatus.textContent = '✓ Existing Parent - Details autofilled';
                         cnicStatus.className = 'text-xs text-green-600 font-semibold';
                         
@@ -429,11 +456,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     })
                     .catch(error => {
+                        // If this is not the latest request, ignore the error
+                        if (lastRequestTime !== currentRequestTime) return;
+
                         cnicStatus.textContent = 'New Parent (Not found in database)';
                         cnicStatus.className = 'text-xs text-gray-500';
-                        // Optional: Clear fields if you want to force re-entry, but usually better to leave what user typed
-                        // fatherNameInput.value = '';
-                        // fatherContactInput.value = '';
                         
                         // Reset file requirements if it's a new admission (no ID)
                         <?php if (!$id): ?>
@@ -466,7 +493,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
         });
 
-        // Contact Formatting Logic
         const contactInputs = document.querySelectorAll('.contact-input');
         contactInputs.forEach(input => {
             input.addEventListener('input', function(e) {
@@ -483,7 +509,77 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 e.target.value = value;
             });
         });
+
+        // Date of Birth to Words Logic
+        const dobInput = document.getElementById('date_of_birth');
+        const dobWordsInput = document.getElementById('dob_words');
+
+        function numberToWords(n) {
+            const string = n.toString();
+            const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            if (n < 20) return units[n];
+            
+            const digit = n % 10;
+            if (n < 100) return tens[Math.floor(n / 10)] + (digit ? ' ' + units[digit] : '');
+            
+            if (n < 1000) return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 == 0 ? '' : ' and ' + numberToWords(n % 100));
+            
+            return numberToWords(Math.floor(n / 1000)) + ' Thousand ' + (n % 1000 != 0 ? numberToWords(n % 1000) : '');
+        }
+
+        function getDayWord(d) {
+            const days = [
+                '', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth',
+                'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth',
+                'Twenty-First', 'Twenty-Second', 'Twenty-Third', 'Twenty-Fourth', 'Twenty-Fifth', 'Twenty-Sixth', 'Twenty-Seventh', 'Twenty-Eighth', 'Twenty-Ninth', 'Thirtieth', 'Thirty-First'
+            ];
+            return days[d] || '';
+        }
+
+        function getMonthWord(m) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[m] || '';
+        }
+
+        function convertDobToWords() {
+            const dateVal = dobInput.value;
+            if (!dateVal) {
+                dobWordsInput.value = '';
+                return;
+            }
+
+            const date = new Date(dateVal);
+            const day = date.getDate();
+            const month = date.getMonth(); // 0-indexed
+            const year = date.getFullYear();
+
+            const dayStr = getDayWord(day);
+            const monthStr = getMonthWord(month);
+            
+            // Year: 2025 -> Two Thousand Twenty Five
+            // Usually simple numberToWords works, but let's be specific for years like 1999 (Nineteen Ninety Nine) vs 2000+ (Two Thousand...)
+            // Users often prefer "Two Thousand Twenty". numberToWords(2020) -> "Two Thousand Twenty". Correct.
+            const yearStr = numberToWords(year);
+
+            dobWordsInput.value = `${dayStr} of ${monthStr} ${yearStr}`;
+        }
+
+        dobInput.addEventListener('change', convertDobToWords);
+        // Run on load if value exists
+        if (dobInput.value) convertDobToWords();
     });
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profile_preview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 
 <?php include '../includes/footer.php'; ?>

@@ -45,12 +45,18 @@ if (!$result) {
 <body class="bg-white p-8">
     <div class="max-w-2xl mx-auto border-4 border-double border-gray-800 p-8">
         <!-- Header -->
-        <div class="text-center mb-8 relative">
-            <img src="../GBPS_LOGO.png" alt="Logo" class="absolute left-0 top-0 w-24 h-24 object-contain">
-            <h1 class="text-2xl font-bold text-gray-900 uppercase">Government Boys Primary School</h1>
-            <h2 class="text-xl font-bold text-gray-800 uppercase mt-1">Ali Bux Jarwar</h2>
-            <h3 class="text-lg font-semibold text-gray-600 mt-2 uppercase">Result Card - <?= $examType ?> Examination</h3>
-            <p class="text-sm text-gray-500 mt-1">Session <?= $year ?>-<?= $year + 1 ?></p>
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="w-24 h-24 flex-shrink-0">
+                <img src="../GBPS_LOGO.png" alt="Logo" class="w-full h-full object-contain">
+            </div>
+            <div class="flex-1 text-center px-4">
+                <h1 class="text-2xl font-bold text-gray-900 uppercase leading-tight">Government Boys Primary School</h1>
+                <h2 class="text-xl font-bold text-gray-800 uppercase mt-1">Ali Bux Jarwar</h2>
+                <h3 class="text-lg font-semibold text-gray-600 mt-2 uppercase">Result Card - <?= $examType ?> Examination</h3>
+                <p class="text-sm text-gray-500 mt-1">Session <?= $year ?>-<?= $year + 1 ?></p>
+            </div>
+            <div class="w-24 h-24 flex-shrink-0"></div> <!-- invisible spacer to keep text centered -->
         </div>
 
         <!-- Student Info -->

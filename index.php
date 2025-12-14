@@ -22,6 +22,21 @@ foreach ($activeStudents as $student) {
     if (!isset($classes[$class])) $classes[$class] = 0;
     $classes[$class]++;
 }
+$alumniCount = 0;
+foreach ($students as $student) {
+    if (isset($student['student_status']) && $student['student_status'] === 'Alumni') {
+        $alumniCount++;
+    }
+}
+
+$teachers = $db->getAllTeachers();
+$teacherCount = count($teachers);
+
+$attendanceStats = $db->getAttendanceStats();
+$overallStats = $attendanceStats['overall'];
+$classStats = $attendanceStats['class_wise'];
+$presentCount = $overallStats['Present'];
+$attendancePercentage = ($totalStudents > 0) ? round(($presentCount / $totalStudents) * 100, 1) : 0;
 ?>
 
 <?php include 'includes/header.php'; ?>
@@ -31,9 +46,14 @@ foreach ($activeStudents as $student) {
         <h1 class="text-2xl md:text-3xl font-bold">Dashboard</h1>
         <p class="text-green-100 mt-1">Welcome to GBPS Ali Bux Jarwar</p>
     </div>
-    <a href="pages/student_form.php" class="w-full md:w-auto bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
-        <i class="fas fa-plus-circle"></i> New Admission
-    </a>
+    <div class="flex gap-2">
+        <a href="pages/teacher_form.php" class="w-full md:w-auto bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
+            <i class="fas fa-chalkboard-teacher"></i> Add Teacher
+        </a>
+        <a href="pages/student_form.php" class="w-full md:w-auto bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
+            <i class="fas fa-plus-circle"></i> New Admission
+        </a>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -49,13 +69,27 @@ foreach ($activeStudents as $student) {
         <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Female</div>
         <div class="text-3xl font-bold text-pink-600"><?php echo $femaleCount; ?></div>
     </a>
+    
+    <!-- Row 2 -->
+    <a href="pages/alumni.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Alumni Students</div>
+        <div class="text-3xl font-bold text-purple-600"><?php echo $alumniCount; ?></div>
+    </a>
+    <a href="pages/assign_roles.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Teaching Staff</div>
+        <div class="text-3xl font-bold text-amber-600"><?php echo $teacherCount; ?></div>
+    </a>
+    <a href="pages/attendance.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Today's Attendance</div>
+        <div class="text-3xl font-bold text-teal-600">
+            <?php if ($attendanceStats['is_today']): ?>
+                <?php echo $presentCount; ?> <span class="text-lg text-gray-400 font-normal">(<?php echo $attendancePercentage; ?>%)</span>
+            <?php else: ?>
+                <span class="text-2xl text-gray-400">Unmarked</span>
+            <?php endif; ?>
+        </div>
+    </a>
 </div>
-
-<?php
-$attendanceStats = $db->getAttendanceStats();
-$overallStats = $attendanceStats['overall'];
-$classStats = $attendanceStats['class_wise'];
-?>
 
 <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mt-8">
     <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Attendance Insights</h2>
@@ -63,9 +97,18 @@ $classStats = $attendanceStats['class_wise'];
         <!-- Overall Attendance Pie Chart -->
         <div class="bg-gray-50 p-4 rounded-xl shadow-inner border border-gray-100">
             <h3 class="text-center mb-4 font-semibold text-gray-700">Overall Attendance Status</h3>
-            <div class="relative h-[300px]">
-                <canvas id="overallAttendanceChart"></canvas>
-            </div>
+            <?php if (!$attendanceStats['is_today']): ?>
+                <div class="relative h-[300px] flex items-center justify-center">
+                    <div class="text-center w-full">
+                         <i class="fas fa-calendar-times text-gray-400 text-5xl mb-2"></i>
+                         <p class="text-gray-600 font-medium text-lg mb-1">Attendance Unmarked for Today</p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="relative h-[300px]">
+                    <canvas id="overallAttendanceChart"></canvas>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Class-wise Attendance Bar Chart -->
@@ -105,6 +148,7 @@ $classStats = $attendanceStats['class_wise'];
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    <?php if ($attendanceStats['is_today']): ?>
     // Overall Attendance Chart
     const overallCtx = document.getElementById('overallAttendanceChart').getContext('2d');
     const overallChart = new Chart(overallCtx, {
@@ -141,6 +185,7 @@ $classStats = $attendanceStats['class_wise'];
             }
         }
     });
+    <?php endif; ?>
 
     // Class-wise Attendance Chart - Only render if attendance is marked for today
     <?php if ($attendanceStats['is_today']): ?>

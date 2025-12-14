@@ -1492,6 +1492,76 @@ class Database {
         return false;
     }
 
+    public function resetClassResults($class, $examType, $year) {
+        $file = __DIR__ . '/../data/results.csv';
+        if (!file_exists($file)) return false;
+
+        $rows = [];
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 1000, ",");
+        $rows[] = $headers;
+        
+        $hasYear = in_array('year', $headers);
+        $resetCount = 0;
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if (count($row) == count($headers)) {
+                $data = array_combine($headers, $row);
+                $rowYear = $hasYear ? $data['year'] : date('Y');
+
+                if ($data['class'] == $class && $data['exam_type'] == $examType && $rowYear == $year) {
+                    // Reset marks to 0
+                    $data['english'] = 0;
+                    $data['math'] = 0;
+                    $data['social_studies'] = 0;
+                    $data['general_science'] = 0;
+                    $data['mt'] = 0;
+                    $data['islamiyat'] = 0;
+                    $data['nmt'] = 0;
+                    
+                    // Reset extra subjects if any
+                    $otherSubjects = isset($data['other_subjects']) ? json_decode($data['other_subjects'], true) : [];
+                    if (is_array($otherSubjects)) {
+                        foreach ($otherSubjects as $key => $val) {
+                            $otherSubjects[$key] = 0;
+                        }
+                    }
+                    $data['other_subjects'] = json_encode($otherSubjects);
+
+                    // Reset totals and grade
+                    $data['total_obtained'] = 0;
+                    $data['percentage'] = 0;
+                    $data['grade'] = 'F';
+                    $data['remarks'] = 'Fail';
+                    $data['updated_at'] = date('Y-m-d H:i:s');
+                    
+                    // Reconstruct row based on header order
+                    $newRow = [];
+                    foreach ($headers as $header) {
+                        $newRow[] = $data[$header];
+                    }
+                    $rows[] = $newRow;
+                    $resetCount++;
+                } else {
+                    $rows[] = $row;
+                }
+            } else {
+                $rows[] = $row;
+            }
+        }
+        fclose($handle);
+
+        if ($resetCount > 0) {
+            $fp = fopen($file, 'w');
+            foreach ($rows as $row) {
+                fputcsv($fp, $row);
+            }
+            fclose($fp);
+            return $resetCount;
+        }
+        return 0;
+    }
+
     public function getResults($class, $examType, $year) {
         $file = __DIR__ . '/../data/results.csv';
         $results = [];

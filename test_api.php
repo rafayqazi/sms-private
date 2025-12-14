@@ -1,28 +1,41 @@
 <?php
-// Test script to see what assign_role.php returns
-$url = 'http://localhost/school%20Management%20system%20-%20ali%20bux%20jarwar/api/assign_role.php';
+// Mock GET request
+$_GET['cnic'] = '41307-2298247-1';
 
-$data = array(
-    'teacherId' => '1',
-    'role' => 'Editor',
-    'username' => 'testuser',
-    'password' => 'testpass',
-    'classes' => array('Kachi'),
-    'isEdit' => false
-);
+// Adjust paths since we are running from root
+require_once 'includes/db.php';
 
-$options = array(
-    'http' => array(
-        'header'  => "Content-Type: application/json\r\n",
-        'method'  => 'POST',
-        'content' => json_encode($data)
-    )
-);
+// Copy-paste logic from api/get_parent.php
+$inputCnic = str_replace(['-', ' '], '', trim($_GET['cnic']));
 
-$context  = stream_context_create($options);
-$result = file_get_contents($url, false, $context);
+$db = new Database();
+$students = $db->readData();
 
-echo "Response:\n";
-echo $result;
-echo "\n\nFirst 200 characters:\n";
-echo substr($result, 0, 200);
+$parent = null;
+
+echo "Searching for: " . $inputCnic . "\n";
+
+foreach ($students as $student) {
+    if (isset($student['father_cnic'])) {
+        $storedCnic = str_replace(['-', ' '], '', trim($student['father_cnic']));
+        
+        if ($storedCnic === $inputCnic) {
+            echo "Match Found!\n";
+            echo "Stored Raw: " . $student['father_cnic'] . "\n";
+            $parent = [
+                'father_name' => $student['father_name'],
+                'father_contact' => $student['father_contact'],
+                'father_cnic_front' => isset($student['father_cnic_front']) ? $student['father_cnic_front'] : '',
+                'father_cnic_back' => isset($student['father_cnic_back']) ? $student['father_cnic_back'] : ''
+            ];
+            break; 
+        }
+    }
+}
+
+if ($parent) {
+    echo json_encode($parent);
+} else {
+    echo "Parent not found";
+}
+?>
