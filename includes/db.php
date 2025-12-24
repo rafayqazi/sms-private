@@ -1617,7 +1617,7 @@ class Database {
         if ($percentage >= 70) return 'A';
         if ($percentage >= 60) return 'B';
         if ($percentage >= 50) return 'C';
-        if ($percentage >= 40) return 'D';
+        if ($percentage >= 33) return 'D';
         return 'F';
     }
 
@@ -1626,7 +1626,7 @@ class Database {
         if ($percentage >= 70) return 'Very Good';
         if ($percentage >= 60) return 'Good';
         if ($percentage >= 50) return 'Fair';
-        if ($percentage >= 40) return 'Pass';
+        if ($percentage >= 33) return 'Satisfactory';
         return 'Fail';
     }
 
@@ -1690,5 +1690,159 @@ class Database {
             }
         }
         return false;
+    }
+
+    public function saveExamAttendance($examName, $class, $subject, $date, $attendanceData, $time = '') {
+        $file = __DIR__ . '/../data/exam_attendance.csv';
+        $allAttendance = [];
+        $headers = ['exam_name', 'class', 'subject', 'date', 'student_id', 'status', 'created_at', 'time'];
+
+        // Read existing data
+        if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
+            $fileHeaders = fgetcsv($handle, 1000, ",");
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (count($row) >= 6) {
+                    // Update: if re-saving same exam subject for same date, we might be updating time too.
+                    // If not the same exam/class/subject, keep it.
+                    // If it IS the same, we simply discard the old rows (since we are rewriting everyone's status and time)
+                    // Note: This logic assumes we replace ALL students for this subject/exam/class/date combo.
+                    if (!($row[0] == $examName && $row[1] == $class && $row[2] == $subject)) {
+                        $allAttendance[] = $row;
+                    }
+                }
+            }
+            fclose($handle);
+        }
+
+        // Add new data
+        $now = date('Y-m-d H:i:s');
+        foreach ($attendanceData as $studentId => $status) {
+            // Append time at the end to maintain backward compatibility with column indices 0-6
+            $allAttendance[] = [$examName, $class, $subject, $date, $studentId, $status, $now, $time];
+        }
+
+        // Write back
+        $fp = fopen($file, 'w');
+        fputcsv($fp, $headers);
+        foreach ($allAttendance as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function getExamsByClass($class) {
+        $file = __DIR__ . '/../data/exam_attendance.csv';
+        $exams = [];
+        
+        if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
+            fgetcsv($handle); // Skip header
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (count($row) >= 2) {
+                    if ($row[1] == $class) {
+                        $exams[] = $row[0];
+                    }
+                }
+            }
+            fclose($handle);
+        }
+        return array_unique($exams);
+    }
+
+    public function getExamSchedule($examName, $class) {
+        $file = __DIR__ . '/../data/exam_attendance.csv';
+        $schedule = []; // subject => ['date' => ..., 'time' => ...]
+        
+        if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
+            fgetcsv($handle); // Skip header
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (count($row) >= 6) {
+                    if ($row[0] == $examName && $row[1] == $class) {
+                        $subject = $row[2];
+                        $date = $row[3];
+                        $time = isset($row[7]) ? $row[7] : '';
+                        
+                        // We only need one record per subject to know the schedule
+                        if (!isset($schedule[$subject])) {
+                            $schedule[$subject] = ['date' => $date, 'time' => $time];
+                        }
+                    }
+                }
+            }
+            fclose($handle);
+        }
+        return $schedule;
+    }
+
+
+    public function getExamAttendance($examName, $class, $subject) {
+        $file = __DIR__ . '/../data/exam_attendance.csv';
+        $attendance = [];
+        
+        if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
+            fgetcsv($handle); // Skip header
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if (count($row) >= 6) {
+                    // We don't filter by date anymore in this specific call because we want the latest for this exam/subject
+                    if ($row[0] == $examName && $row[1] == $class && $row[2] == $subject) {
+                        $attendance[$row[4]] = $row[5]; // student_id => status
+                    }
+                }
+            }
+            fclose($handle);
+        }
+        return $attendance;
+    }
+    public function getSchoolSettings() {
+        $file = __DIR__ . '/../data/settings.json';
+        $defaults = [
+            "school_name" => "Government Boys Primary School Ali Bux Jarwar",
+            "address_tagline" => "District Ghotki",
+            "headmaster_name" => "Signature Headmaster____________",
+            "semis_code" => "424010147",
+            "admin_username" => "GBPSalibuxjarwar",
+            "admin_password_hash" => '$2y$10$/pdBSPF3.tIje1liRt5pw.bMBGIPzYA07tgV4raAyO1Qx4XSDGOrW'
+        ];
+
+        if (file_exists($file)) {
+            $json = file_get_contents($file);
+            $data = json_decode($json, true);
+            if (is_array($data)) {
+                return array_merge($defaults, $data);
+            }
+        }
+        return $defaults;
+    }
+
+    public function updateSchoolSettings($data) {
+        $file = __DIR__ . '/../data/settings.json';
+        $current = $this->getSchoolSettings();
+        
+        // Update general fields
+        if (isset($data['school_name'])) $current['school_name'] = $data['school_name'];
+        if (isset($data['headmaster_name'])) $current['headmaster_name'] = $data['headmaster_name'];
+        if (isset($data['address_tagline'])) $current['address_tagline'] = $data['address_tagline'];
+        if (isset($data['semis_code'])) $current['semis_code'] = $data['semis_code'];
+        
+        return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
+    }
+
+    public function verifyAdmin($username, $password) {
+        $settings = $this->getSchoolSettings();
+        if ($username === $settings['admin_username']) {
+            if (password_verify($password, $settings['admin_password_hash'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function updateAdminPassword($newPassword) {
+        $file = __DIR__ . '/../data/settings.json';
+        $current = $this->getSchoolSettings();
+        
+        $current['admin_password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
+        
+        return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
     }
 }

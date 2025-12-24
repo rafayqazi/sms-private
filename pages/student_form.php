@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Error is already set, just fall through to display it
     } else {
         // Handle File Uploads
-        $uploadDir = 'uploads/';
+        $uploadDir = '../uploads/';
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }

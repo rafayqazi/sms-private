@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // If editing and no new image, keep old one (handled in db update)
     // If new image uploaded, process it
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
-        $uploadDir = 'uploads/teachers/';
+        $uploadDir = '../uploads/teachers/';
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }

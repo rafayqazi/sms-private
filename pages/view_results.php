@@ -133,9 +133,31 @@ function printAllResults() {
                                 <?php endif; ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <button onclick="printResult(<?= $studentId ?>)" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors">
+                                <button onclick="printResult(<?= $studentId ?>)" class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors mr-2">
                                     <i class="fas fa-print mr-1"></i> Print Card
                                 </button>
+                                <?php 
+                                    $phone = isset($student['father_contact']) ? $student['father_contact'] : '';
+                                    if ($result) {
+                                        $msg = "Assalam-o-Alaikum, Result of *" . $student['student_name'] . "*\n";
+                                        $msg .= "Class: " . $student['current_class'] . "\n";
+                                        $msg .= "Exam: " . $selectedExam . " (" . $selectedYear . ")\n";
+                                        $msg .= "Obtained: " . $result['total_obtained'] . "/" . $result['total_max'] . "\n";
+                                        $msg .= "Percentage: " . $result['percentage'] . "%\n";
+                                        $msg .= "Grade: " . $result['grade'];
+                                        // Encode for JS
+                                        $encodedMsg = htmlspecialchars(json_encode($msg), ENT_QUOTES, 'UTF-8');
+                                        $encodedPhone = htmlspecialchars($phone, ENT_QUOTES, 'UTF-8');
+                                    } else {
+                                        $encodedMsg = "''";
+                                        $encodedPhone = "''";
+                                    }
+                                ?>
+                                <?php if ($result && $phone): ?>
+                                <button onclick='shareWhatsapp(<?= $encodedPhone ?>, <?= $encodedMsg ?>)' class="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition-colors">
+                                    <i class="fab fa-whatsapp mr-1"></i> WhatsApp
+                                </button>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -154,6 +176,19 @@ function printAllResults() {
 <script>
 function printResult(studentId) {
     window.open('print_result.php?id=' + studentId + '&exam_type=<?= $selectedExam ?>&year=<?= $selectedYear ?>', '_blank');
+}
+
+function shareWhatsapp(phone, message) {
+    // Clean phone number
+    let cleanPhone = phone.toString().replace(/\D/g, '');
+    
+    // Add country code if missing (assuming PK +92)
+    if (cleanPhone.startsWith('03')) {
+        cleanPhone = '92' + cleanPhone.substring(1);
+    }
+    
+    const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
 }
 
 // Real-time loading

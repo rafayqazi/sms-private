@@ -7,6 +7,7 @@ if (!isset($_GET['id']) || !isset($_GET['exam_type'])) {
 }
 
 $database = new Database();
+$settings = $database->getSchoolSettings();
 $studentId = $_GET['id'];
 $examType = $_GET['exam_type'];
 $year = isset($_GET['year']) ? $_GET['year'] : date('Y');
@@ -38,25 +39,55 @@ if (!$result) {
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print {
-            body { -webkit-print-color-adjust: exact; }
+            body { 
+                -webkit-print-color-adjust: exact;
+                font-family: 'Times New Roman', Times, serif;
+            }
+        }
+        body { font-family: 'Times New Roman', Times, serif; }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.1;
+            width: 400px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .content-relative {
+            position: relative;
+            z-index: 10;
         }
     </style>
 </head>
 <body class="bg-white p-8">
-    <div class="max-w-2xl mx-auto border-4 border-double border-gray-800 p-8">
+    <div class="max-w-2xl mx-auto border-4 border-double border-gray-800 p-8 relative overflow-hidden">
+        <!-- Watermark -->
+        <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" class="watermark">
+        
+        <div class="content-relative">
         <!-- Header -->
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div class="w-24 h-24 flex-shrink-0">
-                <img src="../GBPS_LOGO.png" alt="Logo" class="w-full h-full object-contain">
+                <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-full h-full object-contain">
             </div>
             <div class="flex-1 text-center px-4">
-                <h1 class="text-2xl font-bold text-gray-900 uppercase leading-tight">Government Boys Primary School</h1>
-                <h2 class="text-xl font-bold text-gray-800 uppercase mt-1">Ali Bux Jarwar</h2>
+                <h1 class="text-2xl font-bold text-gray-900 uppercase leading-tight"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
+                <h2 class="text-lg font-bold text-gray-800 uppercase mt-1 whitespace-nowrap"><?php echo htmlspecialchars($settings['address_tagline']); ?></h2>
+                <p class="text-sm font-bold uppercase tracking-widest mt-1">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?></p>
                 <h3 class="text-lg font-semibold text-gray-600 mt-2 uppercase">Result Card - <?= $examType ?> Examination</h3>
                 <p class="text-sm text-gray-500 mt-1">Session <?= $year ?>-<?= $year + 1 ?></p>
             </div>
-            <div class="w-24 h-24 flex-shrink-0"></div> <!-- invisible spacer to keep text centered -->
+            <!-- Student Profile Image -->
+            <div class="w-24 h-24 flex-shrink-0 border border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
+                <?php if (!empty($student['profile_image']) && file_exists($student['profile_image'])): ?>
+                    <img src="<?= htmlspecialchars($student['profile_image']) ?>" alt="Student Photo" class="w-full h-full object-cover">
+                <?php else: ?>
+                    <span class="text-xs text-gray-400 text-center">Photo</span>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Student Info -->
@@ -109,7 +140,7 @@ if (!$result) {
                     <td class="border border-gray-800 px-4 py-2 text-center"><?= $max ?></td>
                     <td class="border border-gray-800 px-4 py-2 text-center font-bold"><?= $marks ?></td>
                     <td class="border border-gray-800 px-4 py-2 text-sm italic">
-                        <?= $marks >= 40 ? 'Pass' : 'Fail' ?>
+                        <?= $marks >= 33 ? 'Pass' : 'Fail' ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -132,8 +163,9 @@ if (!$result) {
             </div>
             <div class="text-center">
                 <div class="w-40 border-t border-gray-800 mb-2"></div>
-                <p class="font-bold text-sm">Headmaster</p>
+                <p class="font-bold text-sm"><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
             </div>
+        </div>
         </div>
     </div>
 

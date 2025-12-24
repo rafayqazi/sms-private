@@ -10,6 +10,8 @@ if ($id) {
     $student = $db->getStudent($id);
 }
 
+$settings = $db->getSchoolSettings();
+
 if (!$student) {
     header("Location: students.php");
     exit;
@@ -164,11 +166,11 @@ if (!$student) {
         <!-- Header -->
         <div class="flex justify-between items-start mb-12">
             <div class="flex items-center gap-6">
-                <img src="../GBPS_LOGO.png" alt="Logo" class="w-28 h-28 object-contain">
+                <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-28 h-28 object-contain">
                 <div>
-                    <h1 class="text-3xl font-extrabold uppercase tracking-wide text-black leading-tight">Government Boys Primary<br>School</h1>
-                    <h2 class="text-2xl font-bold mt-2 text-black">Ali Bux Jarwar</h2>
-                    <p class="text-lg mt-1 text-gray-800 font-medium">Taluka & District Tando Allahyar</p>
+                    <h1 class="text-3xl font-extrabold uppercase tracking-wide text-black leading-tight"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
+                    <p class="text-lg mt-1 text-gray-800 font-medium whitespace-nowrap"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
+                    <p class="text-sm font-bold uppercase tracking-widest mt-1 text-gray-800">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?></p>
                 </div>
             </div>
             <!-- Photo Box -->
@@ -269,7 +271,7 @@ if (!$student) {
         <!-- Signature -->
         <div class="absolute bottom-12 right-12">
             <div class="border-t-2 border-black w-72 pt-2 text-center">
-                <p class="font-bold text-xl text-black">Headmaster Signature</p>
+                <p class="font-bold text-xl text-black"><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
             </div>
         </div>
     </div>

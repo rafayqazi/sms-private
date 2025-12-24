@@ -1,6 +1,8 @@
 <?php
 require_once 'includes/db.php';
 session_start();
+$db = new Database();
+$settings = $db->getSchoolSettings();
 
 if (isset($_SESSION['user'])) {
     header("Location: index.php");
@@ -14,7 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
 
     // Check if it's admin login
-    if ($username === 'GBPSalibuxjarwar' && $password === 'admin') {
+    $db = new Database();
+    if ($db->verifyAdmin($username, $password)) {
         $_SESSION['user'] = $username;
         $_SESSION['user_type'] = 'admin';
         $_SESSION['user_role'] = 'Admin';
@@ -82,9 +85,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <div class="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-6 md:p-10 relative z-10 animate-[slideUp_0.6s_ease-out]">
         <div class="text-center mb-8">
-            <img src="GBPS_LOGO.png" alt="GBPS Logo" class="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md hover:scale-105 transition-transform duration-300">
+            <img src="GBPS_LOGO.png?v=<?php echo time(); ?>" alt="GBPS Logo" class="w-24 h-24 object-contain mx-auto mb-4 drop-shadow-md hover:scale-105 transition-transform duration-300">
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">School Management System</h1>
-            <p class="text-slate-500 font-medium">GBPS Ali Bux Jarwar</p>
+            <p class="text-slate-500 font-medium"><?php echo htmlspecialchars($settings['school_name']); ?></p>
         </div>
 
         <div class="text-center mb-8">

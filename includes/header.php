@@ -7,6 +7,7 @@ $base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
 
 // Message Count Logic (Moved from sidebar)
 $db_for_messages = new Database();
+$headerSettings = $db_for_messages->getSchoolSettings();
 $currentUserId = isSuperAdmin() ? 'admin' : (isset($_SESSION['teacher_id']) ? $_SESSION['teacher_id'] : null);
 $unreadCount = 0;
 if ($currentUserId) {
@@ -18,7 +19,7 @@ if ($currentUserId) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GBPS Ali Bux Jarwar - School Management System</title>
+    <title><?php echo htmlspecialchars($headerSettings['school_name']); ?> - School Management System</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -55,8 +56,8 @@ if ($currentUserId) {
     <div class="app-container flex min-h-screen bg-gray-50">
         <aside class="sidebar group w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full overflow-y-auto transition-all duration-300 z-50 md:translate-x-0 -translate-x-full [&.collapsed]:w-16" id="sidebar">
             <div class="brand p-6 group-[.collapsed]:p-4 group-[.collapsed]:justify-center group-[.collapsed]:cursor-pointer text-xl font-bold text-indigo-600 border-b border-gray-200 flex items-center gap-3">
-                <img src="<?php echo $base_path; ?>GBPS_LOGO.png" alt="Logo" class="w-10 h-10 object-contain">
-                <span class="sidebar-text group-[.collapsed]:hidden text-sm leading-tight">GBPS Ali Bux Jarwar</span>
+                <img src="<?php echo $base_path; ?>GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain">
+                <span class="sidebar-text group-[.collapsed]:hidden text-sm leading-tight"><?php echo htmlspecialchars($headerSettings['school_name']); ?></span>
                 <button id="sidebar-toggle" class="ml-auto text-gray-600 hover:text-indigo-600 transition-colors hidden md:block group-[.collapsed]:hidden" title="Toggle Sidebar">
                     <i class="fas fa-chevron-left text-lg"></i>
                 </button>
@@ -99,13 +100,13 @@ if ($currentUserId) {
 
                 <!-- Examination Dropdown -->
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Examination">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Examination">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-poll w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Examination</span>
                         </div>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php']) ? '!flex' : ''; ?>">
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? '!flex' : ''; ?>">
                         <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-edit w-4 text-center"></i> Enter Marks
                         </a>
@@ -114,6 +115,9 @@ if ($currentUserId) {
                         </a>
                         <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-id-card w-4 text-center"></i> Print Exam Slips
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-clipboard-list w-4 text-center"></i> Examination Attendance
                         </a>
                     </div>
                 </div>
@@ -240,7 +244,7 @@ if ($currentUserId) {
 
                     <!-- User Profile Dropdown -->
                     <div class="relative group">
-                        <button class="flex items-center gap-2 md:gap-3 focus:outline-none">
+                        <button id="user-menu-btn" class="flex items-center gap-2 md:gap-3 focus:outline-none">
                             <div class="text-right hidden md:block">
                                 <div class="text-sm font-semibold text-gray-800"><?php echo getUserDisplayName(); ?></div>
                                 <div class="text-xs text-gray-500"><?php echo getUserRoleBadge(); ?></div>
@@ -252,7 +256,7 @@ if ($currentUserId) {
                         </button>
 
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 hidden group-hover:block hover:block transition-all transform origin-top-right z-50">
+                        <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 hidden group-hover:block hover:block transition-all transform origin-top-right z-50">
                             <div class="px-4 py-3 border-b border-gray-50 md:hidden">
                                 <div class="text-sm font-semibold text-gray-800"><?php echo getUserDisplayName(); ?></div>
                                 <div class="text-xs text-gray-500"><?php echo getUserRoleBadge(); ?></div>
@@ -269,6 +273,23 @@ if ($currentUserId) {
                                 <?php if ($unreadCount > 0): ?>
                                     <span class="ml-auto text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full"><?php echo $unreadCount; ?></span>
                                 <?php endif; ?>
+                            </a>
+                            
+                            <a href="<?php echo $base_path; ?>pages/print_slips.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-print mr-2 w-4"></i> Print Result Card
+                            </a>
+                            <a href="<?php echo $base_path; ?>pages/print_all_results.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-print mr-2 w-4"></i> Print All Marksheets
+                            </a>
+                            <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-id-card mr-2 w-4"></i> Print Exam Slips
+                            </a>
+                            <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-clipboard-list mr-2 w-4"></i> Examination Attendance
+                            </a>
+                            
+                            <a href="<?php echo $base_path; ?>pages/settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-cog mr-2 w-4"></i> Settings
                             </a>
                             
                             <div class="border-t border-gray-100 my-1"></div>
@@ -378,6 +399,24 @@ if ($currentUserId) {
                 overlay.addEventListener('click', () => {
                     sidebar.classList.add('-translate-x-full');
                     overlay.classList.add('hidden');
+                });
+            }
+            
+            // User Dropdown Click Logic
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            const userMenuDropdown = document.getElementById('user-menu-dropdown');
+
+            if (userMenuBtn && userMenuDropdown) {
+                userMenuBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenuDropdown.classList.toggle('hidden');
+                });
+
+                // Close on outside click
+                document.addEventListener('click', function(e) {
+                    if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+                        userMenuDropdown.classList.add('hidden');
+                    }
                 });
             }
         });

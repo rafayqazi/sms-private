@@ -288,15 +288,16 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-20 bg-gray-50 z-10 w-40">NAME</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">ENG</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">MATH</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">S.ST</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">G.SCI</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Social Studies</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">G.Science</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">MT</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">ISL</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Islamyat</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">NMT</th>
                         <?php foreach ($extraSubjects as $subj): ?>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"><?= strtoupper($subj) ?></th>
                         <?php endforeach; ?>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">TOTAL</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">PERCENTAGE</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">GRADE</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">ACTION</th>
                     </tr>
@@ -326,6 +327,9 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         
                         <td class="px-2 py-2 font-bold text-center total-marks text-gray-700 bg-gray-50 border rounded-md min-w-[3rem] p-1">
                             <?= $result ? $result['total_obtained'] : '0' ?>
+                        </td>
+                        <td class="px-2 py-2 font-bold text-center percentage-cell text-gray-700 bg-gray-50 border rounded-md min-w-[3rem] p-1">
+                            <?= $result ? ($result['percentage'] . '%') : '0%' ?>
                         </td>
                         <td class="px-2 py-2 text-center grade-cell">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -398,6 +402,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalMax = count * 100;
         const percentage = totalMax > 0 ? (total / totalMax) * 100 : 0;
         
+        // Update Percentage Cell
+        const percentageCell = row.querySelector('.percentage-cell');
+        if (percentageCell) {
+            percentageCell.textContent = percentage.toFixed(2) + '%';
+        }
+        
         let grade = 'F';
         let colorClass = 'bg-red-100 text-red-800';
 
@@ -405,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (percentage >= 70) { grade = 'A'; colorClass = 'bg-green-100 text-green-800'; }
         else if (percentage >= 60) { grade = 'B'; colorClass = 'bg-green-100 text-green-800'; }
         else if (percentage >= 50) { grade = 'C'; colorClass = 'bg-green-100 text-green-800'; }
-        else if (percentage >= 40) { grade = 'D'; colorClass = 'bg-green-100 text-green-800'; }
+        else if (percentage >= 33) { grade = 'D'; colorClass = 'bg-green-100 text-green-800'; }
         
         // Update Grade Cell
         const gradeCell = row.querySelector('.grade-cell');
