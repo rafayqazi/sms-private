@@ -42,17 +42,38 @@ if (empty($classes) || !is_array($classes)) {
 error_reporting(0); // Suppress warnings to ensure valid JSON
 ini_set('display_errors', 0);
 
+// Include functions for email support
+require_once '../includes/functions.php';
+
 try {
     // Create or update role
     if ($isEdit) {
         $result = $db->updateUserRole($teacherId, $role, $username, $password, $classes);
+        $action = 'updated';
     } else {
         if (empty($password)) {
             echo json_encode(['success' => false, 'message' => 'Password is required for new roles']);
             exit;
         }
         $result = $db->createUserRole($teacherId, $role, $username, $password, $classes);
+        $action = 'assigned';
     }
+    
+    // Send email notification if successful
+    if ($result['success']) {
+        $teacher = $db->getTeacher($teacherId);
+        if ($teacher && !empty($teacher['email'])) {
+            sendRoleChangeEmail(
+                $teacher['email'],
+                $teacher['name'],
+                $role,
+                $username,
+                $password ? $password : null, // Only send password if changed/set
+                $action
+            );
+        }
+    }
+    
     echo json_encode($result);
 
 } catch (Exception $e) {

@@ -100,6 +100,7 @@ if ($class) {
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                        <th class="p-4">S#</th>
                         <th class="p-4">GR No</th>
                         <th class="p-4">Name</th>
                         <th class="p-4">Father's Name</th>
@@ -169,7 +170,7 @@ if ($class) {
 
                             // Update Table
                             tableBody.innerHTML = '';
-                            data.students.forEach(student => {
+                            data.students.forEach((student, index) => {
                                 let statusBadge = '<span class="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800">Unmarked</span>';
                                 if (student.status === 'P') statusBadge = '<span class="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">Present</span>';
                                 else if (student.status === 'A') statusBadge = '<span class="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">Absent</span>';
@@ -177,6 +178,7 @@ if ($class) {
 
                                 const row = document.createElement('tr');
                                 row.innerHTML = `
+                                    <td class="p-4 text-gray-500 font-medium">${index + 1}</td>
                                     <td class="p-4 text-gray-700">${student.gr_no}</td>
                                     <td class="p-4 font-medium text-gray-800 capitalize">${student.student_name}</td>
                                     <td class="p-4 text-gray-600 capitalize">${student.father_name}</td>
@@ -202,10 +204,10 @@ if ($class) {
             dateInput.addEventListener('change', loadReport);
 
             // Initial load
-            if (!classSelect.value) {
-                classSelect.selectedIndex = 2; // Select 'One'
+            if (!classSelect.value && classSelect.options.length > 1) {
+                classSelect.selectedIndex = 1; // Select first available class
                 loadReport();
-            } else {
+            } else if (classSelect.value) {
                 loadReport();
             }
         });

@@ -112,9 +112,11 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
 
 ### 1. Dashboard (`index.php`)
 **Central Hub**:
-- **Attendance Insights**: Doughnut chart for daily status, bar chart for class-wise attendance.
-- **Smart Date Logic**: Displays "Attendance Unmarked" if no data exists for the current day.
-- **Quick Actions**: Add Student, Add Teacher, Backup Data.
+- **Attendance Insights**: Doughnut chart for today's student status.
+- **Top Performers**: Displays the top 3 students based on exam results.
+- **Birthdays**: Smart card showing today's birthdays and upcoming ones (next 15 days).
+- **Inventory Alerts**: Real-time alerts for low-stock items.
+- **Quick Actions**: One-click access to most common tasks like Add Student, Mark Attendance, Backup.
 
 ### 2. Student Management
 - **Admission (`pages/student_form.php`)**: 
@@ -149,10 +151,12 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
 - **Restore**: Manual restoration via replacing the `data` folder (currently manual).
 
 ### 5. Attendance
-- **Daily Marking (`pages/attendance.php`)**:
-  - Mark Present/Absent/Leave for whole class.
-  - Quick "Mark All Present" button.
-- **Reports**: View monthly and daily reports.
+- **Daily Student Marking (`pages/attendance.php`)**: Mark P/A/L for whole class.
+- **Teacher Attendance (`pages/teacher_attendance.php`)**: Dedicated interface for staff attendance with "Mark All" capabilities.
+- **Reporting (`pages/teacher_attendance_view.php`)**: 
+  - Staff-wise performance summaries.
+  - Percentage-based analysis.
+  - Individual history drill-downs for specific staff members.
 
 ---
 
@@ -204,4 +208,4 @@ Edit `pages/generate_id_card.php`:
 - **Access Control**: Critical features (Backup, Reset) are protected by secondary password verification.
 
 ---
-*Last Updated: December 14, 2025*
+*Last Updated: January 08, 2026*

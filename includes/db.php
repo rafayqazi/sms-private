@@ -1,6 +1,9 @@
 <?php
 date_default_timezone_set('Asia/Karachi'); // Set timezone to Pakistan/Karachi
 
+require_once __DIR__ . '/license.php';
+License::checkAndRedirect();
+
 class Database {
     private $csvFile;
     private $headers;
@@ -160,6 +163,37 @@ class Database {
         }
         $this->writeData($newData);
         return true;
+    }
+
+    public function deleteStudents($ids) {
+        $data = $this->readData();
+        $newData = [];
+        $ids = array_map('intval', $ids); // Ensure integers
+        foreach ($data as $student) {
+            if (!in_array((int)$student['id'], $ids)) {
+                $newData[] = $student;
+            }
+        }
+        $this->writeData($newData);
+        return true;
+    }
+
+    public function updateStudentsField($ids, $field, $value) {
+        $data = $this->readData();
+        $ids = array_map('intval', $ids);
+        $updated = false;
+        foreach ($data as &$student) {
+            if (in_array((int)$student['id'], $ids)) {
+                $student[$field] = $value;
+                $student['updated_at'] = date('Y-m-d H:i:s');
+                $updated = true;
+            }
+        }
+        if ($updated) {
+            $this->writeData($data);
+            return true;
+        }
+        return false;
     }
     
     
@@ -339,7 +373,7 @@ class Database {
             'id', 'name', 'father_name', 'gender', 'cnic', 'dob', 'age', 'email', 
             'disability', 'payment_type', 'payment_no', 'iban', 'contact', 
             'retirement_date', 'designation', 'department', 'posting', 'basic_scale', 
-            'address', 'district', 'tahsil', 'profile_image', 'created_at'
+            'address', 'district', 'tahsil', 'profile_image', 'joining_date', 'created_at'
         ];
 
         // Create file with headers if it doesn't exist
@@ -384,6 +418,7 @@ class Database {
             $data['district'],
             $data['tahsil'],
             isset($data['profile_image']) ? $data['profile_image'] : '',
+            isset($data['joining_date']) ? $data['joining_date'] : '',
             date('Y-m-d H:i:s')
         ];
 
@@ -465,6 +500,34 @@ class Database {
         return true;
     }
 
+    public function deleteTeachers($ids) {
+        $file = __DIR__ . '/../data/teachers.csv';
+        if (!file_exists($file)) return false;
+
+        $rows = [];
+        $handle = @fopen($file, "r");
+        if ($handle === false) return false;
+
+        $ids = array_map('intval', $ids);
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            // Keep header row (index 0 is 'id') or if ID not in list
+            if (!is_numeric($row[0]) || !in_array((int)$row[0], $ids)) {
+                $rows[] = $row;
+            }
+        }
+        fclose($handle);
+
+        $fp = @fopen($file, 'w');
+        if ($fp === false) return false;
+
+        foreach ($rows as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return true;
+    }
+
     public function updateTeacher($id, $data) {
         $file = __DIR__ . '/../data/teachers.csv';
         if (!file_exists($file)) return false;
@@ -505,6 +568,7 @@ class Database {
                     $data['district'],
                     $data['tahsil'],
                     isset($data['profile_image']) ? $data['profile_image'] : $row[21], // Use new image or keep old
+                    isset($data['joining_date']) ? $data['joining_date'] : (isset($row[22]) ? $row[22] : ''), // Preserve old value if not editing, though here we update all
                     $createdAt
                 ];
                 $rows[] = $updatedRow;
@@ -625,14 +689,14 @@ class Database {
         }
 
         // 5. Sort Class-wise Stats by Logical Order
-        $classOrder = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+        $classOrder = $this->getClassNames();
         $sortedClassStats = [];
         foreach ($classOrder as $className) {
             if (isset($stats['class_wise'][$className])) {
                 $sortedClassStats[$className] = $stats['class_wise'][$className];
             }
         }
-        // Append any remaining classes
+        // Append any remaining classes (in case some were deleted but still have data)
         foreach ($stats['class_wise'] as $className => $data) {
             if (!isset($sortedClassStats[$className])) {
                 $sortedClassStats[$className] = $data;
@@ -779,14 +843,21 @@ class Database {
 
     public function promoteStudent($id, $action) {
         $students = $this->readData();
-        $classProgression = [
-            'Kachi' => 'One',
-            'One' => 'Two',
-            'Two' => 'Three',
-            'Three' => 'Four',
-            'Four' => 'Five',
-            'Five' => 'Alumni (Passed Students)'
-        ];
+        
+        // Generate dynamic class progression
+        $classes = $this->getClasses();
+        $classProgression = [];
+        $lastClassName = '';
+        for ($i = 0; $i < count($classes); $i++) {
+            $currentName = $classes[$i]['class_name'];
+            if ($i < count($classes) - 1) {
+                $classProgression[$currentName] = $classes[$i+1]['class_name'];
+            } else {
+                // Last class promotes to Alumni
+                $classProgression[$currentName] = 'Alumni (Passed Students)';
+                $lastClassName = $currentName;
+            }
+        }
 
         foreach ($students as &$student) {
             if ($student['id'] == $id) {
@@ -803,10 +874,11 @@ class Database {
                 if ($action === 'pass') {
                     // Promote to next class
                     if (isset($classProgression[$currentClass])) {
-                        $student['current_class'] = $classProgression[$currentClass];
+                        $nextClass = $classProgression[$currentClass];
+                        $student['current_class'] = $nextClass;
                         
-                        // If promoted from Class Five, mark as Alumni
-                        if ($currentClass === 'Five') {
+                        // If promoted from the last class, mark as Alumni
+                        if ($currentClass === $lastClassName) {
                             $student['student_status'] = 'Alumni';
                         }
                     }
@@ -1331,12 +1403,30 @@ class Database {
             $marks[] = $mark;
         }
 
-        // Assuming each subject is out of 100 for now, or passed in total_max
-        $totalObtained = array_sum($marks);
+        $failedSubject = false;
+        $totalObtained = 0;
+        foreach ($marks as $mark) {
+            $m = strtolower(trim($mark));
+            if ($m === 'a') {
+                $failedSubject = true;
+                $totalObtained += 0;
+            } else {
+                $val = (float)$mark;
+                if ($val < 33) $failedSubject = true;
+                $totalObtained += $val;
+            }
+        }
+
         $totalMax = isset($resultData['total_max']) ? $resultData['total_max'] : (count($marks) * 100);
         $percentage = ($totalMax > 0) ? ($totalObtained / $totalMax) * 100 : 0;
-        $grade = $this->calculateGrade($percentage);
-        $remarks = $this->calculateRemarks($percentage);
+        
+        if ($failedSubject) {
+            $grade = 'F';
+            $remarks = 'Fail';
+        } else {
+            $grade = $this->calculateGrade($percentage);
+            $remarks = $this->calculateRemarks($percentage);
+        }
 
         $record = [
             $id,
@@ -1409,11 +1499,30 @@ class Database {
                     $marks[] = $mark;
                 }
                 
-                $totalObtained = array_sum($marks);
+                $failedSubject = false;
+                $totalObtained = 0;
+                foreach ($marks as $mark) {
+                    $m = strtolower(trim($mark));
+                    if ($m === 'a') {
+                        $failedSubject = true;
+                        $totalObtained += 0;
+                    } else {
+                        $val = (float)$mark;
+                        if ($val < 33) $failedSubject = true;
+                        $totalObtained += $val;
+                    }
+                }
+
                 $totalMax = isset($resultData['total_max']) ? $resultData['total_max'] : (count($marks) * 100);
                 $percentage = ($totalMax > 0) ? ($totalObtained / $totalMax) * 100 : 0;
-                $grade = $this->calculateGrade($percentage);
-                $remarks = $this->calculateRemarks($percentage);
+                
+                if ($failedSubject) {
+                    $grade = 'F';
+                    $remarks = 'Fail';
+                } else {
+                    $grade = $this->calculateGrade($percentage);
+                    $remarks = $this->calculateRemarks($percentage);
+                }
 
                 $updatedRow = [
                     $id,
@@ -1503,6 +1612,9 @@ class Database {
         
         $hasYear = in_array('year', $headers);
         $resetCount = 0;
+        
+        // Track which students have results in this batch
+        $processedStudentIds = [];
 
         while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
@@ -1535,6 +1647,9 @@ class Database {
                     $data['remarks'] = 'Fail';
                     $data['updated_at'] = date('Y-m-d H:i:s');
                     
+                    // Record that we saw this student
+                    $processedStudentIds[] = $data['student_id'];
+
                     // Reconstruct row based on header order
                     $newRow = [];
                     foreach ($headers as $header) {
@@ -1551,13 +1666,70 @@ class Database {
         }
         fclose($handle);
 
-        if ($resetCount > 0) {
+        // NOW: Check for missing students and add initialized records for them
+        $allStudents = $this->getStudentsByClass($class);
+        $newRecordsCount = 0;
+        
+        // Find max ID for new records
+        $maxId = 0;
+        foreach ($rows as $idx => $r) {
+            if ($idx === 0) continue; // skip header
+            if (is_numeric($r[0]) && $r[0] > $maxId) $maxId = $r[0];
+        }
+
+        foreach ($allStudents as $stu) {
+            if (!in_array($stu['id'], $processedStudentIds)) {
+                // Create new initialized record
+                $maxId++;
+                $newRecord = [
+                    'id' => $maxId,
+                    'student_id' => $stu['id'],
+                    'class' => $class,
+                    'exam_type' => $examType,
+                    'year' => $year,
+                    'english' => 0,
+                    'math' => 0,
+                    'social_studies' => 0,
+                    'general_science' => 0,
+                    'mt' => 0,
+                    'islamiyat' => 0,
+                    'nmt' => 0,
+                    'other_subjects' => '{}',
+                    'total_obtained' => 0,
+                    'total_max' => 700, // Approximate default
+                    'percentage' => 0,
+                    'grade' => 'F',
+                    'remarks' => 'Fail',
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                
+                // Map to headers order
+                $mappedRow = [];
+                foreach ($headers as $h) {
+                    // created_at maps to last col usually, or check name. 
+                    // But standard headers in addResult are: 
+                    // id, student_id, class, exam_type, year, english... remarks, created_at
+                    // Let's use the $newRecord array keys if they match? 
+                    // Safer to check if key exists
+                    if (isset($newRecord[$h])) {
+                        $mappedRow[] = $newRecord[$h];
+                    } else {
+                         // Fallback for fields not in our simple array above but in CSV
+                         $mappedRow[] = ''; 
+                    }
+                }
+                $rows[] = $mappedRow;
+                $newRecordsCount++;
+            }
+        }
+
+        if ($resetCount > 0 || $newRecordsCount > 0) {
             $fp = fopen($file, 'w');
             foreach ($rows as $row) {
                 fputcsv($fp, $row);
             }
             fclose($fp);
-            return $resetCount;
+            return $resetCount + $newRecordsCount;
         }
         return 0;
     }
@@ -1844,5 +2016,575 @@ class Database {
         $current['admin_password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
         
         return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
+    }
+
+
+    // ==========================================
+    // INVENTORY MANAGEMENT METHODS
+    // ==========================================
+
+    // --- Category Methods ---
+    public function getCategories() {
+        $file = __DIR__ . '/../data/inventory_categories.csv';
+        $categories = [];
+        if (!file_exists($file)) return $categories;
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 1000, ",");
+        
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if (count($row) >= 4) {
+                 $categories[] = [
+                    'id' => $row[0],
+                    'name' => $row[1],
+                    'description' => $row[2],
+                    'created_at' => $row[3]
+                 ];
+            }
+        }
+        fclose($handle);
+        return $categories;
+    }
+
+    public function addCategory($name, $description) {
+        $file = __DIR__ . '/../data/inventory_categories.csv';
+        $categories = $this->getCategories();
+        
+        // Auto-increment ID
+        $lastId = 0;
+        if (!empty($categories)) {
+            $lastItem = end($categories);
+            $lastId = (int)$lastItem['id'];
+        }
+        $id = $lastId + 1;
+        
+        $record = [
+            $id,
+            $name,
+            $description,
+            date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $record);
+        fclose($fp);
+        return $id;
+    }
+
+    public function deleteCategory($id) {
+        $file = __DIR__ . '/../data/inventory_categories.csv';
+        $categories = $this->getCategories();
+        
+        $newCategories = array_filter($categories, function($cat) use ($id) {
+            return $cat['id'] != $id;
+        });
+
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['id','name','description','created_at']); // Headers
+        foreach ($newCategories as $cat) {
+            fputcsv($fp, $cat);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function updateCategory($id, $name, $description) {
+        $file = __DIR__ . '/../data/inventory_categories.csv';
+        $categories = $this->getCategories();
+        $headers = ['id','name','description','created_at'];
+        
+        $found = false;
+        foreach ($categories as &$cat) {
+            if ($cat['id'] == $id) {
+                $cat['name'] = $name;
+                $cat['description'] = $description;
+                $found = true;
+                break;
+            }
+        }
+        unset($cat);
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($categories as $cat) {
+                fputcsv($fp, $cat);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+
+    // --- Inventory Item Methods ---
+    public function getInventory($filters = []) {
+        $file = __DIR__ . '/../data/inventory.csv';
+        $inventory = [];
+        if (!file_exists($file)) return $inventory;
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 1000, ","); // id,item_name,category_id,quantity,purchase_date,cost,condition,status,disposal_date,disposal_reason,remarks,created_at
+        
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if (count($row) >= 12) {
+                // Filter by Status (default: Active)
+                $status = $row[7];
+                if (isset($filters['status']) && $filters['status'] !== 'All' && $status !== $filters['status']) {
+                    continue;
+                }
+                
+                // Filter by Category
+                if (isset($filters['category_id']) && $filters['category_id'] !== '' && $row[2] != $filters['category_id']) {
+                    continue;
+                }
+
+                $inventory[] = [
+                    'id' => $row[0],
+                    'item_name' => $row[1],
+                    'category_id' => $row[2],
+                    'quantity' => $row[3],
+                    'purchase_date' => $row[4],
+                    'cost' => $row[5],
+                    'condition' => $row[6],
+                    'status' => $row[7],
+                    'disposal_date' => $row[8],
+                    'disposal_reason' => $row[9],
+                    'remarks' => $row[10],
+                    'created_at' => $row[11]
+                ];
+            }
+        }
+        fclose($handle);
+        return $inventory;
+    }
+
+    public function getInventoryItem($id) {
+        $items = $this->getInventory(['status' => 'All']);
+        foreach ($items as $item) {
+            if ($item['id'] == $id) return $item;
+        }
+        return null;
+    }
+
+    public function addInventory($data) {
+        $file = __DIR__ . '/../data/inventory.csv';
+        
+        // Get Last ID (robust read)
+        $rows = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $lastId = 0;
+        if (count($rows) > 0) {
+            $lastRow = str_getcsv(trim(end($rows)));
+            if (isset($lastRow[0]) && is_numeric($lastRow[0])) {
+                $lastId = (int)$lastRow[0];
+            }
+        }
+        $id = $lastId + 1;
+
+        $record = [
+            $id,
+            $data['item_name'],
+            $data['category_id'],
+            $data['quantity'],
+            $data['purchase_date'],
+            $data['cost'],
+            $data['condition'],
+            'Active', // Default status
+            '', // disposal_date
+            '', // disposal_reason
+            $data['remarks'],
+            date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $record);
+        fclose($fp);
+        return $id;
+    }
+
+    public function updateInventory($id, $data) {
+        $file = __DIR__ . '/../data/inventory.csv';
+        $items = $this->getInventory(['status' => 'All']);
+        $headers = ['id','item_name','category_id','quantity','purchase_date','cost','condition','status','disposal_date','disposal_reason','remarks','created_at'];
+
+        $found = false;
+        foreach ($items as &$item) {
+            if ($item['id'] == $id) {
+                // Update fields if present
+                if (isset($data['item_name'])) $item['item_name'] = $data['item_name'];
+                if (isset($data['category_id'])) $item['category_id'] = $data['category_id'];
+                if (isset($data['quantity'])) $item['quantity'] = $data['quantity'];
+                if (isset($data['purchase_date'])) $item['purchase_date'] = $data['purchase_date'];
+                if (isset($data['cost'])) $item['cost'] = $data['cost'];
+                if (isset($data['condition'])) $item['condition'] = $data['condition'];
+                if (isset($data['remarks'])) $item['remarks'] = $data['remarks'];
+                
+                // Dead Stock Update
+                if (isset($data['status'])) {
+                    $item['status'] = $data['status'];
+                    if ($data['status'] === 'Dead Stock') {
+                        $item['disposal_date'] = isset($data['disposal_date']) ? $data['disposal_date'] : date('Y-m-d');
+                        $item['disposal_reason'] = isset($data['disposal_reason']) ? $data['disposal_reason'] : '';
+                    }
+                }
+                $found = true;
+            }
+        }
+        unset($item);
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($items as $item) {
+                fputcsv($fp, $item);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+    public function moveToDeadStock($id, $qty, $reason, $date, $remarks) {
+        $file = __DIR__ . '/../data/inventory.csv';
+        $items = $this->getInventory(['status' => 'All']);
+        $headers = ['id','item_name','category_id','quantity','purchase_date','cost','condition','status','disposal_date','disposal_reason','remarks','created_at'];
+        
+        $sourceItem = null;
+        foreach ($items as $item) {
+            if ($item['id'] == $id) {
+                $sourceItem = $item;
+                break;
+            }
+        }
+
+        if (!$sourceItem) return false;
+
+        $currentQty = (int)$sourceItem['quantity'];
+        $moveQty = (int)$qty;
+
+        if ($moveQty <= 0 || $moveQty > $currentQty) return false;
+
+        // If moving ALL items
+        if ($moveQty === $currentQty) {
+            $data = [
+                'status' => 'Dead Stock',
+                'disposal_reason' => $reason,
+                'disposal_date' => $date,
+                'remarks' => $remarks
+            ];
+            return $this->updateInventory($id, $data);
+        }
+
+        // If moving PARTIAL items
+        // 1. Update existing item quantity
+        $this->updateInventory($id, ['quantity' => $currentQty - $moveQty]);
+
+        // 2. Create NEW Dead Stock item
+        $newItem = [
+            'item_name' => $sourceItem['item_name'],
+            'category_id' => $sourceItem['category_id'],
+            'quantity' => $moveQty,
+            'purchase_date' => $sourceItem['purchase_date'],
+            'cost' => $sourceItem['cost'],
+            'condition' => 'Damaged', // Default to damaged or inherit? Let's genericize or keep logic simple. Most dead stock is broken/old.
+            'remarks' => $remarks
+        ];
+        
+        // Add as generally new, then immediately update status? 
+        // Better to insert directly or use addInventory then update.
+        // Let's use addInventory then immediately update to Dead Stock to reuse logic/formatting
+        $newId = $this->addInventory($newItem);
+        
+        $deadStockData = [
+            'status' => 'Dead Stock',
+            'disposal_reason' => $reason,
+            'disposal_date' => $date
+        ];
+        return $this->updateInventory($newId, $deadStockData);
+    }
+    public function deleteInventory($id) {
+        $file = __DIR__ . '/../data/inventory.csv';
+        $items = $this->getInventory(['status' => 'All']);
+        $headers = ['id','item_name','category_id','quantity','purchase_date','cost','condition','status','disposal_date','disposal_reason','remarks','created_at'];
+
+        $newItems = array_filter($items, function($item) use ($id) {
+            return $item['id'] != $id;
+        });
+
+        if (count($items) !== count($newItems)) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($newItems as $item) {
+                fputcsv($fp, $item);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+
+    // Class Management Methods
+    public function getClasses() {
+        $file = __DIR__ . '/../data/classes.csv';
+        $classes = [];
+        if (file_exists($file)) {
+            if (($handle = fopen($file, "r")) !== FALSE) {
+                $headers = fgetcsv($handle); // Skip header
+                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    if (count($row) >= 2) {
+                        $classes[] = [
+                            'id' => $row[0],
+                            'class_name' => $row[1],
+                            'sort_order' => isset($row[2]) ? (int)$row[2] : 0
+                        ];
+                    }
+                }
+                fclose($handle);
+                
+                // Sort by sort_order
+                usort($classes, function($a, $b) {
+                    return $a['sort_order'] - $b['sort_order'];
+                });
+            }
+        }
+        return $classes;
+    }
+
+    public function getClassNames() {
+        $classes = $this->getClasses();
+        return array_map(function($c) { return $c['class_name']; }, $classes);
+    }
+
+    public function addClass($name) {
+        $file = __DIR__ . '/../data/classes.csv';
+        $classes = $this->getClasses();
+        $nextId = 1;
+        $maxSort = 0;
+        foreach ($classes as $c) {
+            if ((int)$c['id'] >= $nextId) $nextId = (int)$c['id'] + 1;
+            if ((int)$c['sort_order'] > $maxSort) $maxSort = (int)$c['sort_order'];
+        }
+        
+        $fp = fopen($file, 'a');
+        fputcsv($fp, [$nextId, $name, $maxSort + 1]);
+        fclose($fp);
+        return $nextId;
+    }
+
+    public function deleteClass($id) {
+        $file = __DIR__ . '/../data/classes.csv';
+        $classes = $this->getClasses();
+        $newClasses = array_filter($classes, function($c) use ($id) {
+            return $c['id'] != $id;
+        });
+        
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['id', 'class_name', 'sort_order']);
+        foreach ($newClasses as $c) {
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order']]);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function updateClasses($updatedClasses) {
+        $file = __DIR__ . '/../data/classes.csv';
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['id', 'class_name', 'sort_order']);
+        foreach ($updatedClasses as $c) {
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order']]);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function getToppers($limit = 3) {
+        $file = __DIR__ . '/../data/results.csv';
+        if (!file_exists($file)) return [];
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 1000, ",");
+        if (!$headers) return [];
+
+        $all = [];
+        $latestYear = 0;
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+             if (count($row) == count($headers)) {
+                $data = array_combine($headers, $row);
+                if (isset($data['year'])) {
+                    $year = (int)$data['year'];
+                    if ($year > $latestYear) {
+                        $latestYear = $year;
+                    }
+                }
+                $all[] = $data;
+             }
+        }
+        fclose($handle);
+
+        if (empty($all)) return [];
+
+        // Filter for latest year
+        $latestResults = array_filter($all, function($r) use ($latestYear) {
+            return isset($r['year']) && (int)$r['year'] === $latestYear;
+        });
+
+        if (empty($latestResults)) return [];
+
+        usort($latestResults, function($a, $b) {
+             return (float)($b['percentage'] ?? 0) <=> (float)($a['percentage'] ?? 0);
+        });
+
+        $toppers = array_slice($latestResults, 0, $limit);
+        
+        // Map student info
+        $students = $this->readData();
+        $studentMap = [];
+        foreach ($students as $s) { $studentMap[$s['id']] = $s; }
+
+        foreach ($toppers as &$t) {
+            $sid = $t['student_id'];
+            $t['student_name'] = isset($studentMap[$sid]) ? $studentMap[$sid]['student_name'] : 'Unknown';
+            $t['profile_image'] = isset($studentMap[$sid]) ? $studentMap[$sid]['profile_image'] : '';
+            $t['current_class'] = isset($studentMap[$sid]) ? $studentMap[$sid]['current_class'] : ($t['class'] ?? 'N/A');
+        }
+
+        return $toppers;
+    }
+
+    public function getBirthdaysToday() {
+        $students = $this->readData();
+        $todayFormat = date('m-d');
+        $thisYear = date('Y');
+        
+        $results = [
+            'today' => [],
+            'upcoming' => []
+        ];
+
+        foreach ($students as $s) {
+            if (!empty($s['date_of_birth'])) {
+                $dob = $s['date_of_birth'];
+                $monthDay = substr($dob, 5); // Assumes YYYY-MM-DD
+                
+                $birthdayThisYear = strtotime($thisYear . '-' . $monthDay);
+                $diff = ($birthdayThisYear - strtotime(date('Y-m-d'))) / 86400;
+
+                $bdayInfo = [
+                    'name' => $s['student_name'],
+                    'class' => $s['current_class'],
+                    'image' => $s['profile_image'],
+                    'dob' => $dob,
+                    'type' => 'student'
+                ];
+
+                if ($monthDay === $todayFormat) {
+                    $results['today'][] = $bdayInfo;
+                } elseif ($diff > 0 && $diff <= 15) {
+                    $results['upcoming'][] = $bdayInfo;
+                }
+            }
+        }
+        
+        $teachers = $this->getAllTeachers();
+        foreach ($teachers as $t) {
+            if (!empty($t['dob'])) {
+                $dob = $t['dob'];
+                $monthDay = substr($dob, 5);
+                
+                $birthdayThisYear = strtotime($thisYear . '-' . $monthDay);
+                $diff = ($birthdayThisYear - strtotime(date('Y-m-d'))) / 86400;
+
+                $bdayInfo = [
+                    'name' => $t['name'],
+                    'class' => $t['designation'],
+                    'image' => $t['profile_image'],
+                    'dob' => $dob,
+                    'type' => 'teacher'
+                ];
+
+                if ($monthDay === $todayFormat) {
+                    $results['today'][] = $bdayInfo;
+                } elseif ($diff > 0 && $diff <= 15) {
+                    $results['upcoming'][] = $bdayInfo;
+                }
+            }
+        }
+
+        // Sort upcoming by date
+        usort($results['upcoming'], function($a, $b) {
+            return substr($a['dob'], 5) <=> substr($b['dob'], 5);
+        });
+
+        return $results;
+    }
+
+    public function saveTeacherAttendance($date, $attendanceData) {
+        $file = __DIR__ . '/../data/teacher_attendance.csv';
+        $rows = [];
+        $headers = ['date', 'teacher_id', 'status', 'created_at', 'remarks'];
+        
+        // Read existing data but skip rows for the same date
+        if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
+            fgetcsv($handle); // skip headers
+            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                if ($row[0] !== $date) {
+                    $rows[] = $row;
+                }
+            }
+            fclose($handle);
+        }
+
+        // Add new entries
+        foreach ($attendanceData as $teacherId => $status) {
+            $rows[] = [$date, $teacherId, $status, date('Y-m-d H:i:s'), ''];
+        }
+
+        // Write back
+        $fp = fopen($file, 'w');
+        fputcsv($fp, $headers);
+        foreach ($rows as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function getTeacherAttendance($date) {
+        $file = __DIR__ . '/../data/teacher_attendance.csv';
+        $attendance = [];
+        if (!file_exists($file)) return $attendance;
+
+        $handle = fopen($file, "r");
+        fgetcsv($handle); // skip headers
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if ($row[0] === $date) {
+                $attendance[$row[1]] = $row[2]; // teacher_id => status
+            }
+        }
+        fclose($handle);
+        return $attendance;
+    }
+
+    public function getTeacherAttendanceReport($startDate, $endDate) {
+        $file = __DIR__ . '/../data/teacher_attendance.csv';
+        $report = [];
+        if (!file_exists($file)) return $report;
+
+        $handle = fopen($file, "r");
+        fgetcsv($handle); // skip headers
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $date = $row[0];
+            if ($date >= $startDate && $date <= $endDate) {
+                $report[] = [
+                    'date' => $row[0],
+                    'teacher_id' => $row[1],
+                    'status' => $row[2],
+                    'created_at' => $row[3],
+                    'remarks' => $row[4]
+                ];
+            }
+        }
+        fclose($handle);
+        return $report;
     }
 }

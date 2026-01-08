@@ -51,8 +51,24 @@ if ($id) {
             <!-- Profile Image Section -->
             <div class="w-full md:w-1/4 text-center">
                 <div class="profile-image-container mb-4">
-                    <?php if (!empty($teacher['profile_image']) && file_exists($teacher['profile_image'])): ?>
-                        <img src="<?php echo htmlspecialchars($teacher['profile_image']); ?>" alt="Profile Image" class="rounded-lg shadow-md w-full h-auto max-h-[300px] object-cover mx-auto">
+                    <?php 
+                    $imagePath = !empty($teacher['profile_image']) ? $teacher['profile_image'] : '';
+                    if (!empty($imagePath)) {
+                        // Check if file exists relative to current script (pages/teacher_profile.php)
+                        // If path starts with '../', it's already relative to pages/
+                        if (file_exists($imagePath)) {
+                            // Good to go
+                        } 
+                        // If path is stored as 'uploads/...' (root relative), prepend '../'
+                        elseif (file_exists('../' . $imagePath)) {
+                            $imagePath = '../' . $imagePath;
+                        } else {
+                            $imagePath = ''; // File not found
+                        }
+                    }
+                    ?>
+                    <?php if (!empty($imagePath)): ?>
+                        <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="Profile Image" class="rounded-lg shadow-md w-full h-auto max-h-[300px] object-cover object-top mx-auto">
                     <?php else: ?>
                         <div class="bg-gray-200 rounded-lg flex items-center justify-center h-[200px] w-full mx-auto">
                             <i class="fas fa-user fa-4x text-gray-400"></i>
@@ -81,6 +97,7 @@ if ($id) {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></div>
                     <div><strong>Posting:</strong> <?php echo htmlspecialchars($teacher['posting']); ?></div>
+                    <div><strong>Date of Joining:</strong> <?php echo isset($teacher['joining_date']) ? htmlspecialchars($teacher['joining_date']) : 'N/A'; ?></div>
                     <div><strong>Basic Scale:</strong> <?php echo htmlspecialchars($teacher['basic_scale']); ?></div>
                     <div><strong>Date of Retirement:</strong> <?php echo htmlspecialchars($teacher['retirement_date']); ?></div>
                 </div>
@@ -107,10 +124,27 @@ if ($id) {
 <?php else: ?>
     <!-- List View -->
     <div class="bg-white shadow-lg rounded-lg p-6 max-w-7xl mx-auto">
+        
+        <!-- Bulk Actions & Filters -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <select id="bulkActionSelect" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Bulk Actions</option>
+                    <option value="delete">Delete</option>
+                </select>
+                <button id="applyBulkAction" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-green-800 transition duration-300 text-sm">Apply</button>
+            </div>
+            <!-- Potential existing filters or search could go here or align right -->
+        </div>
+
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-100 border-b">
+                        <th class="p-3 w-10">
+                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4">
+                        </th>
+                        <th class="p-3 font-semibold text-gray-700">S#</th>
                         <th class="p-3 font-semibold text-gray-700">ID</th>
                         <th class="p-3 font-semibold text-gray-700">Name</th>
                         <th class="p-3 font-semibold text-gray-700">Designation</th>
@@ -121,13 +155,17 @@ if ($id) {
                 </thead>
                 <tbody>
                     <?php if (count($allTeachers) > 0): ?>
-                        <?php foreach ($allTeachers as $t): ?>
+                        <?php $i = 1; foreach ($allTeachers as $t): ?>
                             <tr class="border-b hover:bg-gray-50 transition-colors">
+                                <td class="p-3">
+                                    <input type="checkbox" name="teacher_ids[]" value="<?php echo htmlspecialchars($t['id']); ?>" class="teacher-checkbox rounded border-gray-300 text-primary focus:ring-primary h-4 w-4">
+                                </td>
+                                <td class="p-3 font-mono text-gray-600"><?php echo $i++; ?></td>
                                 <td class="p-3"><?php echo htmlspecialchars($t['id']); ?></td>
                                 <td class="p-3">
                                     <div class="flex items-center">
                                         <?php if (!empty($t['profile_image']) && file_exists($t['profile_image'])): ?>
-                                            <img src="<?php echo htmlspecialchars($t['profile_image']); ?>" alt="" class="rounded-full w-8 h-8 mr-2 object-cover">
+                                            <img src="<?php echo htmlspecialchars($t['profile_image']); ?>" alt="" class="rounded-full w-8 h-8 mr-2 object-cover object-top">
                                         <?php else: ?>
                                             <div class="w-8 h-8 rounded-full bg-gray-200 mr-2 flex items-center justify-center text-gray-500">
                                                 <i class="fas fa-user text-xs"></i>
@@ -156,13 +194,90 @@ if ($id) {
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="p-4 text-center text-gray-500">No teachers found.</td>
+                            <td colspan="7" class="p-4 text-center text-gray-500">No teachers found.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.teacher-checkbox');
+            const applyBtn = document.getElementById('applyBulkAction');
+            const actionSelect = document.getElementById('bulkActionSelect');
+
+            // Select All Logic
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            });
+
+            // Update Select All if individual checkbox changed
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (!this.checked) {
+                        selectAll.checked = false;
+                    } else {
+                        const allChecked = Array.from(checkboxes).every(c => c.checked);
+                        if (allChecked) selectAll.checked = true;
+                    }
+                });
+            });
+
+            // Apply Action Logic
+            applyBtn.addEventListener('click', function() {
+                const action = actionSelect.value;
+                if (!action) {
+                    showModal('warning', 'Action Required', 'Please select an action.');
+                    return;
+                }
+
+                const selectedIds = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                if (selectedIds.length === 0) {
+                    showModal('warning', 'Selection Required', 'Please select at least one item.');
+                    return;
+                }
+
+                if (action === 'delete') {
+                    showConfirmationModal(
+                        'Confirm Deletion',
+                        `Are you sure you want to delete ${selectedIds.length} teacher(s)? This action cannot be undone.`,
+                        function() {
+                            fetch('../api/bulk_action.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    type: 'teacher',
+                                    action: 'delete',
+                                    ids: selectedIds
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success') {
+                                    showModal('success', 'Success', data.message);
+                                    setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    showModal('error', 'Error', data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                showModal('error', 'Error', 'An error occurred while processing your request.');
+                            });
+                        }
+                    );
+                }
+            });
+        });
+    </script>
 <?php endif; ?>
 
 <?php include '../includes/footer.php'; ?>

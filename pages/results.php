@@ -44,13 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'class' => $class,
                     'exam_type' => $examType,
                     'year' => $year,
-                    'english' => (int)$marks['english'],
-                    'math' => (int)$marks['math'],
-                    'social_studies' => (int)$marks['social_studies'],
-                    'general_science' => (int)$marks['general_science'],
-                    'mt' => (int)$marks['mt'],
-                    'islamiyat' => (int)$marks['islamiyat'],
-                    'nmt' => (int)$marks['nmt'],
+                    'english' => $marks['english'],
+                    'math' => $marks['math'],
+                    'social_studies' => $marks['social_studies'],
+                    'general_science' => $marks['general_science'],
+                    'mt' => $marks['mt'],
+                    'islamiyat' => $marks['islamiyat'],
+                    'nmt' => $marks['nmt'],
                     'other_subjects' => $jsonExtra
                 ];
                 $db->addResult($resultData);
@@ -154,7 +154,7 @@ if ($selectedClass && $selectedExam && $selectedYear) {
             <label class="text-sm font-medium text-gray-700">Class</label>
             <select name="class" id="classSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" required>
                 <option value="">Select Class</option>
-                <?php foreach (['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'] as $c): ?>
+                <?php foreach ($db->getClassNames() as $c): ?>
                     <option value="<?= $c ?>" <?= $selectedClass === $c ? 'selected' : '' ?>>Class <?= $c ?></option>
                 <?php endforeach; ?>
             </select>
@@ -284,44 +284,100 @@ if ($selectedClass && $selectedExam && $selectedYear) {
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 w-20">GR NO</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-20 bg-gray-50 z-10 w-40">NAME</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">ENG</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">MATH</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Social Studies</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">G.Science</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">MT</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Islamyat</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">NMT</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 w-16 min-w-[4rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">S#</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50 z-20 w-24 min-w-[6rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">GR NO</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-40 bg-gray-50 z-20 w-64 min-w-[16rem] shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">NAME</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">ENG</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">MATH</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">Social Studies</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">G.Science</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">MT</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">Islamyat</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">NMT</th>
                         <?php foreach ($extraSubjects as $subj): ?>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"><?= strtoupper($subj) ?></th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]"><?= strtoupper($subj) ?></th>
                         <?php endforeach; ?>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">TOTAL</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">PERCENTAGE</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">GRADE</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">ACTION</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">TOTAL</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">PERCENTAGE</th>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 min-w-[4rem]">GRADE</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 min-w-[5rem]">ACTION</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <?php foreach ($students as $student): 
+                    <?php $i = 1; foreach ($students as $student): 
                         $result = isset($existingResults[$student['id']]) ? $existingResults[$student['id']] : null;
                         $otherSubjects = ($result && isset($result['other_subjects'])) ? json_decode($result['other_subjects'], true) : [];
                     ?>
                     <tr>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10"><?= $student['gr_no'] ?></td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 sticky left-20 bg-white z-10"><?= $student['student_name'] ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 font-medium sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-16 min-w-[4rem]"><?= $i++ ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-16 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-24 min-w-[6rem]"><?= $student['gr_no'] ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 sticky left-40 bg-white z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] w-64 min-w-[16rem]"><?= $student['student_name'] ?></td>
                         
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][english]" value="<?= $result ? $result['english'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][math]" value="<?= $result ? $result['math'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][social_studies]" value="<?= $result ? $result['social_studies'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][general_science]" value="<?= $result ? $result['general_science'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][mt]" value="<?= $result ? $result['mt'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][islamiyat]" value="<?= $result ? $result['islamiyat'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
-                        <td class="px-2 py-2"><input type="number" name="results[<?= $student['id'] ?>][nmt]" value="<?= $result ? $result['nmt'] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500"></td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][english]" value="<?= $result ? $result['english'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['english']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['english']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][math]" value="<?= $result ? $result['math'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['math']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['math']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][social_studies]" value="<?= $result ? $result['social_studies'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['social_studies']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['social_studies']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][general_science]" value="<?= $result ? $result['general_science'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['general_science']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['general_science']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][mt]" value="<?= $result ? $result['mt'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['mt']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['mt']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][islamiyat]" value="<?= $result ? $result['islamiyat'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['islamiyat']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['islamiyat']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2">
+                            <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][nmt]" value="<?= $result ? $result['nmt'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['nmt']) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['nmt']) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
+                        </td>
                         
                         <?php foreach ($extraSubjects as $subj): ?>
                         <td class="px-2 py-2">
-                            <input type="number" name="results[<?= $student['id'] ?>][other_subjects][<?= htmlspecialchars($subj) ?>]" value="<?= isset($otherSubjects[$subj]) ? $otherSubjects[$subj] : '' ?>" class="mark-input w-full px-2 py-1 border rounded text-sm focus:ring-blue-500 focus:border-blue-500">
+                             <div class="flex items-center gap-1">
+                                <input type="text" name="results[<?= $student['id'] ?>][other_subjects][<?= htmlspecialchars($subj) ?>]" value="<?= isset($otherSubjects[$subj]) ? $otherSubjects[$subj] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= (isset($otherSubjects[$subj]) && strtoupper($otherSubjects[$subj]) === 'A') ? 'readonly' : '' ?>>
+                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
+                                    <input type="checkbox" class="absent-check scale-75" <?= (isset($otherSubjects[$subj]) && strtoupper($otherSubjects[$subj]) === 'A') ? 'checked' : '' ?>> A
+                                </label>
+                            </div>
                         </td>
                         <?php endforeach; ?>
                         
@@ -372,19 +428,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateResults(row) {
         let total = 0;
         let count = 0;
+        let failedSubject = false;
         const rowInputs = row.querySelectorAll('.mark-input');
         
         rowInputs.forEach(input => {
-            let val = parseFloat(input.value);
-            if (isNaN(val)) val = 0;
-            
-            // Validate max 100
-            if (val > 100) {
-                val = 100;
-                input.value = 100;
-            } else if (val < 0) {
+            let rawVal = input.value.trim().toUpperCase();
+            let val = 0;
+
+            if (rawVal === 'A') {
+                failedSubject = true;
                 val = 0;
-                input.value = 0;
+            } else {
+                val = parseFloat(rawVal);
+                if (isNaN(val)) val = 0;
+                
+                // Validate max 100
+                if (val > 100) {
+                    val = 100;
+                    input.value = 100;
+                } else if (val < 0) {
+                    val = 0;
+                    input.value = 0;
+                }
+
+                if (val < 33) {
+                    failedSubject = true;
+                }
             }
             
             total += val;
@@ -411,11 +480,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let grade = 'F';
         let colorClass = 'bg-red-100 text-red-800';
 
-        if (percentage >= 80) { grade = 'A+'; colorClass = 'bg-green-100 text-green-800'; }
-        else if (percentage >= 70) { grade = 'A'; colorClass = 'bg-green-100 text-green-800'; }
-        else if (percentage >= 60) { grade = 'B'; colorClass = 'bg-green-100 text-green-800'; }
-        else if (percentage >= 50) { grade = 'C'; colorClass = 'bg-green-100 text-green-800'; }
-        else if (percentage >= 33) { grade = 'D'; colorClass = 'bg-green-100 text-green-800'; }
+        if (!failedSubject) {
+            if (percentage >= 80) { grade = 'A+'; colorClass = 'bg-green-100 text-green-800'; }
+            else if (percentage >= 70) { grade = 'A'; colorClass = 'bg-green-100 text-green-800'; }
+            else if (percentage >= 60) { grade = 'B'; colorClass = 'bg-green-100 text-green-800'; }
+            else if (percentage >= 50) { grade = 'C'; colorClass = 'bg-green-100 text-green-800'; }
+            else if (percentage >= 33) { grade = 'D'; colorClass = 'bg-green-100 text-green-800'; }
+        }
         
         // Update Grade Cell
         const gradeCell = row.querySelector('.grade-cell');
@@ -425,11 +496,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     inputs.forEach(input => {
-        // Enforce max 100 attribute
-        input.setAttribute('max', '100');
-        input.setAttribute('min', '0');
-
+        // Enforce basic validation
         input.addEventListener('input', function() {
+            // Allow only numbers and 'A'/'a'
+            this.value = this.value.replace(/[^0-9Aa.]/g, '');
             const row = this.closest('tr');
             calculateResults(row);
         });
@@ -437,6 +507,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial Calculation check for validation
         input.addEventListener('blur', function() {
              const row = this.closest('tr');
+            calculateResults(row);
+        });
+    });
+
+    // Handle Absent Checkbox Toggle
+    document.querySelectorAll('.absent-check').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const container = this.closest('div');
+            const input = container.querySelector('.mark-input');
+            const row = this.closest('tr');
+
+            if (this.checked) {
+                input.value = 'A';
+                input.setAttribute('readonly', true);
+            } else {
+                input.value = '0';
+                input.removeAttribute('readonly');
+            }
             calculateResults(row);
         });
     });

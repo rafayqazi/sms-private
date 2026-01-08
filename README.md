@@ -127,26 +127,29 @@ See attendance history:
 
 ---
 
-### 👨‍🏫 **3. Teacher Management**
+### 👨‍🏫 **3. Teacher Management & Attendance**
 
 #### ➕ **Add New Teacher**
 When hiring a new teacher:
 1. Click "Teachers" → "Add Teacher"
 2. Fill in details:
-   - Name, Father Name, CNIC
-   - Contact number, Email
-   - Designation (e.g., Primary School Teacher)
-   - Basic Pay Scale (e.g., BPS-14)
-   - Bank account details (for salary)
+   - Name, Father Name, CNIC, Contact, Email
+   - Designation, BPS Scale, Bank details
    - Upload photo
 
-3. Save - Teacher is registered!
+#### ✍️ **Teacher Attendance (Daily)**
+Manage your staff's presence professionally:
+1. Click "Attendance" → "Mark Teacher"
+2. Select date and mark **Present**, **Absent**, or **Leave**
+3. Use "Mark All Present" for faster entry
+4. System calculates staff presence percentage automatically
 
-#### 👀 **View Teachers**
-- See all teaching staff
-- Click on any teacher to view full profile
-- Edit information if needed
-- See contact details quickly
+#### 📊 **Teacher Reports & Performance**
+Detailed insights into staff attendance:
+1. Click "Attendance" → "Teacher Reports"
+2. **Staff-wise Summary**: See a card for each teacher with their total Presents/Absents/Leaves for any date range.
+3. **Individual Drill-down**: Click any teacher's card to see their specific day-by-day attendance history.
+4. **Daily Logs**: See a summary of how many staff members were present each day.
 
 ---
 
@@ -575,8 +578,8 @@ If you need help:
 
 **Developed for:** Government Boys Primary School Ali Bux Jarwar  
 **Developer:** Rafay Qazi  
-**Version:** 1.0  
-**Last Updated:** November 2025
+**Version:** 1.5  
+**Last Updated:** January 2026
 
 ---
 

@@ -18,7 +18,7 @@ foreach ($userRoles as $role) {
     $roleMap[$role['teacher_id']] = $role;
 }
 
-$classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+$classes = $db->getClassNames();
 ?>
 
 <div class="max-w-7xl mx-auto">
@@ -37,6 +37,7 @@ $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">S#</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Teacher Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">CNIC</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Contact</th>
@@ -45,8 +46,9 @@ $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    <?php foreach ($teachers as $teacher): ?>
+                    <?php $i = 1; foreach ($teachers as $teacher): ?>
                     <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-gray-500 font-medium"><?php echo $i++; ?></td>
                         <td class="px-6 py-4">
                             <div class="font-medium text-gray-800 capitalize"><?php echo htmlspecialchars($teacher['name']); ?></div>
                             <div class="text-sm text-gray-500 capitalize"><?php echo htmlspecialchars($teacher['designation']); ?></div>

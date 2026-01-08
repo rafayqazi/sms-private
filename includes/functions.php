@@ -73,7 +73,8 @@ function getAssignedClasses() {
         return isset($_SESSION['assigned_classes']) ? $_SESSION['assigned_classes'] : [];
     }
     // Admin/Super Admin can see all classes
-    return ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+    $db = new Database();
+    return $db->getClassNames();
 }
 
 function canEditStudent($studentClass) {
@@ -107,5 +108,72 @@ function getUserRoleBadge() {
     } else {
         return $role . ' (Teacher)';
     }
+}
+
+function sendRoleChangeEmail($to, $name, $role, $username, $password = null, $action = 'assigned') {
+    $subject = "Role Update Notification - GBPS Ali Bux Jarwar";
+    
+    // Construct message based on action
+    $message = "
+    <html>
+    <head>
+        <title>Role Update Notification</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+            .header { background-color: #15803d; color: white; padding: 10px; text-align: center; border-radius: 5px 5px 0 0; }
+            .content { padding: 20px; }
+            .footer { text-align: center; font-size: 0.8em; color: #777; margin-top: 20px; }
+            .highlight { color: #15803d; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <div class='header'>
+                <h2>Role Update Notification</h2>
+            </div>
+            <div class='content'>
+                <p>Dear <strong>$name</strong>,</p>";
+
+    if ($action === 'removed') {
+        $message .= "
+                <p>Your user role has been <span class='highlight' style='color: #dc2626;'>removed</span> from the School Management System.</p>
+                <p>You no longer have access to the administrative/editor panel.</p>";
+    } else {
+        $actionText = ($action === 'updated') ? 'updated' : 'assigned';
+        $message .= "
+                <p>Your user role has been <span class='highlight'>$actionText</span> in the School Management System.</p>
+                <p><strong>Role:</strong> $role</p>
+                <p><strong>Username:</strong> $username</p>";
+        
+        if ($password) {
+            $message .= "<p><strong>Password:</strong> $password</p>";
+        } else {
+            $message .= "<p><strong>Password:</strong> (Unchanged)</p>";
+        }
+        
+        $message .= "
+                <p>Please log in to the system to access your assigned features.</p>";
+    }
+
+    $message .= "
+                <p>Best Regards,<br>GBPS Ali Bux Jarwar Administration</p>
+            </div>
+            <div class='footer'>
+                <p>This is an automated message. Please do not reply directly to this email.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+
+    // Headers
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= 'From: noreply@school.com' . "\r\n";
+
+    // Send email
+    // Note: This requires a configured mail server (e.g., SMTP in php.ini) to work on localhost
+    return mail($to, $subject, $message, $headers);
 }
 ?>

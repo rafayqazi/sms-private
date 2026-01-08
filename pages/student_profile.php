@@ -41,7 +41,7 @@ if (!$student) {
         <div class="w-full md:w-1/4 text-center">
             <div class="profile-image-container mb-4">
                 <?php if (!empty($student['profile_image'])): ?>
-                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile Image" class="rounded-lg shadow-md w-full h-auto max-h-[300px] object-cover mx-auto">
+                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile Image" class="rounded-lg shadow-md w-full h-auto max-h-[300px] object-cover object-top mx-auto">
                 <?php else: ?>
                     <div class="bg-gray-200 rounded-lg flex items-center justify-center h-[200px] w-full mx-auto">
                         <i class="fas fa-user fa-4x text-gray-400"></i>
@@ -142,6 +142,48 @@ if (!$student) {
                 </div>
                 <?php endif; ?>
 
+            <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-8 print:hidden">Book Bank History</h3>
+            <div class="bg-gray-50 rounded-lg p-4 print:hidden">
+                <?php
+                if (file_exists('../includes/book_db.php')) {
+                    require_once '../includes/book_db.php';
+                    $bookDb = new BookDatabase();
+                    $bookHistory = $bookDb->getStudentHistory($student['id']);
+                    
+                    if (empty($bookHistory)): ?>
+                        <p class="text-gray-500 italic text-sm">No book history found.</p>
+                    <?php else: ?>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-100 border-b">
+                                    <tr>
+                                        <th class="px-4 py-2">Book Name</th>
+                                        <th class="px-4 py-2">Subject</th>
+                                        <th class="px-4 py-2">Issue Date</th>
+                                        <th class="px-4 py-2">Return Date</th>
+                                        <th class="px-4 py-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($bookHistory as $record): 
+                                        $statusClass = $record['status'] == 'Issued' ? 'text-orange-600' : 'text-green-600';
+                                    ?>
+                                    <tr class="bg-white border-b hover:bg-gray-50">
+                                        <td class="px-4 py-2 font-medium text-gray-900"><?php echo htmlspecialchars($record['book_details']['name'] ?? '-'); ?></td>
+                                        <td class="px-4 py-2 text-gray-600"><?php echo htmlspecialchars($record['book_details']['subject'] ?? '-'); ?></td>
+                                        <td class="px-4 py-2 text-gray-600"><?php echo htmlspecialchars($record['issue_date']); ?></td>
+                                        <td class="px-4 py-2 text-gray-600"><?php echo htmlspecialchars($record['return_date']); ?></td>
+                                        <td class="px-4 py-2 font-bold <?php echo $statusClass; ?>"><?php echo htmlspecialchars($record['status']); ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; 
+                }
+                ?>
+            </div>
+
 <style>
     @media print {
         @page {
@@ -176,7 +218,9 @@ if (!$student) {
             <!-- Photo Box -->
             <div class="w-40 h-48 border-2 border-black flex items-center justify-center overflow-hidden bg-gray-50">
                 <?php if (!empty($student['profile_image'])): ?>
-                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" class="w-full h-full object-cover">
+                    <img src="<?= !empty($student['profile_image']) ? $student['profile_image'] : '../assets/img/default-avatar.png' ?>" 
+                     alt="Profile Image" 
+                     class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110">
                 <?php else: ?>
                     <span class="text-sm text-gray-400 font-medium">Paste Photo</span>
                 <?php endif; ?>

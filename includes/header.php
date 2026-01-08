@@ -78,7 +78,7 @@ if ($currentUserId) {
                         </div>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php']) ? '!flex' : ''; ?>">
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php', 'manage_classes.php']) ? '!flex' : ''; ?>">
                         <a href="<?php echo $base_path; ?>pages/students.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'students.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-list w-4 text-center"></i> Student List
                         </a>
@@ -90,6 +90,9 @@ if ($currentUserId) {
                         </a>
                         <a href="<?php echo $base_path; ?>pages/alumni.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'alumni.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-user-check w-4 text-center"></i> Alumni
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/manage_classes.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'manage_classes.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-chalkboard w-4 text-center"></i> Manage Classes
                         </a>
                         <a href="<?php echo $base_path; ?>pages/print_id_card.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'print_id_card.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                            <i class="fas fa-id-badge w-4 text-center"></i> Print Identity Card
@@ -124,21 +127,60 @@ if ($currentUserId) {
 
                 <!-- Attendance Dropdown -->
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Attendance">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php', 'teacher_attendance.php', 'teacher_attendance_view.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Attendance">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-calendar-check w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Attendance</span>
                         </div>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php']) ? '!flex' : ''; ?>">
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php', 'teacher_attendance.php', 'teacher_attendance_view.php']) ? '!flex' : ''; ?>">
+                        <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest group-[.collapsed]:hidden">Students</div>
                         <a href="<?php echo $base_path; ?>pages/attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-check-square w-4 text-center"></i> Mark Attendance
+                            <i class="fas fa-user-check w-4 text-center text-[10px]"></i> Mark Student
                         </a>
                         <a href="<?php echo $base_path; ?>pages/attendance_view.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'attendance_view.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-list-alt w-4 text-center"></i> View Attendance
+                            <i class="fas fa-list-alt w-4 text-center text-[10px]"></i> Student Reports
+                        </a>
+                        
+                        <div class="px-4 py-2 mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest group-[.collapsed]:hidden">Teachers</div>
+                        <a href="<?php echo $base_path; ?>pages/teacher_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-chalkboard-teacher w-4 text-center text-[10px]"></i> Mark Teacher
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/teacher_attendance_view.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_attendance_view.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-clipboard-user w-4 text-center text-[10px]"></i> Teacher Reports
                         </a>
                     </div>
                 </div>
+
+
+                <!-- Inventory Dropdown -->
+                <div class="flex flex-col w-full group-[.collapsed]:items-center">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['inventory.php', 'inventory_form.php', 'categories.php', 'dead_stock.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Inventory">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-boxes w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                    </button>
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['inventory.php', 'inventory_form.php', 'categories.php', 'dead_stock.php']) ? '!flex' : ''; ?>">
+                        <a href="<?php echo $base_path; ?>pages/inventory.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'inventory.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-list w-4 text-center"></i> Dashboard
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/inventory_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'inventory_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-plus-circle w-4 text-center"></i> Add Item
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/categories.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'categories.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-tags w-4 text-center"></i> Categories
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/dead_stock.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'dead_stock.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-book-dead w-4 text-center"></i> Dead Stock
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Book Bank -->
+                <a href="<?php echo $base_path; ?>pages/book_bank.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['book_bank.php', 'book_bank_actions.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Book Bank">
+                    <i class="fas fa-book w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Book Bank</span>
+                </a>
 
                 <!-- Teachers Dropdown (Admin Only) -->
                 <?php if (isAdmin() || isSuperAdmin()): ?>
@@ -274,7 +316,9 @@ if ($currentUserId) {
                                     <span class="ml-auto text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full"><?php echo $unreadCount; ?></span>
                                 <?php endif; ?>
                             </a>
-                            
+                            <a href="<?php echo $base_path; ?>pages/manage_classes.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-graduation-cap mr-2 w-4"></i> Manage Classes
+                            </a>
                             <a href="<?php echo $base_path; ?>pages/print_slips.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
                                 <i class="fas fa-print mr-2 w-4"></i> Print Result Card
                             </a>

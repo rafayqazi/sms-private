@@ -32,7 +32,7 @@ if ($selectedClass) {
         <select id="classSelect" class="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
             <option value="">Choose a class...</option>
             <?php
-            $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+            $classes = $db->getClassNames();
             foreach ($classes as $c) {
                 $selected = ($selectedClass == $c) ? 'selected' : '';
                 echo "<option value=\"$c\" $selected>$c</option>";

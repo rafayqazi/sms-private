@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <select name="current_class" id="current_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Class</option>
                     <?php
-                    $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+                    $classes = $db->getClassNames();
                     foreach ($classes as $c) {
                         $selected = ($student && $student['current_class'] == $c) ? 'selected' : '';
                         echo "<option value=\"$c\" $selected>$c</option>";
@@ -377,14 +377,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Note: File inputs cannot be set to required dynamically in a simple way that works across all browsers/validation styles, 
         // but we can enforce it server-side or just visually show it. For now, we'll just toggle visibility.
 
+        const classes = <?php echo json_encode($db->getClassNames()); ?>;
+        const lowClasses = classes.slice(0, 2); // First two classes
+
         function toggleFields() {
             const selectedClass = classSelect.value;
-            if (selectedClass && selectedClass !== 'Kachi' && selectedClass !== 'One') {
+            if (selectedClass && !lowClasses.includes(selectedClass)) {
                 prevSchoolSection.classList.remove('hidden');
             } else {
                 prevSchoolSection.classList.add('hidden');
-                // Optional: Clear fields when hidden
-                // prevSchoolInput.value = ''; 
             }
         }
 

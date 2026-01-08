@@ -74,6 +74,7 @@ foreach ($students as $student) {
         <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                 <tr>
+                    <th class="p-4 text-left">S#</th>
                     <th class="p-4 text-left">Father Name</th>
                     <th class="p-4 text-left">Contact</th>
                     <th class="p-4 text-left">CNIC No</th>
@@ -89,8 +90,9 @@ foreach ($students as $student) {
                         <td colspan="7" class="p-8 text-center text-gray-500">No parents found.</td>
                     </tr>
                 <?php else: ?>
-                    <?php foreach ($parents as $key => $parent): ?>
+                    <?php $i = 1; foreach ($parents as $key => $parent): ?>
                     <tr class="hover:bg-gray-50 transition duration-150">
+                        <td class="p-4 text-left text-gray-500 font-medium"><?php echo $i++; ?></td>
                         <td class="p-4 text-left whitespace-nowrap font-medium text-gray-800 capitalize"><?php echo htmlspecialchars($parent['father_name']); ?></td>
                         <td class="p-4 text-left text-gray-600"><?php echo htmlspecialchars($parent['father_contact']); ?></td>
                         <td class="p-4 text-left text-gray-600"><?php echo htmlspecialchars($parent['father_cnic']); ?></td>
@@ -259,7 +261,7 @@ function openParentModal(parent) {
             childCard.innerHTML = `
                 <div class="flex items-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-indigo-300 transition duration-200">
                     <div class="flex-shrink-0 h-12 w-12">
-                        <img class="h-12 w-12 rounded-full object-cover border border-gray-200" src="${imageSrc}" alt="${child.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(child.name)}&background=random'">
+                        <img class="h-12 w-12 rounded-full object-cover object-top border border-gray-200" src="${imageSrc}" alt="${child.name}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(child.name)}&background=random'">
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600">${child.name}</p>

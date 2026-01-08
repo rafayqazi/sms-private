@@ -37,21 +37,83 @@ $overallStats = $attendanceStats['overall'];
 $classStats = $attendanceStats['class_wise'];
 $presentCount = $overallStats['Present'];
 $attendancePercentage = ($totalStudents > 0) ? round(($presentCount / $totalStudents) * 100, 1) : 0;
+
+// New Dashboard Features Data
+$toppers = $db->getToppers(3);
+$birthdays = $db->getBirthdaysToday();
+
+$allInventory = $db->getInventory(['status' => 'Active']);
+$lowStockItems = array_filter($allInventory, function($item) {
+    return (int)$item['quantity'] < 5;
+});
 ?>
 
 <?php include 'includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-    <div class="text-center md:text-left">
-        <h1 class="text-2xl md:text-3xl font-bold">Dashboard</h1>
-        <p class="text-green-100 mt-1">Welcome to GBPS Ali Bux Jarwar</p>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
+    <!-- Decorative background element -->
+    <div class="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+        <i class="fas fa-graduation-cap text-9xl"></i>
     </div>
-    <div class="flex gap-2">
-        <a href="pages/teacher_form.php" class="w-full md:w-auto bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
-            <i class="fas fa-chalkboard-teacher"></i> Add Teacher
+    
+    <div class="text-center md:text-left relative z-10">
+        <h1 class="text-2xl md:text-3xl font-bold">Dashboard</h1>
+        <p class="text-green-100 mt-1 flex items-center justify-center md:justify-start gap-2">
+            <i class="fas fa-university"></i> GBPS Ali Bux Jarwar
+        </p>
+    </div>
+    
+    <div class="flex flex-wrap justify-center gap-3 relative z-10">
+        <a href="pages/attendance.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
+            <i class="fas fa-calendar-check group-hover:scale-110 transition-transform"></i> Attendance
         </a>
-        <a href="pages/student_form.php" class="w-full md:w-auto bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
-            <i class="fas fa-plus-circle"></i> New Admission
+        <a href="pages/results.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
+            <i class="fas fa-poll-h group-hover:scale-110 transition-transform"></i> Add Marks
+        </a>
+        <a href="pages/settings.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
+            <i class="fas fa-cog group-hover:scale-110 transition-transform"></i> Settings
+        </a>
+    </div>
+</div>
+
+<!-- Quick Actions Section -->
+<div class="mb-8 overflow-x-auto pb-2 no-scrollbar">
+    <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-4">
+        <a href="pages/student_form.php" class="flex-1 bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div>
+                <div class="font-bold">Admission</div>
+                <div class="text-xs text-indigo-100">New Student</div>
+            </div>
+        </a>
+        <a href="pages/attendance.php" class="flex-1 bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div>
+                <div class="font-bold">Attendance</div>
+                <div class="text-xs text-emerald-100">Mark Today</div>
+            </div>
+        </a>
+        <a href="pages/results.php" class="flex-1 bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+                <i class="fas fa-file-invoice"></i>
+            </div>
+            <div>
+                <div class="font-bold">Exam Result</div>
+                <div class="text-xs text-amber-100">Add Marks</div>
+            </div>
+        </a>
+        <a href="pages/inventory.php" class="flex-1 bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div>
+                <div class="font-bold">Inventory</div>
+                <div class="text-xs text-purple-100">Manage Stock</div>
+            </div>
         </a>
     </div>
 </div>
@@ -145,6 +207,162 @@ $attendancePercentage = ($totalStudents > 0) ? round(($presentCount / $totalStud
         </div>
     </div>
 </div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+    <!-- Top 3 Toppers Card -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-indigo-100">
+        <div class="bg-indigo-600 p-4 flex items-center justify-between">
+            <h2 class="text-white font-bold flex items-center gap-2">
+                <i class="fas fa-trophy text-yellow-300"></i> Top Performers
+            </h2>
+            <i class="fas fa-award text-indigo-300"></i>
+        </div>
+        <div class="p-4 space-y-4">
+            <?php if (empty($toppers)): ?>
+                <p class="text-gray-500 text-center py-4">No exam data found</p>
+            <?php else: ?>
+                <?php foreach ($toppers as $index => $topper): ?>
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 transition-colors">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-full border-2 <?php echo ($index == 0) ? 'border-yellow-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100">
+                                <?php if ($topper['profile_image']): ?>
+                                    <img src="uploads/<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
+                                <?php else: ?>
+                                    <div class="w-full h-full flex items-center justify-center text-indigo-400 font-bold uppercase">
+                                        <?php echo substr($topper['student_name'], 0, 1); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white shadow-sm font-bold
+                                <?php echo ($index == 0) ? 'bg-yellow-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
+                                <?php echo $index + 1; ?>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-gray-800 truncate"><?php echo htmlspecialchars($topper['student_name']); ?></div>
+                            <div class="text-xs text-gray-500 flex items-center gap-2">
+                                <span>Class: <?php echo htmlspecialchars($topper['current_class']); ?></span>
+                                <span class="bg-indigo-100 text-indigo-700 px-1.5 rounded font-bold"><?php echo $topper['percentage']; ?>%</span>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Inventory Alert Card -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-red-100">
+        <div class="bg-red-500 p-4 flex items-center justify-between">
+            <h2 class="text-white font-bold flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> Low Stock Alerts
+            </h2>
+            <span class="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs"><?php echo count($lowStockItems); ?></span>
+        </div>
+        <div class="p-4">
+            <?php if (empty($lowStockItems)): ?>
+                <div class="text-center py-6">
+                    <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                    <p class="text-gray-500 text-sm">All inventory is well-stocked</p>
+                </div>
+            <?php else: ?>
+                <div class="space-y-3">
+                    <?php foreach ($lowStockItems as $item): ?>
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
+                            <div>
+                                <div class="font-semibold text-gray-800 text-sm"><?php echo htmlspecialchars($item['item_name']); ?></div>
+                                <div class="text-[10px] text-gray-500">Remaining Qty: <span class="text-red-600 font-bold"><?php echo $item['quantity']; ?></span></div>
+                            </div>
+                            <a href="pages/inventory.php" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-arrow-right text-sm"></i>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Birthdays Card -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-pink-100 flex flex-col">
+        <div class="bg-pink-500 p-4 flex items-center justify-between">
+            <h2 class="text-white font-bold flex items-center gap-2">
+                <i class="fas fa-birthday-cake"></i> Birthdays
+            </h2>
+            <i class="fas fa-sparkles text-pink-200"></i>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto max-h-[350px] no-scrollbar">
+            <!-- Today Section -->
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span> Today
+                </h3>
+                <?php if (empty($birthdays['today'])): ?>
+                    <p class="text-gray-400 text-xs text-center py-2">No birthdays today</p>
+                <?php else: ?>
+                    <div class="space-y-4">
+                        <?php foreach ($birthdays['today'] as $bday): ?>
+                            <div class="flex items-center gap-3 bg-pink-50/50 p-2 rounded-lg border border-pink-100/50">
+                                <div class="w-10 h-10 rounded-full bg-pink-100 border border-pink-200 overflow-hidden shrink-0">
+                                    <?php if ($bday['image']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center text-pink-500 font-bold">
+                                            <?php echo substr($bday['name'], 0, 1); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-bold text-gray-800 truncate"><?php echo htmlspecialchars($bday['name']); ?></div>
+                                    <div class="text-[10px] text-gray-500 flex items-center gap-1">
+                                        <i class="fas <?php echo ($bday['type'] == 'teacher') ? 'fa-chalkboard-teacher' : 'fa-user-graduate'; ?>"></i>
+                                        <?php echo htmlspecialchars($bday['class']); ?>
+                                    </div>
+                                    <div class="text-[10px] font-semibold text-pink-600"><?php echo date('d M Y', strtotime($bday['dob'])); ?></div>
+                                </div>
+                                <div class="ml-auto text-xl">🎉</div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Upcoming Section -->
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Upcoming (Next 15 Days)
+                </h3>
+                <?php if (empty($birthdays['upcoming'])): ?>
+                    <p class="text-gray-400 text-xs text-center py-2 italic">Nothing for now</p>
+                <?php else: ?>
+                    <div class="space-y-3">
+                        <?php foreach ($birthdays['upcoming'] as $bday): ?>
+                            <div class="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+                                <div class="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                                    <?php if ($bday['image']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">
+                                            <?php echo substr($bday['name'], 0, 1); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-gray-700 truncate"><?php echo htmlspecialchars($bday['name']); ?></div>
+                                    <div class="text-[9px] text-gray-400"><?php echo htmlspecialchars($bday['class']); ?></div>
+                                </div>
+                                <div class="ml-auto text-[10px] font-bold text-pink-500 bg-pink-50 px-2 py-0.5 rounded">
+                                    <?php echo date('d M', strtotime($bday['dob'])); ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

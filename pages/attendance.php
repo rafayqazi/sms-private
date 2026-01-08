@@ -229,10 +229,10 @@ if ($class) {
             dateInput.addEventListener('change', loadStudents);
 
             // Initial Load if class is selected (or select first class if not)
-            if (!classSelect.value) {
-                 classSelect.selectedIndex = 2; // Select 'One'
+            if (!classSelect.value && classSelect.options.length > 1) {
+                 classSelect.selectedIndex = 1; // Select first available class
                  loadStudents();
-            } else {
+            } else if (classSelect.value) {
                 loadStudents();
             }
         });

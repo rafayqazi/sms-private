@@ -12,6 +12,8 @@ $db = new Database();
 
 $editMode = false;
 $teacher = null;
+$settings = $db->getSchoolSettings();
+
 if (isset($_GET['edit'])) {
     $editMode = true;
     $teacher = $db->getTeacher($_GET['edit']);
@@ -53,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'payment_no' => $_POST['payment_no'],
         'iban' => $_POST['iban'],
         'contact' => str_replace('-', '', $_POST['contact']),
+        'joining_date' => $_POST['joining_date'],
         'retirement_date' => $_POST['retirement_date'],
         'designation' => '', // Removed field
         'department' => $_POST['department'],
@@ -108,70 +111,70 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Name <span class="text-red-500">*</span></label>
-                <input type="text" name="name" required value="<?php echo $editMode ? htmlspecialchars($teacher['name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="name" required value="<?php echo $editMode ? (isset($teacher['name']) ? htmlspecialchars($teacher['name']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Father Name <span class="text-red-500">*</span></label>
-                <input type="text" name="father_name" required value="<?php echo $editMode ? htmlspecialchars($teacher['father_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="father_name" required value="<?php echo $editMode ? (isset($teacher['father_name']) ? htmlspecialchars($teacher['father_name']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Gender <span class="text-red-500">*</span></label>
                 <select name="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Gender</option>
-                    <option value="Male" <?php echo ($editMode && $teacher['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
-                    <option value="Female" <?php echo ($editMode && $teacher['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
+                    <option value="Male" <?php echo ($editMode && isset($teacher['gender']) && $teacher['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
+                    <option value="Female" <?php echo ($editMode && isset($teacher['gender']) && $teacher['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
                 </select>
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">CNIC <span class="text-red-500">*</span></label>
-                <input type="text" name="cnic" id="cnic" required placeholder="xxxxx-xxxxxxx-x" value="<?php echo $editMode ? formatCnic($teacher['cnic']) : ''; ?>" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="cnic" id="cnic" required placeholder="xxxxx-xxxxxxx-x" value="<?php echo $editMode ? (isset($teacher['cnic']) ? formatCnic($teacher['cnic']) : '') : ''; ?>" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                 <small id="cnic_error" class="text-red-500 text-xs hidden"></small>
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Date of Birth <span class="text-red-500">*</span></label>
-                <input type="date" name="dob" id="dob" required value="<?php echo $editMode ? htmlspecialchars($teacher['dob']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="date" name="dob" id="dob" required value="<?php echo $editMode ? (isset($teacher['dob']) ? htmlspecialchars($teacher['dob']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Age (Auto-calculated)</label>
-                <input type="text" name="age" id="age" readonly class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed" value="<?php echo $editMode ? htmlspecialchars($teacher['age']) : ''; ?>">
+                <input type="text" name="age" id="age" readonly class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed" value="<?php echo $editMode ? (isset($teacher['age']) ? htmlspecialchars($teacher['age']) : '') : ''; ?>">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Email <span class="text-red-500">*</span></label>
-                <input type="email" name="email" required value="<?php echo $editMode ? htmlspecialchars($teacher['email']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="email" name="email" required value="<?php echo $editMode ? (isset($teacher['email']) ? htmlspecialchars($teacher['email']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Disability</label>
                 <select name="disability" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                    <option value="No" <?php echo ($editMode && $teacher['disability'] == 'No') ? 'selected' : ''; ?>>No</option>
-                    <option value="Yes" <?php echo ($editMode && $teacher['disability'] == 'Yes') ? 'selected' : ''; ?>>Yes</option>
+                    <option value="No" <?php echo ($editMode && isset($teacher['disability']) && $teacher['disability'] == 'No') ? 'selected' : ''; ?>>No</option>
+                    <option value="Yes" <?php echo ($editMode && isset($teacher['disability']) && $teacher['disability'] == 'Yes') ? 'selected' : ''; ?>>Yes</option>
                 </select>
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Contact No <span class="text-red-500">*</span></label>
-                <input type="text" name="contact" required value="<?php echo $editMode ? formatContact($teacher['contact']) : ''; ?>" placeholder="xxxx-xxxxxxx" maxlength="12" class="contact-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="contact" required value="<?php echo $editMode ? (isset($teacher['contact']) ? formatContact($teacher['contact']) : '') : ''; ?>" placeholder="xxxx-xxxxxxx" maxlength="12" class="contact-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2 lg:col-span-2">
                 <label class="text-sm font-medium text-gray-700">Address <span class="text-red-500">*</span></label>
-                <input type="text" name="address" required value="<?php echo $editMode ? htmlspecialchars($teacher['address']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="address" required value="<?php echo $editMode ? (isset($teacher['address']) ? htmlspecialchars($teacher['address']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">District <span class="text-red-500">*</span></label>
-                <input type="text" name="district" required value="<?php echo $editMode ? htmlspecialchars($teacher['district']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="district" required value="<?php echo $editMode ? (isset($teacher['district']) ? htmlspecialchars($teacher['district']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Tahsil <span class="text-red-500">*</span></label>
-                <input type="text" name="tahsil" required value="<?php echo $editMode ? htmlspecialchars($teacher['tahsil']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="tahsil" required value="<?php echo $editMode ? (isset($teacher['tahsil']) ? htmlspecialchars($teacher['tahsil']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
         </div>
 
@@ -183,46 +186,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Digital Payment / Bank Account number</label>
-                <select name="payment_type" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Digital Payment / Bank Account number <span class="text-red-500">*</span></label>
+                <select name="payment_type" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Type</option>
-                    <option value="Bank" <?php echo ($editMode && $teacher['payment_type'] == 'Bank') ? 'selected' : ''; ?>>Bank</option>
-                    <option value="EasyPaisa" <?php echo ($editMode && $teacher['payment_type'] == 'EasyPaisa') ? 'selected' : ''; ?>>EasyPaisa</option>
-                    <option value="JazzCash" <?php echo ($editMode && $teacher['payment_type'] == 'JazzCash') ? 'selected' : ''; ?>>JazzCash</option>
+                    <option value="Bank" <?php echo ($editMode && isset($teacher['payment_type']) && $teacher['payment_type'] == 'Bank') ? 'selected' : ''; ?>>Bank</option>
+                    <option value="EasyPaisa" <?php echo ($editMode && isset($teacher['payment_type']) && $teacher['payment_type'] == 'EasyPaisa') ? 'selected' : ''; ?>>EasyPaisa</option>
+                    <option value="JazzCash" <?php echo ($editMode && isset($teacher['payment_type']) && $teacher['payment_type'] == 'JazzCash') ? 'selected' : ''; ?>>JazzCash</option>
                 </select>
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Account / Mobile No</label>
-                <input type="text" name="payment_no" value="<?php echo $editMode ? htmlspecialchars($teacher['payment_no']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Account / Mobile No <span class="text-red-500">*</span></label>
+                <input type="text" name="payment_no" required value="<?php echo $editMode ? (isset($teacher['payment_no']) ? htmlspecialchars($teacher['payment_no']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">IBAN</label>
-                <input type="text" name="iban" value="<?php echo $editMode ? htmlspecialchars($teacher['iban']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">IBAN <span class="text-red-500">*</span></label>
+                <input type="text" name="iban" id="iban" required maxlength="24" value="<?php echo $editMode ? (isset($teacher['iban']) ? htmlspecialchars($teacher['iban']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="PK36SCBL0000001123456702">
+                <small id="iban_error" class="text-red-500 text-xs hidden"></small>
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Date of Joining Service</label>
+                <input type="date" name="joining_date" value="<?php echo $editMode ? (isset($teacher['joining_date']) ? $teacher['joining_date'] : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Date of Retirement (Auto-calculated)</label>
-                <input type="date" name="retirement_date" id="retirement_date" readonly class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed" value="<?php echo $editMode ? htmlspecialchars($teacher['retirement_date']) : ''; ?>">
+                <input type="date" name="retirement_date" id="retirement_date" readonly class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed" value="<?php echo $editMode ? (isset($teacher['retirement_date']) ? htmlspecialchars($teacher['retirement_date']) : '') : ''; ?>">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Department</label>
-                <input type="text" name="department" value="<?php echo $editMode ? htmlspecialchars($teacher['department']) : 'Sindh Education and Literacy Department'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Department <span class="text-red-500">*</span></label>
+                <input type="text" name="department" required value="<?php echo $editMode ? (isset($teacher['department']) ? htmlspecialchars($teacher['department']) : 'Sindh Education and Literacy Department') : 'Sindh Education and Literacy Department'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Place of Posting</label>
-                <input type="text" name="posting" value="<?php echo $editMode ? htmlspecialchars($teacher['posting']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Place of Posting <span class="text-red-500">*</span></label>
+                <input type="text" name="posting" required value="<?php echo $editMode ? (isset($teacher['posting']) ? htmlspecialchars($teacher['posting']) : htmlspecialchars($settings['school_name'])) : htmlspecialchars($settings['school_name']); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">BPS (Pay Scale)</label>
-                <select name="basic_scale" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">BPS (Pay Scale) <span class="text-red-500">*</span></label>
+                <select name="basic_scale" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select BPS</option>
                     <?php for($i = 1; $i <= 22; $i++): ?>
-                        <option value="<?php echo $i; ?>" <?php echo ($editMode && $teacher['basic_scale'] == $i) ? 'selected' : ''; ?>><?php echo $i; ?></option>
+                        <option value="<?php echo $i; ?>" <?php echo (($editMode && isset($teacher['basic_scale']) && $teacher['basic_scale'] == $i) || (!$editMode && $i == 14)) ? 'selected' : ''; ?>><?php echo $i; ?></option>
                     <?php endfor; ?>
                 </select>
             </div>
@@ -271,6 +280,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     const cnicInput = document.getElementById('cnic');
     const cnicError = document.getElementById('cnic_error');
     const submitBtn = document.getElementById('submitBtn');
+    
+    // START IBAN VALIDATION SETUP
+    const ibanInput = document.getElementById('iban');
+    const ibanError = document.getElementById('iban_error');
+
+    function checkFormValidity() {
+        const isCnicInvalid = !cnicError.classList.contains('hidden');
+        const isIbanInvalid = ibanError ? !ibanError.classList.contains('hidden') : false;
+        
+        if (isCnicInvalid || isIbanInvalid) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    // END IBAN VALIDATION SETUP
+
     let cnicDebounceTimer;
 
     cnicInput.addEventListener('input', function(e) {
@@ -301,22 +329,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (data.exists) {
                             cnicError.textContent = 'Error: This CNIC is already registered to another teacher.';
                             cnicError.classList.remove('hidden');
-                            submitBtn.disabled = true;
                             cnicInput.classList.add('border-red-500');
                         } else {
                             cnicError.classList.add('hidden');
-                            submitBtn.disabled = false;
                             cnicInput.classList.remove('border-red-500');
                         }
+                        checkFormValidity();
                     })
                     .catch(err => console.error('Error checking CNIC:', err));
             }, 500);
         } else {
             cnicError.classList.add('hidden');
-            submitBtn.disabled = false;
             cnicInput.classList.remove('border-red-500');
+            checkFormValidity();
         }
     });
+
+    // IBAN Real-time Validation Logic
+    if (ibanInput) {
+        ibanInput.addEventListener('input', function(e) {
+            // Remove spaces and special chars (keep alphanumeric), convince to Uppercase
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            e.target.value = value;
+
+            // Regex for Pakistan IBAN: PK + 2 digits + 4 letters + 16 digits
+            const pkIbanRegex = /^PK\d{2}[A-Z]{4}\d{16}$/;
+
+            if (value.length > 0) {
+                if (!pkIbanRegex.test(value)) {
+                    ibanError.textContent = 'Invalid IBAN: Must be PK + 2 digits + 4 letters + 16 digits (24 chars).';
+                    ibanError.classList.remove('hidden');
+                    ibanInput.classList.add('border-red-500');
+                } else {
+                    ibanError.classList.add('hidden');
+                    ibanInput.classList.remove('border-red-500');
+                }
+            } else {
+                // If empty, assume valid (since not marked required in DB logic, though field might need it)
+                ibanError.classList.add('hidden');
+                ibanInput.classList.remove('border-red-500');
+            }
+            checkFormValidity();
+        });
+    }
 
     // Contact Formatting Logic
     const contactInputs = document.querySelectorAll('.contact-input');

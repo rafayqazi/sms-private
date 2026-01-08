@@ -53,6 +53,7 @@ usort($alumniStudents, function($a, $b) {
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                    <th class="p-4">S#</th>
                     <th class="p-4">GR No</th>
                     <th class="p-4">Student Name</th>
                     <th class="p-4">Father Name</th>
@@ -63,15 +64,16 @@ usort($alumniStudents, function($a, $b) {
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <?php foreach ($alumniStudents as $student): 
+                <?php $i = 1; foreach ($alumniStudents as $student): 
                     $graduationYear = isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : 'N/A';
                 ?>
                 <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 text-gray-500 font-medium"><?php echo $i++; ?></td>
                     <td class="p-4 text-gray-700 font-medium"><?php echo htmlspecialchars($student['gr_no']); ?></td>
                     <td class="p-4 text-gray-800 font-semibold">
                         <div class="flex items-center gap-3">
                             <?php if (!empty($student['profile_image'])): ?>
-                                <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-8 h-8 rounded-full object-cover">
+                                <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-8 h-8 rounded-full object-cover object-top">
                             <?php else: ?>
                                 <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">
                                     <?php echo strtoupper(substr($student['student_name'], 0, 1)); ?>

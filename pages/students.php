@@ -24,6 +24,7 @@ $students = $db->filterStudents($filters);
 ?>
 
 <?php include '../includes/header.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div class="text-center md:text-left">
@@ -35,6 +36,26 @@ $students = $db->filterStudents($filters);
     </a>
 </div>
 
+<!-- Charts Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-venus-mars text-indigo-500"></i> Gender Distribution
+        </h3>
+        <div class="relative h-64">
+            <canvas id="genderChart"></canvas>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-green-500">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-users-class text-green-500"></i> Class Distribution
+        </h3>
+        <div class="relative h-64">
+            <canvas id="classChart"></canvas>
+        </div>
+    </div>
+</div>
+
 <div class="bg-white rounded-lg shadow-lg p-6">
     <div class="mb-6">
         <form id="filterForm" action="" method="GET" class="flex flex-col md:flex-row flex-wrap gap-4 items-end" onsubmit="return false;">
@@ -43,7 +64,7 @@ $students = $db->filterStudents($filters);
                 <select name="class" id="filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                     <option value="">All Classes</option>
                     <?php
-                    $classes = ['Kachi', 'One', 'Two', 'Three', 'Four', 'Five'];
+                    $classes = $db->getClassNames();
                     foreach ($classes as $c) {
                         $selected = ($classFilter == $c) ? 'selected' : '';
                         echo "<option value=\"$c\" $selected>$c</option>";
@@ -76,10 +97,32 @@ $students = $db->filterStudents($filters);
         </form>
     </div>
 
+    <!-- Bulk Actions -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <select id="bulkActionSelect" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm">
+                <option value="">Bulk Actions</option>
+                <option value="delete">Delete Selected</option>
+                <option value="mark_alumni">Mark as Alumni</option>
+                <option value="mark_active">Mark as Active</option>
+                <option value="mark_repeater">Mark as Repeater</option>
+                <option value="unmark_repeater">Unmark as Repeater</option>
+                <option value="generate_ids">Generate ID Cards</option>
+            </select>
+            <button id="applyBulkAction" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-300 text-sm font-semibold shadow-sm flex items-center gap-2">
+                <i class="fas fa-check-circle"></i> Apply
+            </button>
+        </div>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                    <th class="p-4 w-10">
+                        <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                    </th>
+                    <th class="p-4 text-gray-500 font-semibold">S#</th>
                     <th id="sort-gr" class="p-4 cursor-pointer hover:bg-gray-100 transition-colors select-none group">
                         <div class="flex items-center gap-2">
                             GR No <i class="fas fa-sort text-gray-400 group-hover:text-gray-600" id="sort-icon"></i>
@@ -96,7 +139,8 @@ $students = $db->filterStudents($filters);
             <tbody id="students-table-body" class="divide-y divide-gray-100">
                 <?php if (empty($students)): ?>
                     <tr>
-                        <td colspan="7" class="p-8 text-center text-gray-500">
+                    <tr>
+                        <td colspan="9" class="p-8 text-center text-gray-500">
                             <div class="flex flex-col items-center gap-2">
                                 <i class="fas fa-search text-4xl text-gray-300"></i>
                                 <p>No students found matching your criteria.</p>
@@ -104,13 +148,22 @@ $students = $db->filterStudents($filters);
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php foreach ($students as $student): ?>
+                    <?php 
+                    $serial = 1;
+                    foreach ($students as $student): 
+                    ?>
                     <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4">
+                            <input type="checkbox" name="student_ids[]" value="<?php echo htmlspecialchars($student['id']); ?>" class="student-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                        </td>
+                        <td class="p-4 text-gray-500 font-medium"><?php echo $serial++; ?></td>
                         <td class="p-4 text-gray-700 font-medium"><?php echo htmlspecialchars($student['gr_no']); ?></td>
                         <td class="p-4 text-gray-800 font-semibold capitalize">
                             <div class="flex items-center gap-3">
                                 <?php if (!empty($student['profile_image'])): ?>
-                                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-8 h-8 rounded-full object-cover">
+                                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" 
+                                                 alt="" 
+                                                 class="h-8 w-8 rounded-full border-2 border-white shadow-sm object-cover object-top">
                                 <?php else: ?>
                                     <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
                                         <?php echo strtoupper(substr($student['student_name'], 0, 1)); ?>
@@ -163,6 +216,95 @@ $students = $db->filterStudents($filters);
         </table>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAll = document.getElementById('selectAll');
+        const applyBtn = document.getElementById('applyBulkAction');
+        const actionSelect = document.getElementById('bulkActionSelect');
+
+        // Select All Logic - Query dynamically to handle filtered results
+        if(selectAll) {
+            selectAll.addEventListener('change', function() {
+                const currentCheckboxes = document.querySelectorAll('.student-checkbox');
+                currentCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+            });
+        }
+
+        // Apply Action Logic
+        if(applyBtn) {
+            applyBtn.addEventListener('click', function() {
+                const action = actionSelect.value;
+                if (!action) {
+                    showModal('warning', 'Action Required', 'Please select an action.');
+                    return;
+                }
+
+                const currentCheckboxes = document.querySelectorAll('.student-checkbox');
+                const selectedIds = Array.from(currentCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                if (selectedIds.length === 0) {
+                    showModal('warning', 'Selection Required', 'Please select at least one item.');
+                    return;
+                }
+
+                if (action === 'delete' || action === 'mark_alumni' || action === 'mark_active' || action === 'mark_repeater' || action === 'unmark_repeater') {
+                    let confirmTitle = 'Confirm Action';
+                    let confirmMsg = `Are you sure you want to apply this action to ${selectedIds.length} student(s)?`;
+                    
+                    if (action === 'delete') {
+                        confirmTitle = 'Confirm Deletion';
+                        confirmMsg = `Are you sure you want to delete ${selectedIds.length} student(s)? This action cannot be undone.`;
+                    }
+
+                    showConfirmationModal(
+                        confirmTitle,
+                        confirmMsg,
+                        function() {
+                            fetch('../api/bulk_action.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    type: 'student',
+                                    action: action,
+                                    ids: selectedIds
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success') {
+                                    showModal('success', 'Success', data.message);
+                                    setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    showModal('error', 'Error', data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                showModal('error', 'Error', 'An error occurred while processing your request.');
+                            });
+                        }
+                    );
+                } else if (action === 'generate_ids') {
+                    // Collect GR Numbers for selected IDs
+                    const selectedGrNos = Array.from(currentCheckboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => {
+                            const row = cb.closest('tr');
+                            return row.cells[2].textContent.trim(); // GR No is in the 3rd column (index 2)
+                        });
+                    
+                    const url = `generate_id_card.php?gr_no=${selectedGrNos.join(',')}`;
+                    window.open(url, '_blank');
+                }
+            });
+        }
+    });
+</script>
 
 <script>
     const API_BASE_URL = '../api/';
