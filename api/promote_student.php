@@ -22,7 +22,7 @@ $studentId = $data['id'];
 $action = $data['action'];
 
 // Validate action
-if (!in_array($action, ['pass', 'fail', 'stay'])) {
+if (!in_array($action, ['pass', 'fail', 'stay', 'passout'])) {
     echo json_encode(['error' => 'Invalid action']);
     exit;
 }

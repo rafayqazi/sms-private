@@ -40,6 +40,8 @@ $attendancePercentage = ($totalStudents > 0) ? round(($presentCount / $totalStud
 
 // New Dashboard Features Data
 $toppers = $db->getToppers(3);
+$attendanceToppers = $db->getTopAttendancePerformers(3);
+$classPerfStats = $db->getClassPerformanceStats(3);
 $birthdays = $db->getBirthdaysToday();
 
 $allInventory = $db->getInventory(['status' => 'Active']);
@@ -119,46 +121,46 @@ $lowStockItems = array_filter($allInventory, function($item) {
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <a href="pages/students.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
-        <div class="text-3xl font-bold text-gray-800"><?php echo $totalStudents; ?></div>
+    <a href="pages/students.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
+        <div class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $totalStudents; ?></div>
     </a>
-    <a href="pages/students.php?gender=Male" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Male</div>
-        <div class="text-3xl font-bold text-blue-600"><?php echo $maleCount; ?></div>
+    <a href="pages/students.php?gender=Male" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-blue-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Male</div>
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400"><?php echo $maleCount; ?></div>
     </a>
-    <a href="pages/students.php?gender=Female" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-pink-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Female</div>
-        <div class="text-3xl font-bold text-pink-600"><?php echo $femaleCount; ?></div>
+    <a href="pages/students.php?gender=Female" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-pink-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Female</div>
+        <div class="text-3xl font-bold text-pink-600 dark:text-pink-400"><?php echo $femaleCount; ?></div>
     </a>
     
     <!-- Row 2 -->
-    <a href="pages/alumni.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Alumni Students</div>
-        <div class="text-3xl font-bold text-purple-600"><?php echo $alumniCount; ?></div>
+    <a href="pages/alumni.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-purple-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Alumni Students</div>
+        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400"><?php echo $alumniCount; ?></div>
     </a>
-    <a href="pages/assign_roles.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Teaching Staff</div>
-        <div class="text-3xl font-bold text-amber-600"><?php echo $teacherCount; ?></div>
+    <a href="pages/assign_roles.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-amber-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Teaching Staff</div>
+        <div class="text-3xl font-bold text-amber-600 dark:text-amber-400"><?php echo $teacherCount; ?></div>
     </a>
-    <a href="pages/attendance.php" class="bg-white p-6 rounded-lg shadow-md border-l-4 border-teal-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 text-sm font-medium uppercase tracking-wider mb-1">Today's Attendance</div>
-        <div class="text-3xl font-bold text-teal-600">
+    <a href="pages/attendance.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-teal-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
+        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Today's Attendance</div>
+        <div class="text-3xl font-bold text-teal-600 dark:text-teal-400">
             <?php if ($attendanceStats['is_today']): ?>
-                <?php echo $presentCount; ?> <span class="text-lg text-gray-400 font-normal">(<?php echo $attendancePercentage; ?>%)</span>
+                <?php echo $presentCount; ?> <span class="text-lg text-gray-400 dark:text-gray-500 font-normal">(<?php echo $attendancePercentage; ?>%)</span>
             <?php else: ?>
-                <span class="text-2xl text-gray-400">Unmarked</span>
+                <span class="text-2xl text-gray-400 dark:text-gray-500">Unmarked</span>
             <?php endif; ?>
         </div>
     </a>
 </div>
 
-<div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mt-8">
-    <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Attendance Insights</h2>
+<div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 md:p-6 mt-8 border border-gray-100 dark:border-gray-800">
+    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b dark:border-gray-800 pb-2">Attendance Insights</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Overall Attendance Pie Chart -->
-        <div class="bg-gray-50 p-4 rounded-xl shadow-inner border border-gray-100">
-            <h3 class="text-center mb-4 font-semibold text-gray-700">Overall Attendance Status</h3>
+        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl shadow-inner border border-gray-100 dark:border-gray-700">
+            <h3 class="text-center mb-4 font-semibold text-gray-700 dark:text-gray-300">Overall Attendance Status</h3>
             <?php if (!$attendanceStats['is_today']): ?>
                 <div class="relative h-[300px] flex items-center justify-center">
                     <div class="text-center w-full">
@@ -174,8 +176,8 @@ $lowStockItems = array_filter($allInventory, function($item) {
         </div>
 
         <!-- Class-wise Attendance Bar Chart -->
-        <div class="bg-gray-50 p-4 rounded-xl shadow-inner border border-gray-100">
-            <h3 class="text-center mb-4 font-semibold text-gray-700">Class-wise Presence</h3>
+        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl shadow-inner border border-gray-100 dark:border-gray-700">
+            <h3 class="text-center mb-4 font-semibold text-gray-700 dark:text-gray-300">Class-wise Presence</h3>
             <?php if (!$attendanceStats['is_today']): ?>
                 <!-- Show Attendance Unmarked Message -->
                 <div class="relative h-[300px] flex items-center justify-center">
@@ -210,44 +212,132 @@ $lowStockItems = array_filter($allInventory, function($item) {
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
     <!-- Top 3 Toppers Card -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-indigo-100">
-        <div class="bg-indigo-600 p-4 flex items-center justify-between">
-            <h2 class="text-white font-bold flex items-center gap-2">
+    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden border border-indigo-100 dark:border-gray-800 flex flex-col">
+        <div class="bg-indigo-600 dark:bg-indigo-900 p-4 flex items-center justify-between">
+            <h2 class="text-white dark:text-gray-100 font-bold flex items-center gap-2">
                 <i class="fas fa-trophy text-yellow-300"></i> Top Performers
             </h2>
-            <i class="fas fa-award text-indigo-300"></i>
+            <i class="fas fa-award text-indigo-300 dark:text-indigo-400"></i>
         </div>
-        <div class="p-4 space-y-4">
-            <?php if (empty($toppers)): ?>
-                <p class="text-gray-500 text-center py-4">No exam data found</p>
-            <?php else: ?>
-                <?php foreach ($toppers as $index => $topper): ?>
-                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 transition-colors">
-                        <div class="relative">
-                            <div class="w-12 h-12 rounded-full border-2 <?php echo ($index == 0) ? 'border-yellow-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100">
-                                <?php if ($topper['profile_image']): ?>
-                                    <img src="uploads/<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
-                                <?php else: ?>
-                                    <div class="w-full h-full flex items-center justify-center text-indigo-400 font-bold uppercase">
-                                        <?php echo substr($topper['student_name'], 0, 1); ?>
+        
+        <!-- Tabs -->
+        <div class="flex border-b border-indigo-100 dark:border-gray-800">
+            <button onclick="switchTopperTab('academic')" id="tab-academic" class="flex-1 py-3 text-[9px] font-bold uppercase tracking-tighter transition-all border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/30 dark:bg-indigo-950/20 dark:text-indigo-400">
+                Academic
+            </button>
+            <button onclick="switchTopperTab('attendance')" id="tab-attendance" class="flex-1 py-3 text-[9px] font-bold uppercase tracking-tighter transition-all border-b-2 border-transparent text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800">
+                Attendance
+            </button>
+            <button onclick="switchTopperTab('classwise')" id="tab-classwise" class="flex-1 py-3 text-[9px] font-bold uppercase tracking-tighter transition-all border-b-2 border-transparent text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800">
+                Class-wise
+            </button>
+        </div>
+
+        <div class="p-4 space-y-4 flex-1">
+            <!-- Academic Toppers -->
+            <div id="content-academic" class="topper-content space-y-4">
+                <?php if (empty($toppers)): ?>
+                    <p class="text-gray-400 text-center py-6 text-xs italic">No exam data found</p>
+                <?php else: ?>
+                    <?php foreach ($toppers as $index => $topper): ?>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-yellow-400' : 'border-gray-200 dark:border-gray-700'; ?> overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
+                                    <?php if ($topper['profile_image']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center text-indigo-400 dark:text-indigo-300 font-bold uppercase text-sm">
+                                            <?php echo substr($topper['student_name'], 0, 1); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold
+                                    <?php echo ($index == 0) ? 'bg-yellow-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
+                                    <?php echo $index + 1; ?>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-800 dark:text-gray-200 truncate text-sm"><?php echo htmlspecialchars($topper['student_name']); ?></div>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                    <span class="truncate">Class: <?php echo htmlspecialchars($topper['current_class']); ?></span>
+                                    <span class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 px-1.5 rounded font-bold ml-auto shrink-0"><?php echo $topper['percentage']; ?>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <!-- Attendance Toppers -->
+            <div id="content-attendance" class="topper-content hidden space-y-4">
+                <?php if (empty($attendanceToppers)): ?>
+                    <p class="text-gray-400 text-center py-6 text-xs italic">No attendance records found</p>
+                <?php else: ?>
+                    <?php foreach ($attendanceToppers as $index => $atopper): ?>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 transition-colors group">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-emerald-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <?php if ($atopper['profile_image']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($atopper['profile_image']); ?>" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center text-emerald-400 font-bold uppercase text-sm">
+                                            <?php echo substr($atopper['student_name'], 0, 1); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold
+                                    <?php echo ($index == 0) ? 'bg-emerald-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
+                                    <?php echo $index + 1; ?>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-800 truncate text-sm group-hover:text-emerald-700 transition-colors"><?php echo htmlspecialchars($atopper['student_name']); ?></div>
+                                <div class="text-[10px] text-gray-500 flex items-center gap-2">
+                                    <span class="truncate">Class: <?php echo htmlspecialchars($atopper['current_class']); ?></span>
+                                    <span class="bg-emerald-100 text-emerald-700 px-1.5 rounded font-bold ml-auto shrink-0"><?php echo $atopper['percentage']; ?>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    <div class="text-[9px] text-center text-gray-400 pt-2 border-t border-gray-50 italic">Based on overall presence percentage</div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Class-wise Performance -->
+            <div id="content-classwise" class="topper-content hidden space-y-4">
+                <?php if (empty($classPerfStats)): ?>
+                    <p class="text-gray-400 text-center py-6 text-xs italic">No result data available</p>
+                <?php else: ?>
+                    <?php foreach ($classPerfStats as $index => $cs): ?>
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-50 transition-colors group">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-primary' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <?php if ($cs['topper_img']): ?>
+                                        <img src="uploads/<?php echo htmlspecialchars($cs['topper_img']); ?>" class="w-full h-full object-cover">
+                                    <?php else: ?>
+                                        <div class="w-full h-full flex items-center justify-center text-primary font-bold uppercase text-sm">
+                                            <?php echo substr($cs['class_name'], 0, 1); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold bg-primary border border-white">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-800 truncate text-sm">Class <?php echo htmlspecialchars($cs['class_name']); ?></div>
+                                <div class="text-[10px] text-gray-500 flex flex-col">
+                                    <span class="truncate italic">Topper: <?php echo htmlspecialchars($cs['topper_name']); ?> (<?php echo $cs['top_percent']; ?>%)</span>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-primary font-bold">Avg: <?php echo $cs['avg_percentage']; ?>%</span>
                                     </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white shadow-sm font-bold
-                                <?php echo ($index == 0) ? 'bg-yellow-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
-                                <?php echo $index + 1; ?>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-bold text-gray-800 truncate"><?php echo htmlspecialchars($topper['student_name']); ?></div>
-                            <div class="text-xs text-gray-500 flex items-center gap-2">
-                                <span>Class: <?php echo htmlspecialchars($topper['current_class']); ?></span>
-                                <span class="bg-indigo-100 text-indigo-700 px-1.5 rounded font-bold"><?php echo $topper['percentage']; ?>%</span>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    <?php endforeach; ?>
+                    <div class="text-[9px] text-center text-gray-400 pt-2 border-t border-gray-50 italic">Top classes based on average student score</div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -573,26 +663,53 @@ $lowStockItems = array_filter($allInventory, function($item) {
     100% { transform: scale(1); opacity: 1; }
 }
 </style>
+<?php 
+    unset($_SESSION['show_welcome_animation']);
+endif; 
+?>
 
 <script>
+function switchTopperTab(tab) {
+    // Buttons
+    const academicBtn = document.getElementById('tab-academic');
+    const attendanceBtn = document.getElementById('tab-attendance');
+    const classwiseBtn = document.getElementById('tab-classwise');
+    
+    if (!academicBtn || !attendanceBtn || !classwiseBtn) return;
+
+    academicBtn.classList.remove('border-indigo-600', 'text-indigo-600', 'bg-indigo-50/30');
+    academicBtn.classList.add('border-transparent', 'text-gray-400');
+    
+    attendanceBtn.classList.remove('border-indigo-600', 'text-indigo-600', 'bg-indigo-50/30');
+    attendanceBtn.classList.add('border-transparent', 'text-gray-400');
+
+    classwiseBtn.classList.remove('border-indigo-600', 'text-indigo-600', 'bg-indigo-50/30');
+    classwiseBtn.classList.add('border-transparent', 'text-gray-400');
+    
+    // Active Button
+    const activeBtn = document.getElementById('tab-' + tab);
+    if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-gray-400');
+        activeBtn.classList.add('border-indigo-600', 'text-indigo-600', 'bg-indigo-50/30');
+    }
+    
+    // Contents
+    document.querySelectorAll('.topper-content').forEach(el => el.classList.add('hidden'));
+    const content = document.getElementById('content-' + tab);
+    if (content) content.classList.remove('hidden');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('welcome-overlay');
-    
-    // Play sound if desired (optional, browser policies might block)
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        overlay.style.opacity = '0';
+    if (overlay) {
         setTimeout(() => {
-            overlay.remove();
-        }, 1000); // Wait for fade out
-    }, 3000);
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.remove();
+            }, 1000);
+        }, 3000);
+    }
 });
 </script>
-<?php 
-    // Unset the session variable so it doesn't show again on refresh
-    unset($_SESSION['show_welcome_animation']); 
-?>
-<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>

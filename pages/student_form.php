@@ -186,10 +186,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
                         <i class="fas fa-camera"></i>
-                        <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" <?php echo ($student && !empty($student['profile_image'])) ? '' : 'required'; ?> onchange="previewImage(this)">
+                        <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(this)">
                     </label>
                 </div>
-                <p class="text-sm text-gray-500 mt-2">Upload Student Photo <span class="text-red-500">*</span></p>
+                <p class="text-sm text-gray-500 mt-2">Upload Student Photo</p>
             </div>
 
             <div class="flex flex-col space-y-2">
@@ -320,8 +320,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father CNIC (Front) <span class="text-red-500">*</span></label>
-                <input type="file" name="father_cnic_front" id="father_cnic_front" accept="image/*" <?php echo ($student && !empty($student['father_cnic_front'])) ? '' : 'required'; ?> class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <label class="text-sm font-medium text-gray-700">Father CNIC (Front)</label>
+                <input type="file" name="father_cnic_front" id="father_cnic_front" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 <div id="father_cnic_front_preview" class="mt-2">
                     <?php if ($student && !empty($student['father_cnic_front'])): ?>
                         <small class="text-gray-500">Current: <a href="<?php echo $student['father_cnic_front']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
@@ -330,8 +330,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father CNIC (Back) <span class="text-red-500">*</span></label>
-                <input type="file" name="father_cnic_back" id="father_cnic_back" accept="image/*" <?php echo ($student && !empty($student['father_cnic_back'])) ? '' : 'required'; ?> class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <label class="text-sm font-medium text-gray-700">Father CNIC (Back)</label>
+                <input type="file" name="father_cnic_back" id="father_cnic_back" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 <div id="father_cnic_back_preview" class="mt-2">
                     <?php if ($student && !empty($student['father_cnic_back'])): ?>
                         <small class="text-gray-500">Current: <a href="<?php echo $student['father_cnic_back']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
@@ -340,8 +340,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">B-Form / CRC Image <span class="text-red-500">*</span></label>
-                <input type="file" name="b_form_img" accept="image/*" <?php echo ($student && !empty($student['b_form_img'])) ? '' : 'required'; ?> class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <label class="text-sm font-medium text-gray-700">B-Form / CRC Image</label>
+                <input type="file" name="b_form_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 <?php if ($student && !empty($student['b_form_img'])): ?>
                     <small class="text-gray-500">Current: <a href="<?php echo $student['b_form_img']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
                 <?php endif; ?>
@@ -463,10 +463,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         cnicStatus.textContent = 'New Parent (Not found in database)';
                         cnicStatus.className = 'text-xs text-gray-500';
                         
-                        // Reset file requirements if it's a new admission (no ID)
                         <?php if (!$id): ?>
-                        cnicFrontInput.setAttribute('required', 'required');
-                        cnicBackInput.setAttribute('required', 'required');
                         cnicFrontPreview.innerHTML = '';
                         cnicBackPreview.innerHTML = '';
                         <?php endif; ?>

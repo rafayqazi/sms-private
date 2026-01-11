@@ -132,9 +132,9 @@ if ($selectedClass && $selectedExam && $selectedYear) {
 
 <?php include '../includes/header.php'; ?>
 
-<div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6">
-    <h1 class="text-3xl font-bold">Manage Results</h1>
-    <p class="text-green-100 mt-1">Enter and view student results</p>
+<div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6">
+    <h1 class="text-2xl md:text-3xl font-bold">Manage Results</h1>
+    <p class="text-sm md:text-base text-green-100 mt-1">Enter and view student results</p>
 </div>
 
 <?php if ($message): ?>
@@ -148,8 +148,8 @@ if ($selectedClass && $selectedExam && $selectedYear) {
     </div>
 <?php endif; ?>
 
-<div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <form method="GET" class="flex flex-col md:flex-row flex-wrap gap-4 items-end" id="filterForm">
+<div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+    <form method="GET" class="flex flex-col md:flex-row flex-wrap gap-3 md:gap-4 items-stretch md:items-end" id="filterForm">
         <div class="flex flex-col gap-1 w-full md:w-auto md:min-w-[200px]">
             <label class="text-sm font-medium text-gray-700">Class</label>
             <select name="class" id="classSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" required>
@@ -173,14 +173,19 @@ if ($selectedClass && $selectedExam && $selectedYear) {
         </div>
         <!-- Load Students Button Removed -->
         
-        <div class="flex flex-col gap-1 w-full md:w-auto ml-auto flex-row items-end">
-            <!-- Reset Button Triggers Modal -->
-            <button type="button" onclick="document.getElementById('resetConfirmModal').classList.remove('hidden')" class="<?= ($selectedClass && $selectedExam && $selectedYear && !empty($existingResults)) ? '' : 'hidden' ?> bg-red-100 text-red-700 border border-red-200 px-4 py-2 rounded-md hover:bg-red-200 transition duration-200 flex items-center mr-2">
-                <i class="fas fa-undo mr-2"></i> Reset Result
+        <div class="flex flex-wrap gap-2 w-full md:w-auto md:ml-auto items-center justify-center md:justify-end mt-4 md:mt-0">
+            <!-- Reset Button for Inputs -->
+            <button type="button" onclick="zeroAllMarks()" class="<?= ($selectedClass && !empty($students)) ? '' : 'hidden' ?> bg-orange-100 text-orange-700 border border-orange-200 px-4 py-2 rounded-md hover:bg-orange-200 transition duration-200 flex items-center whitespace-nowrap text-sm">
+                <i class="fas fa-undo mr-2 text-xs"></i> Reset results
             </button>
 
-             <button type="button" onclick="document.getElementById('addSubjectModal').classList.remove('hidden')" class="<?= ($selectedClass && $selectedExam && $selectedYear) ? '' : 'hidden' ?> bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-md hover:bg-indigo-200 transition duration-200 flex items-center">
-                <i class="fas fa-plus mr-2"></i> Add Subject
+            <!-- Reset Button Triggers Modal (Database) -->
+            <button type="button" onclick="document.getElementById('resetConfirmModal').classList.remove('hidden')" class="<?= ($selectedClass && $selectedExam && $selectedYear && !empty($existingResults)) ? '' : 'hidden' ?> bg-red-100 text-red-700 border border-red-200 px-4 py-2 rounded-md hover:bg-red-200 transition duration-200 flex items-center whitespace-nowrap text-sm">
+                <i class="fas fa-trash-alt mr-2 text-xs"></i> Clear Database
+            </button>
+
+             <button type="button" onclick="document.getElementById('addSubjectModal').classList.remove('hidden')" class="<?= ($selectedClass && $selectedExam && $selectedYear) ? '' : 'hidden' ?> bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-md hover:bg-indigo-200 transition duration-200 flex items-center whitespace-nowrap text-sm">
+                <i class="fas fa-plus mr-2 text-xs"></i> Add Subject
             </button>
         </div>
     </form>
@@ -273,7 +278,7 @@ if ($selectedClass && $selectedExam && $selectedYear) {
 </div>
 
 <?php if (!empty($students)): ?>
-<div class="bg-white rounded-lg shadow-lg overflow-hidden">
+<div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
     <!-- Save Results Form -->
     <form method="POST">
         <input type="hidden" name="class" id="hiddenClass" value="<?= $selectedClass ?>">
@@ -284,9 +289,9 @@ if ($selectedClass && $selectedExam && $selectedYear) {
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 w-16 min-w-[4rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">S#</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50 z-20 w-24 min-w-[6rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">GR NO</th>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-40 bg-gray-50 z-20 w-64 min-w-[16rem] shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">NAME</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 w-12 min-w-[3rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">S#</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[3rem] bg-gray-50 z-20 w-20 min-w-[5rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">GR NO</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[8rem] bg-gray-50 z-20 w-48 min-w-[12rem] shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">NAME</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">ENG</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">MATH</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">Social Studies</th>
@@ -309,9 +314,9 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         $otherSubjects = ($result && isset($result['other_subjects'])) ? json_decode($result['other_subjects'], true) : [];
                     ?>
                     <tr>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 font-medium sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-16 min-w-[4rem]"><?= $i++ ?></td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-16 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-24 min-w-[6rem]"><?= $student['gr_no'] ?></td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 sticky left-40 bg-white z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] w-64 min-w-[16rem]"><?= $student['student_name'] ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 font-medium sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-12 min-w-[3rem]"><?= $i++ ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-[3rem] bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-20 min-w-[5rem]"><?= $student['gr_no'] ?></td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 sticky left-[8rem] bg-white z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] w-48 min-w-[12rem]"><?= $student['student_name'] ?></td>
                         
                         <td class="px-2 py-2">
                             <div class="flex items-center gap-1">
@@ -528,6 +533,21 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateResults(row);
         });
     });
+
+    window.zeroAllMarks = function() {
+        if (confirm('Are you sure you want to set all marks to 0? This will clear all current entries on this screen.')) {
+            document.querySelectorAll('.mark-input').forEach(input => {
+                input.value = '0';
+                input.removeAttribute('readonly');
+            });
+            document.querySelectorAll('.absent-check').forEach(check => {
+                check.checked = false;
+            });
+            document.querySelectorAll('tbody tr').forEach(row => {
+                calculateResults(row);
+            });
+        }
+    }
 
     const classSelect = document.getElementById('classSelect');
     const examSelect = document.getElementById('examSelect');

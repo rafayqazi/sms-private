@@ -1,6 +1,15 @@
             </div> <!-- End Page Content Wrapper -->
             <footer class="mt-8 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
                 <p>Application created by <span class="font-semibold text-indigo-600">Abdul Rafay Qazi</span> and all rights reserved 2025 &copy;</p>
+                <div class="mt-2 flex justify-center gap-4">
+                    <a href="<?php echo $base_path; ?>pages/license.php" class="text-indigo-500 hover:text-indigo-700 hover:underline flex items-center gap-1">
+                        <i class="fas fa-file-contract"></i> Software License
+                    </a>
+                    <span class="text-gray-300">|</span>
+                    <a href="mailto:abdulrafehqazi@gmail.com" class="text-indigo-500 hover:text-indigo-700 hover:underline flex items-center gap-1">
+                        <i class="fas fa-envelope"></i> Contact Developer
+                    </a>
+                </div>
             </footer>
         </main>
     </div>
@@ -38,7 +47,7 @@
         </div>
     </div>
 
-    <script src="assets/js/chat.js?v=<?php echo time(); ?>"></script>
+    <script src="<?php echo $base_path; ?>assets/js/chat.js?v=<?php echo time(); ?>"></script>
     <!-- Global Confirmation Modal -->
     <div id="confirmationModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">

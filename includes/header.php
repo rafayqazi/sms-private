@@ -25,7 +25,9 @@ if ($currentUserId) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        const APP_BASE_PATH = '<?php echo $base_path; ?>';
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -49,36 +51,163 @@ if ($currentUserId) {
             }
         }
     </script>
+    <style>
+        /* Global Dark Mode Overrides for CDN Tailwind */
+        .dark body { background-color: #030712 !important; color: #f3f4f6 !important; }
+        .dark .bg-white { background-color: #111827 !important; }
+        .dark .bg-gray-50 { background-color: #030712 !important; }
+        .dark .text-gray-800, .dark .text-gray-900 { color: #f3f4f6 !important; }
+        .dark .text-gray-700 { color: #d1d5db !important; }
+        .dark .text-gray-600 { color: #9ca3af !important; }
+        .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 { border-color: #1f2937 !important; }
+        
+        /* Interactive element fixes */
+        .dark .hover\:bg-gray-50:hover { background-color: #1f2937 !important; }
+        .dark .hover\:bg-indigo-50:hover { background-color: #312e81 !important; }
+        .dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
+        
+        /* Table and Input fixes */
+        .dark table { background-color: #111827 !important; }
+        .dark th { background-color: #1f2937 !important; color: #e5e7eb !important; border-color: #374151 !important; }
+        .dark td { border-color: #1f2937 !important; }
+        .dark select, .dark input { background-color: #1f2937 !important; color: #f3f4f6 !important; border-color: #374151 !important; }
+    </style>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Immediate theme check to prevent flashing
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
 </head>
-<body>
-    <div class="app-container flex min-h-screen bg-gray-50">
-        <aside class="sidebar group w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full overflow-y-auto transition-all duration-300 z-50 md:translate-x-0 -translate-x-full [&.collapsed]:w-16" id="sidebar">
-            <div class="brand p-6 group-[.collapsed]:p-4 group-[.collapsed]:justify-center group-[.collapsed]:cursor-pointer text-xl font-bold text-indigo-600 border-b border-gray-200 flex items-center gap-3">
-                <img src="<?php echo $base_path; ?>GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain">
-                <span class="sidebar-text group-[.collapsed]:hidden text-sm leading-tight"><?php echo htmlspecialchars($headerSettings['school_name']); ?></span>
-                <button id="sidebar-toggle" class="ml-auto text-gray-600 hover:text-indigo-600 transition-colors hidden md:block group-[.collapsed]:hidden" title="Toggle Sidebar">
-                    <i class="fas fa-chevron-left text-lg"></i>
+<body class="dark:bg-gray-950 transition-colors duration-300">
+    <!-- Auto Update Notification Banner -->
+    <div id="global-update-banner" class="hidden bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg relative z-[60] transition-all duration-300 transform -translate-y-full">
+        <div class="container mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+            <div class="flex items-center gap-3">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                <span class="font-bold tracking-wide">Update Available!</span>
+                <span class="opacity-90 hidden sm:inline">A new version of the software is ready to install.</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="<?php echo $base_path; ?>pages/settings.php?tab=updates" class="bg-white text-indigo-600 px-4 py-1.5 rounded-full font-bold text-xs hover:bg-opacity-90 transition-colors shadow-sm whitespace-nowrap">
+                    <i class="fas fa-cloud-download-alt mr-1"></i> Update Now
+                </a>
+                <button onclick="dismissUpdateBanner()" class="text-white/80 hover:text-white transition-colors p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto Update Logic -->
+    <?php if (isAdmin()): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+            const LAST_CHECK_KEY = 'sys_last_update_check';
+            const UPDATE_AVAIL_KEY = 'sys_update_available';
+            
+            function showBanner() {
+                const banner = document.getElementById('global-update-banner');
+                if(banner) {
+                    banner.classList.remove('hidden', '-translate-y-full');
+                }
+            }
+
+            // Check if we already know an update is available
+            if (localStorage.getItem(UPDATE_AVAIL_KEY) === 'true') {
+                showBanner();
+            }
+
+            const lastCheck = parseInt(localStorage.getItem(LAST_CHECK_KEY) || '0');
+            const now = Date.now();
+
+            // Perform check if time elapsed
+            if (now - lastCheck > CHECK_INTERVAL) {
+                // Background check
+                fetch('<?php echo $base_path; ?>api/check_update.php')
+                    .then(res => res.json())
+                    .then(data => {
+                        localStorage.setItem(LAST_CHECK_KEY, now.toString());
+                        
+                        if (data.success && data.update_available) {
+                            localStorage.setItem(UPDATE_AVAIL_KEY, 'true');
+                            showBanner();
+                        } else {
+                            localStorage.setItem(UPDATE_AVAIL_KEY, 'false');
+                            const banner = document.getElementById('global-update-banner');
+                            if(banner) banner.classList.add('hidden');
+                        }
+                    })
+                    .catch(e => console.error('Update Check failed (background)', e));
+            }
+        });
+
+        function dismissUpdateBanner() {
+            const banner = document.getElementById('global-update-banner');
+            banner.classList.add('-translate-y-full');
+            setTimeout(() => banner.classList.add('hidden'), 300);
+            // Optional: Don't show again this session? 
+            // For now, we keep the localStorage flag true so it shows on reload, unless cleared.
+            // If user wants to permanently dismiss for the day, we could set a 'dismissed_until' flag.
+        }
+    </script>
+    <?php endif; ?>
+
+    <div class="app-container flex min-h-screen bg-gray-50 dark:bg-gray-950">
+        <aside class="sidebar group w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col fixed h-full overflow-y-auto transition-all duration-300 z-50 md:translate-x-0 -translate-x-full [&.collapsed]:w-16" id="sidebar">
+            <div class="brand min-h-[5rem] p-4 group-[.collapsed]:justify-center group-[.collapsed]:cursor-pointer border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 bg-gray-50/50 dark:bg-gray-900/50">
+                <img src="<?php echo $base_path; ?>GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+                <div class="flex flex-col group-[.collapsed]:hidden">
+                    <span class="text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight leading-tight" title="<?php echo htmlspecialchars($headerSettings['school_name']); ?>">
+                        <?php echo htmlspecialchars($headerSettings['school_name']); ?>
+                    </span>
+                    <span class="text-[10px] font-bold text-gray-500 dark:text-gray-500 uppercase tracking-widest mt-0.5">Management Portal</span>
+                </div>
+                <button id="sidebar-toggle" class="ml-auto text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors hidden md:block group-[.collapsed]:hidden p-1 rounded-md hover:bg-gray-200/50 dark:hover:bg-gray-800" title="Collapse Menu">
+                    <i class="fas fa-chevron-left text-sm"></i>
                 </button>
             </div>
             
 <!-- Login Status Indicator Removed (Moved to Top Bar) -->
-            <nav class="p-4 flex flex-col gap-2 group-[.collapsed]:p-2 group-[.collapsed]:items-center">
-                <a href="<?php echo $base_path; ?>index.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Dashboard">
+            <nav class="p-4 flex flex-col gap-2 group-[.collapsed]:p-2 group-[.collapsed]:items-center overflow-y-auto max-h-[calc(100vh-5rem)] custom-scrollbar">
+                <!-- Dashboard -->
+                <a href="<?php echo $base_path; ?>index.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Dashboard">
                     <i class="fas fa-home w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Dashboard</span>
                 </a>
 
-                <!-- Students Dropdown (Admin Only) -->
+                <!-- Class Management -->
+                <div class="flex flex-col w-full group-[.collapsed]:items-center">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['manage_classes.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Class Management">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chalkboard w-5 text-center"></i> <span class="group-[.collapsed]:hidden whitespace-nowrap">Class Management</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                    </button>
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['manage_classes.php']) ? '!flex' : ''; ?>">
+                         <a href="<?php echo $base_path; ?>pages/manage_classes.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'manage_classes.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-layer-group w-4 text-center"></i> Manage Classes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Students Dropdown -->
                 <?php if (isAdmin() || isSuperAdmin()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Students">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php', 'print_id_card.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Students">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-user-graduate w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Students</span>
                         </div>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php', 'manage_classes.php']) ? '!flex' : ''; ?>">
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php', 'print_id_card.php']) ? '!flex' : ''; ?>">
                         <a href="<?php echo $base_path; ?>pages/students.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'students.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-list w-4 text-center"></i> Student List
                         </a>
@@ -91,9 +220,6 @@ if ($currentUserId) {
                         <a href="<?php echo $base_path; ?>pages/alumni.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'alumni.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-user-check w-4 text-center"></i> Alumni
                         </a>
-                        <a href="<?php echo $base_path; ?>pages/manage_classes.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'manage_classes.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-chalkboard w-4 text-center"></i> Manage Classes
-                        </a>
                         <a href="<?php echo $base_path; ?>pages/print_id_card.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'print_id_card.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                            <i class="fas fa-id-badge w-4 text-center"></i> Print Identity Card
                        </a>
@@ -101,33 +227,46 @@ if ($currentUserId) {
                 </div>
                 <?php endif; ?>
 
-                <!-- Examination Dropdown -->
+                <!-- Teachers Dropdown (Admin Only) -->
+                <?php if (isAdmin() || isSuperAdmin()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Examination">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['teacher_form.php', 'teacher_profile.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Teachers">
                         <div class="flex items-center gap-3">
-                            <i class="fas fa-poll w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Examination</span>
+                            <i class="fas fa-chalkboard-teacher w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Teachers</span>
                         </div>
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? '!flex' : ''; ?>">
-                        <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-edit w-4 text-center"></i> Enter Marks
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['teacher_form.php', 'teacher_profile.php']) ? '!flex' : ''; ?>">
+                        <a href="<?php echo $base_path; ?>pages/teacher_profile.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_profile.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-list w-4 text-center"></i> Teacher List
                         </a>
-                        <a href="<?php echo $base_path; ?>pages/view_results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'view_results.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-eye w-4 text-center"></i> View Results
-                        </a>
-                        <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-id-card w-4 text-center"></i> Print Exam Slips
-                        </a>
-                        <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-clipboard-list w-4 text-center"></i> Examination Attendance
+                        <a href="<?php echo $base_path; ?>pages/teacher_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-plus-circle w-4 text-center"></i> Add Teacher
                         </a>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <!-- Parents Dropdown (Admin Only) -->
+                <?php if (isAdmin() || isSuperAdmin()): ?>
+                <div class="flex flex-col w-full group-[.collapsed]:items-center">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['parents.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Parents">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-users w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Parents</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                    </button>
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['parents.php']) ? '!flex' : ''; ?>">
+                        <a href="<?php echo $base_path; ?>pages/parents.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-list w-4 text-center"></i> Parents List
+                        </a>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Attendance Dropdown -->
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php', 'teacher_attendance.php', 'teacher_attendance_view.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Attendance">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php', 'teacher_attendance.php', 'teacher_attendance_view.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Attendance">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-calendar-check w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Attendance</span>
                         </div>
@@ -152,6 +291,34 @@ if ($currentUserId) {
                     </div>
                 </div>
 
+                <!-- Examination Dropdown -->
+                <div class="flex flex-col w-full group-[.collapsed]:items-center">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Examination">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-poll w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Examination</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                    </button>
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? '!flex' : ''; ?>">
+                        <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
+                            <i class="fas fa-edit w-4 text-center"></i> Enter Marks
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/view_results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'view_results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
+                            <i class="fas fa-eye w-4 text-center"></i> View Results
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
+                            <i class="fas fa-id-card w-4 text-center"></i> Print Exam Slips
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
+                            <i class="fas fa-clipboard-list w-4 text-center"></i> Examination Attendance
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Book Bank -->
+                <a href="<?php echo $base_path; ?>pages/book_bank.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['book_bank.php', 'book_bank_actions.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Book Bank">
+                    <i class="fas fa-book w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Book Bank</span>
+                </a>
 
                 <!-- Inventory Dropdown -->
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
@@ -177,50 +344,7 @@ if ($currentUserId) {
                     </div>
                 </div>
 
-                <!-- Book Bank -->
-                <a href="<?php echo $base_path; ?>pages/book_bank.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['book_bank.php', 'book_bank_actions.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Book Bank">
-                    <i class="fas fa-book w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Book Bank</span>
-                </a>
-
-                <!-- Teachers Dropdown (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
-                <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['teacher_form.php', 'teacher_profile.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Teachers">
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-chalkboard-teacher w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Teachers</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
-                    </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['teacher_form.php', 'teacher_profile.php']) ? '!flex' : ''; ?>">
-                        <a href="<?php echo $base_path; ?>pages/teacher_profile.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_profile.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-list w-4 text-center"></i> Teacher List
-                        </a>
-                        <a href="<?php echo $base_path; ?>pages/teacher_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-plus-circle w-4 text-center"></i> Add Teacher
-                        </a>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <!-- Parents Dropdown (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
-                <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['parents.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Parents">
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-users w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Parents</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
-                    </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['parents.php']) ? '!flex' : ''; ?>">
-                        <a href="<?php echo $base_path; ?>pages/parents.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'parents.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
-                            <i class="fas fa-list w-4 text-center"></i> Parents List
-                        </a>
-                    </div>
-                </div>
-                <?php endif; ?>
-
                 <!-- Messages -->
-<!-- Logic moved to top -->
                 <a href="<?php echo $base_path; ?>pages/messages.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'messages.php' ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Messages">
                     <i class="fas fa-comments w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Messages</span>
                     <?php if ($unreadCount > 0): ?>
@@ -228,15 +352,12 @@ if ($currentUserId) {
                     <?php endif; ?>
                 </a>
 
-                <!-- Assign User Role (Admin Only) -->
+                <!-- Assign User Role & Extras (Admin Only) -->
                 <?php if (isAdmin() || isSuperAdmin()): ?>
                 <a href="<?php echo $base_path; ?>pages/assign_roles.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'assign_roles.php' ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Assign User Role">
                     <i class="fas fa-user-shield w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Assign User Role</span>
                 </a>
-                <?php endif; ?>
-
-                <!-- Backup and Restore Dropdown (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
+                
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
                     <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['reset_app.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Backup and Restore">
                         <div class="flex items-center gap-3">
@@ -254,6 +375,7 @@ if ($currentUserId) {
                     </div>
                 </div>
                 <?php endif; ?>
+
                 <a href="<?php echo $base_path; ?>logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors mt-auto w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center" title="Logout">
                     <i class="fas fa-sign-out-alt w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Logout</span>
                 </a>
@@ -263,9 +385,9 @@ if ($currentUserId) {
         <!-- Mobile Overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
-        <main class="main-content flex-1 md:ml-64 transition-all duration-300">
+        <main class="main-content flex-1 md:ml-64 transition-all duration-300 dark:bg-gray-950">
             <!-- Top Navigation Bar -->
-            <header class="bg-white shadow-sm border-b border-gray-200 px-4 py-4 mb-6 md:px-8 md:mb-8 flex justify-between items-center sticky top-0 z-30">
+            <header class="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 px-4 py-4 mb-6 md:px-8 md:mb-8 flex justify-between items-center sticky top-0 z-30">
                 <div class="flex items-center gap-3 md:gap-4">
                     <button id="mobile-menu-btn" class="md:hidden text-gray-600 hover:text-indigo-600 transition-colors p-1">
                         <i class="fas fa-bars text-xl"></i>
@@ -274,6 +396,12 @@ if ($currentUserId) {
                 </div>
 
                 <div class="flex items-center gap-4 md:gap-6">
+                    <!-- Dark Mode Toggle -->
+                    <button id="dark-mode-toggle" class="relative p-2 text-gray-500 hover:text-indigo-600 transition-colors bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700" title="Toggle Dark Mode">
+                        <i id="theme-icon-moon" class="fas fa-moon text-lg block dark:hidden"></i>
+                        <i id="theme-icon-sun" class="fas fa-sun text-lg hidden dark:block text-yellow-400"></i>
+                    </button>
+
                     <!-- Notifications -->
                     <a href="<?php echo $base_path; ?>pages/messages.php" class="relative text-gray-500 hover:text-indigo-600 transition-colors group" title="Messages">
                         <i class="fas fa-bell text-xl group-hover:animate-swing"></i>
@@ -288,20 +416,20 @@ if ($currentUserId) {
                     <div class="relative group">
                         <button id="user-menu-btn" class="flex items-center gap-2 md:gap-3 focus:outline-none">
                             <div class="text-right hidden md:block">
-                                <div class="text-sm font-semibold text-gray-800"><?php echo getUserDisplayName(); ?></div>
-                                <div class="text-xs text-gray-500"><?php echo getUserRoleBadge(); ?></div>
+                                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200"><?php echo getUserDisplayName(); ?></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo getUserRoleBadge(); ?></div>
                             </div>
-                            <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold border-2 border-indigo-50 transition-colors group-hover:border-indigo-200">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold border-2 border-indigo-50 dark:border-indigo-900 transition-colors group-hover:border-indigo-200">
                                 <?php echo strtoupper(substr(getUserDisplayName(), 0, 1)); ?>
                             </div>
-                            <i class="fas fa-chevron-down text-xs text-gray-400 group-hover:text-indigo-600 transition-colors hidden sm:block"></i>
+                            <i class="fas fa-chevron-down text-xs text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors hidden sm:block"></i>
                         </button>
 
                         <!-- Dropdown Menu -->
-                        <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 hidden group-hover:block hover:block transition-all transform origin-top-right z-50">
-                            <div class="px-4 py-3 border-b border-gray-50 md:hidden">
-                                <div class="text-sm font-semibold text-gray-800"><?php echo getUserDisplayName(); ?></div>
-                                <div class="text-xs text-gray-500"><?php echo getUserRoleBadge(); ?></div>
+                        <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 hidden group-hover:block hover:block transition-all transform origin-top-right z-50">
+                            <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 md:hidden">
+                                <div class="text-sm font-semibold text-gray-800 dark:text-white"><?php echo getUserDisplayName(); ?></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo getUserRoleBadge(); ?></div>
                             </div>
                             
                             <?php if (isset($_SESSION['teacher_id'])): ?>
@@ -461,6 +589,15 @@ if ($currentUserId) {
                     if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
                         userMenuDropdown.classList.add('hidden');
                     }
+                });
+            }
+
+            // Dark Mode Toggle Logic
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', () => {
+                    const isDark = document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 });
             }
         });

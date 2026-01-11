@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showTyping();
 
         // Call API
-        fetch('api/chat.php', {
+        fetch(APP_BASE_PATH + 'api/chat.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const div = document.createElement('div');
         // Base classes
         div.className = 'max-w-[80%] p-3 rounded-xl text-sm leading-relaxed relative break-words';
-        
+
         if (type === 'user') {
             div.classList.add('self-end', 'bg-green-700', 'text-white', 'rounded-br-sm');
         } else if (type === 'ai') {

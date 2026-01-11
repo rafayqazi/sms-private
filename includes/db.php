@@ -880,8 +880,16 @@ class Database {
                         // If promoted from the last class, mark as Alumni
                         if ($currentClass === $lastClassName) {
                             $student['student_status'] = 'Alumni';
+                            $student['graduation_year'] = date('Y');
+                            $student['last_class'] = $currentClass;
                         }
                     }
+                    $student['is_repeater'] = '0';
+                } elseif ($action === 'passout') {
+                    // Mark as Alumni from any class
+                    $student['student_status'] = 'Alumni';
+                    $student['graduation_year'] = date('Y');
+                    $student['last_class'] = $currentClass;
                     $student['is_repeater'] = '0';
                 } elseif ($action === 'fail') {
                     $student['is_repeater'] = '1';
@@ -2586,5 +2594,135 @@ class Database {
         }
         fclose($handle);
         return $report;
+    }
+
+    public function getTopAttendancePerformers($limit = 3) {
+        $file = __DIR__ . '/../data/attendance.csv';
+        if (!file_exists($file)) return [];
+
+        $handle = fopen($file, "r");
+        fgetcsv($handle); // skip headers
+
+        $studentAttendance = []; // student_id => ['P' => 0, 'total' => 0]
+        
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if (count($row) >= 4) {
+                $sid = $row[2];
+                $status = $row[3];
+                if (!isset($studentAttendance[$sid])) {
+                    $studentAttendance[$sid] = ['P' => 0, 'total' => 0];
+                }
+                if ($status === 'P') {
+                    $studentAttendance[$sid]['P']++;
+                }
+                $studentAttendance[$sid]['total']++;
+            }
+        }
+        fclose($handle);
+
+        if (empty($studentAttendance)) return [];
+
+        // Calculate percentages
+        $rankings = [];
+        foreach ($studentAttendance as $sid => $stats) {
+            $percent = ($stats['total'] > 0) ? round(($stats['P'] / $stats['total']) * 100, 1) : 0;
+            $rankings[] = [
+                'student_id' => $sid,
+                'percentage' => $percent,
+                'total_days' => $stats['total'],
+                'present_days' => $stats['P']
+            ];
+        }
+
+        // Sort by percentage descent, then by total days (as tie-breaker/weight)
+        usort($rankings, function($a, $b) {
+            if ($b['percentage'] == $a['percentage']) {
+                return $b['total_days'] <=> $a['total_days'];
+            }
+            return $b['percentage'] <=> $a['percentage'];
+        });
+
+        $topRankings = array_slice($rankings, 0, $limit);
+
+        // Map student info
+        $students = $this->readData();
+        $studentMap = [];
+        foreach ($students as $s) { $studentMap[$s['id']] = $s; }
+
+        foreach ($topRankings as &$t) {
+            $sid = $t['student_id'];
+            $t['student_name'] = isset($studentMap[$sid]) ? $studentMap[$sid]['student_name'] : 'Unknown';
+            $t['profile_image'] = isset($studentMap[$sid]) ? $studentMap[$sid]['profile_image'] : '';
+            $t['current_class'] = isset($studentMap[$sid]) ? $studentMap[$sid]['current_class'] : 'N/A';
+        }
+
+        return $topRankings;
+    }
+
+    public function getClassPerformanceStats($limit = 3) {
+        $file = __DIR__ . '/../data/results.csv';
+        if (!file_exists($file)) return [];
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 1000, ",");
+        if (!$headers) return [];
+
+        $classData = []; // class_name => ['sum' => 0, 'count' => 0, 'topper' => ['', 0]]
+        $latestYear = 0;
+        $all = [];
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if (count($row) == count($headers)) {
+                $data = array_combine($headers, $row);
+                if (isset($data['year'])) {
+                    $year = (int)$data['year'];
+                    if ($year > $latestYear) $latestYear = $year;
+                }
+                $all[] = $data;
+            }
+        }
+        fclose($handle);
+
+        // Map students for names
+        $students = $this->readData();
+        $studentMap = [];
+        foreach ($students as $s) { $studentMap[$s['id']] = $s; }
+
+        foreach ($all as $r) {
+            if (isset($r['year']) && (int)$r['year'] === $latestYear) {
+                $class = $r['class'];
+                $percent = (float)($r['percentage'] ?? 0);
+                
+                if (!isset($classData[$class])) {
+                    $classData[$class] = ['sum' => 0, 'count' => 0, 'top_percent' => -1, 'topper_name' => ''];
+                }
+                
+                $classData[$class]['sum'] += $percent;
+                $classData[$class]['count'] += 1;
+                
+                if ($percent > $classData[$class]['top_percent']) {
+                    $classData[$class]['top_percent'] = $percent;
+                    $classData[$class]['topper_name'] = isset($studentMap[$r['student_id']]) ? $studentMap[$r['student_id']]['student_name'] : 'Unknown';
+                    $classData[$class]['topper_img'] = isset($studentMap[$r['student_id']]) ? $studentMap[$r['student_id']]['profile_image'] : '';
+                }
+            }
+        }
+
+        $stats = [];
+        foreach ($classData as $className => $data) {
+            $stats[] = [
+                'class_name' => $className,
+                'avg_percentage' => round($data['sum'] / $data['count'], 1),
+                'topper_name' => $data['topper_name'],
+                'topper_img' => $data['topper_img'],
+                'top_percent' => $data['top_percent']
+            ];
+        }
+
+        usort($stats, function($a, $b) {
+            return $b['avg_percentage'] <=> $a['avg_percentage'];
+        });
+
+        return array_slice($stats, 0, $limit);
     }
 }
