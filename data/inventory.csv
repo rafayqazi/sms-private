@@ -1,0 +1,6 @@
+id,item_name,category_id,quantity,purchase_date,cost,condition,status,disposal_date,disposal_reason,remarks,created_at
+6,"White Boards",2,5,2026-01-06,,New,Active,,,"These boards was purchsed by sSir muhmmad hassan jarwar and in which 2 boards are purchased by sir abdul rafay","2026-01-06 13:05:15"
+7,Fans,1,5,2026-01-06,,New,Active,,,"These fans was purchsed by sir muhammad hassan jarwar","2026-01-06 13:06:02"
+8,Bat,3,13,2026-01-07,,New,Active,,,,"2026-01-07 23:58:51"
+9,Wicket,3,11,2026-01-07,,New,Active,,,,"2026-01-07 23:59:09"
+10,Bat,3,1,2026-01-07,,Damaged,"Dead Stock",2026-01-07,Broken/Damaged,"Damaged by students","2026-01-07 23:59:36"
