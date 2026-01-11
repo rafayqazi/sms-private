@@ -375,6 +375,7 @@ $settings = $db->getSchoolSettings();
                             </div>
                             <div class="flex gap-4">
                                 <a href="https://github.com/rafayqazi" target="_blank" class="text-slate-400 hover:text-slate-800 transition-colors" title="GitHub"><i class="fab fa-github text-lg"></i></a>
+                                <a href="https://web.facebook.com/rafeH.QAZI" target="_blank" class="text-slate-400 hover:text-blue-600 transition-colors" title="Facebook"><i class="fab fa-facebook text-lg"></i></a>
                                 <a href="https://www.linkedin.com/in/abdulrafayqazi" target="_blank" class="text-slate-400 hover:text-blue-600 transition-colors" title="LinkedIn"><i class="fab fa-linkedin text-lg"></i></a>
                                 <a href="https://wa.me/923000358189" target="_blank" class="text-slate-400 hover:text-green-600 transition-colors" title="WhatsApp"><i class="fab fa-whatsapp text-lg"></i></a>
                                 <a href="mailto:abdulrafehqazi@gmail.com" class="text-slate-400 hover:text-red-500 transition-colors" title="Email"><i class="fas fa-envelope text-lg"></i></a>
