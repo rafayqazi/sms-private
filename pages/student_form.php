@@ -58,7 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Check for duplicate GR No (only if no age error)
     if (empty($error) && $db->isGrNoExists($grNo, $id)) {
-        $error = "Error: GR No '$grNo' is already assigned to another student.";
+        // Check if it's an alumni or just a regular duplicate
+        $existing = $db->getStudentByGrNo($grNo);
+        if ($existing && isset($existing['student_status']) && $existing['student_status'] === 'Alumni') {
+             $error = "GR No '$grNo' belongs to an Alumni student (" . htmlspecialchars($existing['student_name']) . "). <a href='student_form.php?id=" . $existing['id'] . "&restore=1' class='underline font-bold hover:text-indigo-200'>Click here to Edit/Restore this student</a>.";
+        } else {
+             $error = "Error: GR No '$grNo' is already assigned to another student.";
+        }
+        
         // Retain submitted values
         $student = $_POST;
         // If updating, keep the ID
@@ -140,6 +147,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Merge uploaded files into data
         $data = array_merge($data, $uploadedFiles);
+
+        if (isset($_POST['student_status'])) {
+            $data['student_status'] = $_POST['student_status'];
+        } elseif (isset($_GET['restore']) || (isset($student['student_status']) && $student['student_status'] === 'Alumni')) {
+             // If we are editing an alumni but didn't explicitly send status (shouldn't happen if field is there), 
+             // but if restore param is there, force it.
+             if (isset($_GET['restore'])) {
+                 $data['student_status'] = 'Active';
+             }
+        }
 
         if ($id) {
             $db->updateStudent($id, $data);
@@ -311,6 +328,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label class="text-sm font-medium text-gray-700">SEMIS Code</label>
                 <input type="text" name="semis_code" value="<?php echo $student ? htmlspecialchars($student['semis_code']) : '424010147'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
+
+            <?php 
+            // Show Status Field if Student is Alumni or we are restoring
+            $isAlumni = ($student && isset($student['student_status']) && $student['student_status'] === 'Alumni');
+            $isRestore = isset($_GET['restore']);
+            
+            if ($isAlumni || $isRestore): 
+            ?>
+            <div class="col-span-full bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <h4 class="font-bold text-yellow-800 mb-2"> <i class="fas fa-exclamation-triangle"></i> Account Status</h4>
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Student Status</label>
+                    <select name="student_status" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="Active" <?php echo ($isRestore) ? 'selected' : ''; ?>>Active (Restore Student)</option>
+                        <option value="Alumni" <?php echo (!$isRestore && $isAlumni) ? 'selected' : ''; ?>>Alumni (Graduated/Left)</option>
+                    </select>
+                    <p class="text-xs text-gray-500">Select "Active" to restore this student to the main list.</p>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Section: Documents -->
             <div class="col-span-full border-b pb-2 mb-2 mt-6">

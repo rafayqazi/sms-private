@@ -152,6 +152,16 @@ class Database {
         }
         return null;
     }
+
+    public function getStudentByGrNo($grNo) {
+        $data = $this->readData();
+        foreach ($data as $student) {
+            if ($student['gr_no'] == $grNo) {
+                return $student;
+            }
+        }
+        return null;
+    }
     
     public function deleteStudent($id) {
         $data = $this->readData();

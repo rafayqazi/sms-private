@@ -166,6 +166,9 @@ rsort($years);
                     <td class="p-4 text-gray-500 text-xs italic font-medium"><?php echo htmlspecialchars($student['admission_date']); ?></td>
                     <td class="p-4 text-center">
                         <div class="flex items-center justify-center gap-2">
+                            <a href="student_form.php?id=<?php echo $student['id']; ?>&restore=1" class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Restore Student">
+                                <i class="fas fa-undo-alt text-xs"></i>
+                            </a>
                             <a href="student_profile.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Full Profile">
                                 <i class="fas fa-user-graduate text-xs"></i>
                             </a>
