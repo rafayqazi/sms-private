@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['username'] = $username;
         $_SESSION['teacher_id'] = null;
         $_SESSION['assigned_classes'] = [];
+        $_SESSION['login_time'] = time(); // Set login timestamp
         $_SESSION['show_welcome_animation'] = true; // Trigger animation
         header("Location: index.php");
         exit;
@@ -43,6 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['teacher_id'] = $userRole['teacher_id'];
             $_SESSION['teacher_name'] = $teacher ? $teacher['name'] : 'Teacher';
             $_SESSION['assigned_classes'] = $userRole['assigned_classes'] ? $userRole['assigned_classes'] : [];
+            $_SESSION['login_time'] = time(); // Set login timestamp
             $_SESSION['show_welcome_animation'] = true; // Trigger animation
             header("Location: index.php");
             exit;

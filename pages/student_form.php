@@ -23,12 +23,24 @@ if ($id) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $grNo = $_POST['gr_no'];
+    $grNo = isset($_POST['gr_no']) ? $_POST['gr_no'] : '0';
+    $currentClass = $_POST['current_class'];
+    
     // Remove leading zeros (e.g., "01" -> "1", "007" -> "7")
     $grNo = ltrim($grNo, '0');
     // If the result is empty (e.g. input was "0" or "00"), set it to "0"
     if ($grNo === '') {
         $grNo = '0';
+    }
+
+    // GR No Validation: Required for all classes except those where it's not required in settings
+    $classData = $db->getClassByName($currentClass);
+    $isGrRequired = $classData ? $classData['is_gr_required'] : 1;
+
+    if ($isGrRequired && ($grNo === '0' || empty($_POST['gr_no']))) {
+        $error = "Error: GR No is required for $currentClass.";
+        $student = $_POST;
+        if ($id) $student['id'] = $id;
     }
     $dob = $_POST['date_of_birth'];
 
@@ -56,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    // Check for duplicate GR No (only if no age error)
-    if (empty($error) && $db->isGrNoExists($grNo, $id)) {
+    // Check for duplicate GR No (only if no age error and GR No is not '0'/empty)
+    if (empty($error) && $grNo !== '0' && $db->isGrNoExists($grNo, $id)) {
         // Check if it's an alumni or just a regular duplicate
         $existing = $db->getStudentByGrNo($grNo);
         if ($existing && isset($existing['student_status']) && $existing['student_status'] === 'Alumni') {
@@ -220,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $defaultGr = $db->getNextGrNo();
                 }
                 ?>
-                <input type="text" name="gr_no" required value="<?php echo $defaultGr; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="gr_no" id="gr_no_input" value="<?php echo $defaultGr; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
             
             <div class="flex flex-col space-y-2">
@@ -414,8 +426,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Note: File inputs cannot be set to required dynamically in a simple way that works across all browsers/validation styles, 
         // but we can enforce it server-side or just visually show it. For now, we'll just toggle visibility.
 
-        const classes = <?php echo json_encode($db->getClassNames()); ?>;
-        const lowClasses = classes.slice(0, 2); // First two classes
+        const classes = <?php echo json_encode($db->getClasses()); ?>;
+        const lowClasses = classes.slice(0, 2).map(c => c.class_name); // First two classes for previous school logic
+
+        const grNoInput = document.getElementById('gr_no_input');
+        const grNoLabel = grNoInput.previousElementSibling;
+        const initialGrNo = <?php echo json_encode($defaultGr); ?>;
 
         function toggleFields() {
             const selectedClass = classSelect.value;
@@ -423,6 +439,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 prevSchoolSection.classList.remove('hidden');
             } else {
                 prevSchoolSection.classList.add('hidden');
+            }
+
+            // GR No Requirement Logic
+            const selectedClassData = classes.find(c => c.class_name === selectedClass);
+            const isGrRequired = selectedClassData ? parseInt(selectedClassData.is_gr_required) === 1 : true;
+
+            if (!isGrRequired) {
+                grNoInput.required = false;
+                grNoInput.disabled = true;
+                grNoInput.value = '';
+                grNoLabel.innerHTML = 'GR No <span class="text-gray-400 text-xs">(Not Required for ' + selectedClass + ')</span>';
+            } else {
+                grNoInput.disabled = false;
+                grNoInput.required = true;
+                // Restore initial value if it's currently empty
+                if (grNoInput.value === '') {
+                    grNoInput.value = initialGrNo;
+                }
+                grNoLabel.innerHTML = 'GR No <span class="text-red-500">*</span>';
             }
         }
 

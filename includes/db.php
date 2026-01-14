@@ -2349,10 +2349,11 @@ class Database {
                 while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
                     if (count($row) >= 2) {
                         $classes[] = [
-                            'id' => $row[0],
-                            'class_name' => $row[1],
-                            'sort_order' => isset($row[2]) ? (int)$row[2] : 0
-                        ];
+                        'id' => $row[0],
+                        'class_name' => $row[1],
+                        'sort_order' => isset($row[2]) ? (int)$row[2] : 0,
+                        'is_gr_required' => isset($row[3]) ? (int)$row[3] : 1
+                    ];
                     }
                 }
                 fclose($handle);
@@ -2371,7 +2372,7 @@ class Database {
         return array_map(function($c) { return $c['class_name']; }, $classes);
     }
 
-    public function addClass($name) {
+    public function addClass($name, $isGrRequired = 1) {
         $file = __DIR__ . '/../data/classes.csv';
         $classes = $this->getClasses();
         $nextId = 1;
@@ -2382,7 +2383,7 @@ class Database {
         }
         
         $fp = fopen($file, 'a');
-        fputcsv($fp, [$nextId, $name, $maxSort + 1]);
+        fputcsv($fp, [$nextId, $name, $maxSort + 1, $isGrRequired]);
         fclose($fp);
         return $nextId;
     }
@@ -2395,9 +2396,9 @@ class Database {
         });
         
         $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order']);
+        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required']);
         foreach ($newClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order']]);
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1]);
         }
         fclose($fp);
         return true;
@@ -2406,12 +2407,20 @@ class Database {
     public function updateClasses($updatedClasses) {
         $file = __DIR__ . '/../data/classes.csv';
         $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order']);
+        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required']);
         foreach ($updatedClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order']]);
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1]);
         }
         fclose($fp);
         return true;
+    }
+
+    public function getClassByName($name) {
+        $classes = $this->getClasses();
+        foreach ($classes as $c) {
+            if ($c['class_name'] == $name) return $c;
+        }
+        return null;
     }
 
     public function getToppers($limit = 3) {
