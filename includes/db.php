@@ -12,7 +12,8 @@ if (file_exists($settingsFile)) {
         $currentPage = basename($_SERVER['PHP_SELF']);
         
         // Redirect ALL users (including admins) to maintenance.php if maintenance mode is active
-        if ($currentPage !== 'maintenance.php') {
+        // EXCEPT if they are on the maintenance page itself or the login page
+        if ($currentPage !== 'maintenance.php' && $currentPage !== 'login.php') {
             header('Location: maintenance.php');
             exit();
         }
