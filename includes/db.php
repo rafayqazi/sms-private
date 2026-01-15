@@ -4,6 +4,21 @@ date_default_timezone_set('Asia/Karachi'); // Set timezone to Pakistan/Karachi
 require_once __DIR__ . '/license.php';
 License::checkAndRedirect();
 
+// Maintenance Mode Check
+$settingsFile = __DIR__ . '/../data/settings.json';
+if (file_exists($settingsFile)) {
+    $settings = json_decode(file_get_contents($settingsFile), true);
+    if (isset($settings['maintenance_mode']) && $settings['maintenance_mode'] === true) {
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        
+        // Redirect ALL users (including admins) to maintenance.php if maintenance mode is active
+        if ($currentPage !== 'maintenance.php') {
+            header('Location: maintenance.php');
+            exit();
+        }
+    }
+}
+
 class Database {
     private $csvFile;
     private $headers;

@@ -52,6 +52,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
 
 <?php include 'includes/header.php'; ?>
 
+
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
     <!-- Decorative background element -->
     <div class="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
