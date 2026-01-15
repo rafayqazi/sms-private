@@ -37,8 +37,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $classData = $db->getClassByName($currentClass);
     $isGrRequired = $classData ? $classData['is_gr_required'] : 1;
 
-    if ($isGrRequired && ($grNo === '0' || empty($_POST['gr_no']))) {
-        $error = "Error: GR No is required for $currentClass.";
+    // Strict Validation for all fields if GR is required
+    if ($isGrRequired) {
+        if ($grNo === '0' || empty($_POST['gr_no'])) {
+            $error = "Error: GR No is required for $currentClass.";
+        } elseif (empty($_POST['student_name'])) {
+            $error = "Error: Student Name is required.";
+        } elseif (empty($_POST['father_name'])) {
+            $error = "Error: Father's Name is required.";
+        } elseif (empty($_POST['gender'])) {
+            $error = "Error: Gender is required.";
+        } elseif (empty($_POST['date_of_birth'])) {
+            $error = "Error: Date of Birth is required.";
+        } elseif (empty($_POST['admission_date'])) {
+            $error = "Error: Admission Date is required.";
+        } elseif (empty($_POST['father_cnic'])) {
+            $error = "Error: Father's CNIC is required.";
+        } elseif (empty($_POST['father_contact'])) {
+            $error = "Error: Father's Contact is required.";
+        }
+    } else {
+        // Minimal validation for non-GR classes
+        if (empty($_POST['student_name'])) {
+            $error = "Error: Student Name is required.";
+        } elseif (empty($_POST['father_name'])) {
+            $error = "Error: Father's Name is required.";
+        }
+    }
+
+    if (!empty($error)) {
         $student = $_POST;
         if ($id) $student['id'] = $id;
     }
@@ -253,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Gender <span class="text-red-500">*</span></label>
-                <select name="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <select name="gender" id="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Gender</option>
                     <option value="Male" <?php echo ($student && $student['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
                     <option value="Female" <?php echo ($student && $student['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
@@ -261,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Date of Birth</label>
+                <label class="text-sm font-medium text-gray-700">Date of Birth <span class="text-red-500">*</span></label>
                 <input type="date" name="date_of_birth" id="date_of_birth" value="<?php echo $student ? date('Y-m-d', strtotime($student['date_of_birth'])) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
@@ -272,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Admission Date <span class="text-red-500">*</span></label>
-                <input type="date" name="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="date" name="admission_date" id="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
@@ -311,8 +338,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">B-Form No</label>
-                <input type="text" name="b_form_no" value="<?php echo $student ? formatCnic($student['b_form_no']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">B-Form No <span class="text-red-500">*</span></label>
+                <input type="text" name="b_form_no" id="b_form_no" value="<?php echo $student ? formatCnic($student['b_form_no']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
 
@@ -322,23 +349,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">District</label>
-                <input type="text" name="district" value="<?php echo $student ? htmlspecialchars($student['district']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">District <span class="text-red-500">*</span></label>
+                <input type="text" name="district" id="district" value="<?php echo $student ? htmlspecialchars($student['district']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Taluka</label>
-                <input type="text" name="taluka" value="<?php echo $student ? htmlspecialchars($student['taluka']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Taluka <span class="text-red-500">*</span></label>
+                <input type="text" name="taluka" id="taluka" value="<?php echo $student ? htmlspecialchars($student['taluka']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2 lg:col-span-2">
-                <label class="text-sm font-medium text-gray-700">School Name</label>
-                <input type="text" name="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : 'GBPS Ali Bux Jarwar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">School Name <span class="text-red-500">*</span></label>
+                <input type="text" name="school_name" id="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : 'GBPS Ali Bux Jarwar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">SEMIS Code</label>
-                <input type="text" name="semis_code" value="<?php echo $student ? htmlspecialchars($student['semis_code']) : '424010147'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">SEMIS Code <span class="text-red-500">*</span></label>
+                <input type="text" name="semis_code" id="semis_code" value="<?php echo $student ? htmlspecialchars($student['semis_code']) : '424010147'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <?php 
@@ -445,6 +472,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const selectedClassData = classes.find(c => c.class_name === selectedClass);
             const isGrRequired = selectedClassData ? parseInt(selectedClassData.is_gr_required) === 1 : true;
 
+            // Fields that depend on GR requirement
+            const dynamicFields = [
+                { id: 'father_cnic', name: "Father's CNIC" },
+                { id: 'gender', name: "Gender" },
+                { id: 'date_of_birth', name: "Date of Birth" },
+                { id: 'admission_date', name: "Admission Date" },
+                { id: 'father_contact', name: "Father's Contact" },
+                { id: 'b_form_no', name: "B-Form No" },
+                { id: 'district', name: "District" },
+                { id: 'taluka', name: "Taluka" },
+                { id: 'school_name', name: "School Name" },
+                { id: 'semis_code', name: "SEMIS Code" }
+            ];
+
+            // 1. Handle GR No Field specifically
             if (!isGrRequired) {
                 grNoInput.required = false;
                 grNoInput.disabled = true;
@@ -453,12 +495,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 grNoInput.disabled = false;
                 grNoInput.required = true;
-                // Restore initial value if it's currently empty
-                if (grNoInput.value === '') {
-                    grNoInput.value = initialGrNo;
-                }
+                if (grNoInput.value === '') grNoInput.value = initialGrNo;
                 grNoLabel.innerHTML = 'GR No <span class="text-red-500">*</span>';
             }
+
+            // 2. Handle all other Dynamic Fields
+            dynamicFields.forEach(field => {
+                const el = document.getElementById(field.id);
+                if (el) {
+                    el.required = isGrRequired;
+                    const label = el.previousElementSibling;
+                    if (label && label.tagName === 'LABEL') {
+                        label.innerHTML = `${field.name} ${isGrRequired ? '<span class="text-red-500">*</span>' : ''}`;
+                    }
+                }
+            });
         }
 
         classSelect.addEventListener('change', toggleFields);
