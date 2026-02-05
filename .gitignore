@@ -1,27 +1,13 @@
 # Sensitive Data - Do not commit
-data/database.csv
-data/teachers.csv
-data/attendance.csv
-
-# Uploads directory (keep structure, not files)
-uploads/*
-!uploads/.gitkeep
-
-# Backups
-backups/*
-
-# System files
-.DS_Store
-Thumbs.db
-
-# IDE files
-.vscode/
-.idea/
-
-# Sensitive Data - Do not commit
-data/database.csv
-data/teachers.csv
-data/attendance.csv
+# Ignore all CSV files everywhere
+*.csv
+# Ignore all files in data directory except the folder itself
+data/*
+# But allow specific non-sensitive directory structure if needed (none for now)
+# Ignore specific files that might be in data
+data/settings.json
+data/subject_config.json
+data/license.php
 
 # Uploads directory (keep structure, not files)
 uploads/*

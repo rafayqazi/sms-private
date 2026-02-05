@@ -1,4 +1,0 @@
-id,student_id,book_id,issue_date,return_date,status,remarks
-694f3b0edf126,32,694f3aceb9785,2025-12-27,2025-12-27,Returned,"torn pages"
-694f3b58af41b,32,694f3aceb9785,2025-12-27,2026-01-06,Returned,
-695caad073af1,20,694f3aceb9785,2026-01-06,2026-01-06,Returned,"godd condition "
