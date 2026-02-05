@@ -169,6 +169,76 @@
             }
             closeConfirmationModal();
         });
+
+        // Global Admission Modal
+        function openAdmissionModal() {
+            const modal = document.getElementById('admissionModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeAdmissionModal() {
+            const modal = document.getElementById('admissionModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close on outside click for admission modal
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('admissionModal');
+            if (event.target == modal) {
+                closeAdmissionModal();
+            }
+        });
     </script>
+
+    <!-- Admission Selection Modal -->
+    <div id="admissionModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 text-left">
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-[scaleIn_0.3s_ease-out]">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    <i class="fas fa-user-plus text-indigo-500"></i> Select Admission Type
+                </h3>
+                <button onclick="closeAdmissionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Single Admission -->
+                <a href="<?php echo $base_path; ?>pages/student_form.php" class="group flex flex-col items-center p-6 bg-slate-50 dark:bg-gray-800 rounded-2xl border-2 border-transparent hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+                    <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800 dark:text-gray-100 mb-1">Single Admission</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Add students one by one manually.</p>
+                </a>
+
+                <!-- Bulk Admission -->
+                <a href="<?php echo $base_path; ?>pages/bulk_admission.php" class="group flex flex-col items-center p-6 bg-slate-50 dark:bg-gray-800 rounded-2xl border-2 border-transparent hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all">
+                    <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <h4 class="font-bold text-gray-800 dark:text-gray-100 mb-1">Bulk Admission</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Import multiple students via CSV file.</p>
+                </a>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 text-center">
+                <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm font-medium">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </body>
 </html>

@@ -1,4 +1,13 @@
-id,student_id,book_id,issue_date,return_date,status,remarks
-694f3b0edf126,32,694f3aceb9785,2025-12-27,2025-12-27,Returned,"torn pages"
-694f3b58af41b,32,694f3aceb9785,2025-12-27,2026-01-06,Returned,
-695caad073af1,20,694f3aceb9785,2026-01-06,2026-01-06,Returned,"godd condition "
+id,recipient_type,recipient_id,book_id,issue_date,return_date,status,remarks
+694f3b0edf126,student,32,694f3aceb9785,2025-12-27,2025-12-27,Returned,"torn pages"
+694f3b58af41b,student,32,694f3aceb9785,2025-12-27,2026-01-06,Returned,
+695caad073af1,student,20,694f3aceb9785,2026-01-06,2026-01-06,Returned,"godd condition "
+696e8114db052,student,41,696dd7cd7b156,2026-01-20,,Issued,normal,,,
+696f1b4db51eb,student,47,696dd7cd7b156,2026-01-20,,Issued,normal,,,
+696f1b610559c,student,44,696dd7cd7b156,2026-01-20,,Issued,normal,,,
+696f1b76067e3,student,43,696dd7cd7b156,2026-01-20,,Issued,normal,,,
+696f1b9bd57a2,student,52,696dd7cd7b156,2026-01-20,2026-01-20,Returned,normal,,,
+696f1bb22854d,student,55,696dd7cd7b156,2026-01-20,,Issued,normal,,,
+696f1c600d776,teacher,3,6969e461e0e56,2026-01-20,,Issued,normal,,,
+696f1c95a2054,teacher,3,696f1c836f164,2026-01-20,,Issued,normal,,,
+696f3b8663cb5,student,54,696dd7cd7b156,2026-01-20,,Issued,normal,,,

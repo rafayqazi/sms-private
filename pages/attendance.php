@@ -8,6 +8,11 @@ $class = isset($_GET['class']) ? $_GET['class'] : '';
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+    
     $date = $_POST['date'];
     $class = $_POST['class'];
     $attendanceData = isset($_POST['attendance']) ? $_POST['attendance'] : [];
@@ -52,6 +57,7 @@ if ($class) {
     <?php endif; ?>
 
     <form id="attendanceForm" action="" method="POST">
+        <?php echo csrfInput(); ?>
         <div class="flex flex-col md:flex-row flex-wrap gap-6 mb-8 items-end">
             <div class="flex flex-col gap-2 min-w-[200px]">
                 <label class="text-sm font-medium text-gray-700">Date</label>

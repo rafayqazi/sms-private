@@ -31,9 +31,14 @@ $students = $db->filterStudents($filters);
         <h1 class="text-2xl md:text-3xl font-bold">Students Directory</h1>
         <p class="text-green-100 mt-1">Manage student records and admissions</p>
     </div>
-    <a href="student_form.php" class="w-full md:w-auto bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
-        <i class="fas fa-plus-circle"></i> New Admission
-    </a>
+    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+        <a href="bulk_admission.php" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
+            <i class="fas fa-file-import"></i> Bulk Admission
+        </a>
+        <a href="student_form.php" class="bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
+            <i class="fas fa-plus-circle"></i> New Admission
+        </a>
+    </div>
 </div>
 
 <!-- Charts Section -->

@@ -1,4 +1,5 @@
 <?php
+require_once '../includes/auth_session.php';
 require_once '../includes/ai_context.php';
 
 header('Content-Type: application/json');

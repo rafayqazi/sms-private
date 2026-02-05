@@ -22,7 +22,7 @@ if (file_exists($settingsFile)) {
 
 class Database {
     private $csvFile;
-    private $headers;
+    public $headers;
 
     public function __construct($file = null) {
         if ($file === null) {
@@ -115,6 +115,45 @@ class Database {
         $data[] = $studentData;
         $this->writeData($data);
         return true;
+    }
+
+    public function bulkAddStudents($studentsArray) {
+        $data = $this->readData();
+        
+        // Get Start ID
+        $lastId = 0;
+        if (!empty($data)) {
+            $lastItem = end($data);
+            $lastId = isset($lastItem['id']) ? (int)$lastItem['id'] : 0;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $today = new DateTime();
+
+        foreach ($studentsArray as $studentData) {
+            $lastId++;
+            $studentData['id'] = $lastId;
+            $studentData['created_at'] = $now;
+            $studentData['updated_at'] = $now;
+            $studentData['is_active'] = isset($studentData['is_active']) ? $studentData['is_active'] : 1;
+
+            // Age calculation
+            if (!empty($studentData['date_of_birth'])) {
+                try {
+                    $dob = new DateTime($studentData['date_of_birth']);
+                    $studentData['age'] = $dob->diff($today)->y;
+                } catch (Exception $e) {
+                    $studentData['age'] = '';
+                }
+            } else {
+                $studentData['age'] = '';
+            }
+
+            // Default values for missing fields to avoid array_combine mismatch if internal write logic changes
+            $data[] = $studentData;
+        }
+
+        return $this->writeData($data);
     }
 
     public function getNextGrNo() {

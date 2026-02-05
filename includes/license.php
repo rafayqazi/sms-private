@@ -107,10 +107,18 @@ class License {
      * Check license and redirect if invalid
      */
     public static function checkAndRedirect() {
-        // Skip check for license error page itself
+        // Skip check for license error page itself and missing files page
         $current_page = basename($_SERVER['PHP_SELF']);
-        if ($current_page === 'license_error.php') {
+        if ($current_page === 'license_error.php' || $current_page === 'missing_files.php') {
             return;
+        }
+
+        // 1. Check for .git folder - Software Integrity Protection
+        if (!is_dir(__DIR__ . '/../.git')) {
+            // Determine redirect path based on where we are
+            $prefix = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false || strpos($_SERVER['PHP_SELF'], '/api/') !== false) ? '../' : '';
+            header("Location: " . $prefix . "pages/missing_files.php");
+            exit();
         }
 
         if (!self::isLicensed()) {
@@ -121,7 +129,7 @@ class License {
             }
 
             // Determine redirect path based on where we are
-            $prefix = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
+            $prefix = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false || strpos($_SERVER['PHP_SELF'], '/api/') !== false) ? '../' : '';
             header("Location: " . $prefix . "pages/license_error.php");
             exit();
         }

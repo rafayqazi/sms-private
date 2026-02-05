@@ -12,6 +12,11 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+
     $password = $_POST['password'];
     
     // Hardcoded check matching login.php
@@ -68,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST" action="" onsubmit="return confirm('FINAL WARNING: Are you absolutely sure you want to wipe all data?');">
+                <?php echo csrfInput(); ?>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
                         Confirm Admin Password

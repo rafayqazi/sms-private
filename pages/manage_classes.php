@@ -10,6 +10,11 @@ $errorMsg = '';
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+    
     if (isset($_POST['add_class'])) {
         $name = trim($_POST['class_name']);
         $grRequired = isset($_POST['gr_required']) ? 1 : 0;
@@ -116,6 +121,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                         <?php echo $editMode ? 'Edit Class' : 'Add New Class'; ?>
                     </h3>
                     <form action="" method="POST" class="space-y-4">
+                        <?php echo csrfInput(); ?>
                         <?php if ($editMode): ?>
                             <input type="hidden" name="class_id" value="<?php echo $editClass['id']; ?>">
                         <?php endif; ?>
@@ -199,6 +205,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <form action="" method="POST" onsubmit="return confirm('Are you sure? Removing a class may affect student filtering.');" class="inline">
+                                                    <?php echo csrfInput(); ?>
                                                     <input type="hidden" name="class_id" value="<?php echo $c['id']; ?>">
                                                     <button type="submit" name="delete_class" class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50" title="Delete Class">
                                                         <i class="fas fa-trash-alt"></i>

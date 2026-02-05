@@ -23,6 +23,11 @@ if ($id) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed. Possible attack detected.");
+    }
+
     $grNo = isset($_POST['gr_no']) ? $_POST['gr_no'] : '0';
     $currentClass = $_POST['current_class'];
     
@@ -144,14 +149,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $fileExtension = strtolower(end($fileNameCmps));
 
                 $allowedfileExtensions = array('jpg', 'gif', 'png', 'jpeg');
-                if (in_array($fileExtension, $allowedfileExtensions)) {
-                    // Create unique filename: GR-123-field_name.jpg
-                    $newFileName = 'GR-' . $grNo . '-' . $field . '.' . $fileExtension;
-                    $dest_path = $uploadDir . $newFileName;
+                $allowedMimeTypes = array('image/jpeg', 'image/png', 'image/gif');
+                
+                // Max file size 2MB
+                $maxFileSize = 2 * 1024 * 1024;
 
-                    if(move_uploaded_file($fileTmpPath, $dest_path)) {
-                        $uploadedFiles[$field] = $dest_path;
+                if (in_array($fileExtension, $allowedfileExtensions) && $fileSize <= $maxFileSize) {
+                    // Double check MIME type for security
+                    $check = getimagesize($fileTmpPath);
+                    if ($check !== false && in_array($check['mime'], $allowedMimeTypes)) {
+                        // Create unique filename: GR-123-field_name-HEX.jpg
+                        $newFileName = 'GR-' . preg_replace('/[^a-zA-Z0-9]/', '', $grNo) . '-' . $field . '-' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
+                        $dest_path = $uploadDir . $newFileName;
+
+                        if(move_uploaded_file($fileTmpPath, $dest_path)) {
+                            $uploadedFiles[$field] = $dest_path;
+                        }
+                    } else {
+                        $error = "Error: Invalid image file type for $field.";
+                        break;
                     }
+                } elseif ($fileSize > $maxFileSize) {
+                    $error = "Error: File size too large for $field. Max limit is 2MB.";
+                    break;
                 }
             }
         }
@@ -222,60 +242,72 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <form action="" method="POST" enctype="multipart/form-data" class="p-4 md:p-8">
+        <?php echo csrfInput(); ?>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Section: Personal Details -->
-            <div class="col-span-full border-b pb-2 mb-2">
-                <h3 class="text-xl font-semibold text-gray-800">Personal Information</h3>
-            </div>
-
-            <!-- Profile Image Upload (Centered) -->
-            <div class="col-span-full flex flex-col items-center justify-center mb-6">
-                <div class="relative group">
-                    <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                        <?php if ($student && !empty($student['profile_image'])): ?>
-                            <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover">
-                        <?php else: ?>
-                            <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400">
-                        <?php endif; ?>
-                    </div>
-                    <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
-                        <i class="fas fa-camera"></i>
-                        <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(this)">
-                    </label>
+        <!-- Profile Image Upload (Top) -->
+        <div class="flex flex-col items-center justify-center mb-8 pb-6 border-b">
+            <div class="relative group">
+                <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <?php if ($student && !empty($student['profile_image'])): ?>
+                        <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover">
+                    <?php else: ?>
+                        <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400">
+                    <?php endif; ?>
                 </div>
-                <p class="text-sm text-gray-500 mt-2">Upload Student Photo</p>
+                <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
+                    <i class="fas fa-camera"></i>
+                    <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                </label>
+            </div>
+            <p class="text-sm font-semibold text-gray-600 mt-2">Upload Student Photo</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Current Class <span class="text-red-500">*</span></label>
+                <select name="current_class" id="current_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <option value="">Select Class</option>
+                    <?php
+                    $classes = $db->getClassNames();
+                    foreach ($classes as $c) {
+                        $selected = ($student && $student['current_class'] == $c) ? 'selected' : '';
+                        echo "<option value=\"$c\" $selected>$c</option>";
+                    }
+                    ?>
+                </select>
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">GR No <span class="text-red-500">*</span></label>
                 <?php 
-                $defaultGr = '';
-                if ($student) {
-                    $defaultGr = htmlspecialchars($student['gr_no']);
-                } else {
-                    // Start of autofill logic
-                    $defaultGr = $db->getNextGrNo();
-                }
+                $defaultGr = ($student) ? htmlspecialchars($student['gr_no']) : $db->getNextGrNo();
                 ?>
                 <input type="text" name="gr_no" id="gr_no_input" value="<?php echo $defaultGr; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
-            
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Admission Date <span class="text-red-500">*</span></label>
+                <input type="date" name="admission_date" id="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
+            <!-- Removed duplicated Profile Image upload from here -->
+
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Student Name <span class="text-red-500">*</span></label>
                 <input type="text" name="student_name" required value="<?php echo $student ? htmlspecialchars($student['student_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
+            <div class="flex flex-col space-y-2 relative">
+                <label class="text-sm font-medium text-gray-700">Father's Name <span class="text-red-500">*</span></label>
+                <input type="text" name="father_name" id="father_name" required value="<?php echo $student ? htmlspecialchars($student['father_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="Type to search..." autocomplete="off">
+                <div id="father_suggestions" class="absolute z-[100] top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-xl mt-1 hidden max-h-60 overflow-y-auto"></div>
             </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Father's CNIC <span class="text-red-500">*</span></label>
                 <input type="text" name="father_cnic" id="father_cnic" required value="<?php echo $student ? formatCnic($student['father_cnic']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                 <small id="cnic_status" class="text-xs text-gray-500"></small>
-            </div>
-
-            <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father's Name <span class="text-red-500">*</span></label>
-                <input type="text" name="father_name" id="father_name" required value="<?php echo $student ? htmlspecialchars($student['father_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
@@ -298,53 +330,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Admission Date <span class="text-red-500">*</span></label>
-                <input type="date" name="admission_date" id="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-            </div>
-
-            <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Current Class <span class="text-red-500">*</span></label>
-                <select name="current_class" id="current_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                    <option value="">Select Class</option>
-                    <?php
-                    $classes = $db->getClassNames();
-                    foreach ($classes as $c) {
-                        $selected = ($student && $student['current_class'] == $c) ? 'selected' : '';
-                        echo "<option value=\"$c\" $selected>$c</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-
-            <!-- Dynamic Section: Previous School Info -->
-            <div id="previousSchoolSection" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4 mt-2 hidden">
-                <div class="col-span-full">
-                    <h3 class="text-lg font-semibold text-gray-800">Previous School Information</h3>
-                    <p class="text-sm text-gray-500">Required for classes other than Kachi and One</p>
-                </div>
-                
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">Previous School Name</label>
-                    <input type="text" name="previous_school" id="previous_school" value="<?php echo $student ? htmlspecialchars($student['previous_school'] ?? '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">School Leaving Certificate (SLC)</label>
-                    <input type="file" name="slc_img" id="slc_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    <?php if ($student && !empty($student['slc_img'])): ?>
-                        <small class="text-gray-500">Current: <a href="<?php echo $student['slc_img']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">B-Form No <span class="text-red-500">*</span></label>
                 <input type="text" name="b_form_no" id="b_form_no" value="<?php echo $student ? formatCnic($student['b_form_no']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
-
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father's Contact</label>
+                <label class="text-sm font-medium text-gray-700">Father's Contact <span class="text-red-500">*</span></label>
                 <input type="text" name="father_contact" id="father_contact" value="<?php echo $student ? formatContact($student['father_contact']) : ''; ?>" placeholder="xxxx-xxxxxxx" maxlength="12" class="contact-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
@@ -368,39 +359,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="text" name="semis_code" id="semis_code" value="<?php echo $student ? htmlspecialchars($student['semis_code']) : '424010147'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
-            <?php 
-            // Show Status Field if Student is Alumni or we are restoring
-            $isAlumni = ($student && isset($student['student_status']) && $student['student_status'] === 'Alumni');
-            $isRestore = isset($_GET['restore']);
-            
-            if ($isAlumni || $isRestore): 
-            ?>
+            <?php if ($student && (isset($student['student_status']) && $student['student_status'] === 'Alumni') || isset($_GET['restore'])): ?>
             <div class="col-span-full bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                 <h4 class="font-bold text-yellow-800 mb-2"> <i class="fas fa-exclamation-triangle"></i> Account Status</h4>
                 <div class="flex flex-col space-y-2">
                     <label class="text-sm font-medium text-gray-700">Student Status</label>
                     <select name="student_status" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="Active" <?php echo ($isRestore) ? 'selected' : ''; ?>>Active (Restore Student)</option>
-                        <option value="Alumni" <?php echo (!$isRestore && $isAlumni) ? 'selected' : ''; ?>>Alumni (Graduated/Left)</option>
+                        <option value="Active" <?php echo (isset($_GET['restore'])) ? 'selected' : ''; ?>>Active (Restore Student)</option>
+                        <option value="Alumni" <?php echo (!isset($_GET['restore'])) ? 'selected' : ''; ?>>Alumni (Graduated/Left)</option>
                     </select>
-                    <p class="text-xs text-gray-500">Select "Active" to restore this student to the main list.</p>
                 </div>
             </div>
             <?php endif; ?>
 
-            <!-- Section: Documents -->
-            <div class="col-span-full border-b pb-2 mb-2 mt-6">
-                <h3 class="text-xl font-semibold text-gray-800">Documents Upload</h3>
+            <!-- Dynamic Section: Previous School Info -->
+            <div id="previousSchoolSection" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4 mt-2 hidden">
+                <div class="col-span-full">
+                    <h3 class="text-lg font-semibold text-gray-800">Previous School Information</h3>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Previous School Name</label>
+                    <input type="text" name="previous_school" id="previous_school" value="<?php echo $student ? htmlspecialchars($student['previous_school'] ?? '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">SLC Image</label>
+                    <input type="file" name="slc_img" id="slc_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
             </div>
 
-
+            <!-- Documents -->
+            <div class="col-span-full border-t pt-4 mt-2">
+                <h3 class="text-lg font-semibold text-gray-800">Document Uploads</h3>
+            </div>
 
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Father CNIC (Front)</label>
                 <input type="file" name="father_cnic_front" id="father_cnic_front" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                <div id="father_cnic_front_preview" class="mt-2">
+                <div id="father_cnic_front_preview" class="mt-2 text-xs">
                     <?php if ($student && !empty($student['father_cnic_front'])): ?>
-                        <small class="text-gray-500">Current: <a href="<?php echo $student['father_cnic_front']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
+                        <a href="<?php echo $student['father_cnic_front']; ?>" target="_blank" class="text-indigo-600 hover:underline">View Existing Front</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -408,9 +405,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Father CNIC (Back)</label>
                 <input type="file" name="father_cnic_back" id="father_cnic_back" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                <div id="father_cnic_back_preview" class="mt-2">
+                <div id="father_cnic_back_preview" class="mt-2 text-xs">
                     <?php if ($student && !empty($student['father_cnic_back'])): ?>
-                        <small class="text-gray-500">Current: <a href="<?php echo $student['father_cnic_back']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
+                        <a href="<?php echo $student['father_cnic_back']; ?>" target="_blank" class="text-indigo-600 hover:underline">View Existing Back</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -419,14 +416,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label class="text-sm font-medium text-gray-700">B-Form / CRC Image</label>
                 <input type="file" name="b_form_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 <?php if ($student && !empty($student['b_form_img'])): ?>
-                    <small class="text-gray-500">Current: <a href="<?php echo $student['b_form_img']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
+                    <small class="text-gray-500">Existing: <a href="<?php echo $student['b_form_img']; ?>" target="_blank" class="text-indigo-600 hover:underline">View</a></small>
                 <?php endif; ?>
             </div>
 
         </div>
 
         <div class="mt-8">
-            <button type="submit" class="w-full bg-gradient-to-r from-primary to-green-800 text-white font-bold py-3 px-4 rounded-md hover:from-green-800 hover:to-green-900 transition duration-300 shadow-lg text-lg transform hover:-translate-y-0.5">
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition duration-300 shadow-lg text-lg">
                 <?php echo $id ? 'Update Student Record' : 'Submit Admission Form'; ?>
             </button>
         </div>
@@ -528,71 +525,156 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const cnicStatus = document.getElementById('cnic_status');
 
         let debounceTimer;
-        let lastRequestTime = 0;
+        // Real-time Name Suggestions
+        const fatherSuggestions = document.getElementById('father_suggestions');
 
-        cnicInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            const cnic = this.value.trim();
-            
-            if (cnic.length < 5) {
+        let nameSearchTimer;
+        fatherNameInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length < 2) {
+                fatherSuggestions.classList.add('hidden');
+                return;
+            }
+
+            clearTimeout(nameSearchTimer);
+            nameSearchTimer = setTimeout(() => {
+                fetch(`../api/search_parents.php?q=${encodeURIComponent(query)}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('API Error');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            fatherSuggestions.innerHTML = '';
+                            data.forEach(p => {
+                                const div = document.createElement('div');
+                                div.className = 'px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors duration-150';
+                                div.innerHTML = `
+                                    <div class="font-bold text-gray-800 dark:text-gray-200">${p.father_name}</div>
+                                    <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest">${p.father_cnic || 'No CNIC'}</div>
+                                `;
+                                div.onclick = () => {
+                                    fatherNameInput.value = p.father_name;
+                                    cnicInput.value = formatCnicJS(p.father_cnic);
+                                    fatherContactInput.value = formatContactJS(p.father_contact);
+                                    
+                                    // Autofill Images
+                                    if (p.father_cnic_front) {
+                                        cnicFrontInput.removeAttribute('required');
+                                        cnicFrontPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Front: <a href="${p.father_cnic_front}" target="_blank" class="underline">View</a></small>
+                                        <input type="hidden" name="existing_father_cnic_front" value="${p.father_cnic_front}">`;
+                                    }
+                                    if (p.father_cnic_back) {
+                                        cnicBackInput.removeAttribute('required');
+                                        cnicBackPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Back: <a href="${p.father_cnic_back}" target="_blank" class="underline">View</a></small>
+                                        <input type="hidden" name="existing_father_cnic_back" value="${p.father_cnic_back}">`;
+                                    }
+
+                                    fatherSuggestions.classList.add('hidden');
+                                    cnicStatus.textContent = '✓ Existing Parent - Details autofilled';
+                                    cnicStatus.className = 'text-[10px] text-green-600 font-bold uppercase';
+                                };
+                                fatherSuggestions.appendChild(div);
+                            });
+                            fatherSuggestions.classList.remove('hidden');
+                        } else {
+                            fatherSuggestions.classList.add('hidden');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Name search error:', err);
+                        fatherSuggestions.classList.add('hidden');
+                    });
+            }, 300);
+        });
+
+        // Hide suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (!fatherNameInput.contains(e.target) && !fatherSuggestions.contains(e.target)) {
+                fatherSuggestions.classList.add('hidden');
+            }
+        });
+
+        function formatCnicJS(value) {
+            let val = value.replace(/\D/g, '');
+            if (val.length > 13) val = val.substring(0, 13);
+            if (val.length > 12) {
+                return val.substring(0, 5) + '-' + val.substring(5, 12) + '-' + val.substring(12, 13);
+            } else if (val.length > 5) {
+                return val.substring(0, 5) + '-' + val.substring(5);
+            }
+            return val;
+        }
+
+        function formatContactJS(value) {
+            let val = value.replace(/\D/g, '');
+            if (val.length > 11) val = val.substring(0, 11);
+            if (val.length > 4) {
+                return val.substring(0, 4) + '-' + val.substring(4);
+            }
+            return val;
+        }
+
+        function lookupParent(type, value) {
+            if (value.length < (type === 'cnic' ? 5 : 3)) {
                 cnicStatus.textContent = '';
                 return;
             }
 
             cnicStatus.textContent = 'Checking...';
-            cnicStatus.className = 'text-xs text-gray-500'; // Reset color
+            cnicStatus.className = 'text-xs text-gray-500';
             
+            clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const currentRequestTime = Date.now();
                 lastRequestTime = currentRequestTime;
 
-                fetch(`../api/get_parent.php?cnic=${encodeURIComponent(cnic)}`)
+                fetch(`../api/get_parent.php?${type}=${encodeURIComponent(value)}`)
                     .then(response => {
-                        // If this is not the latest request, ignore the response completely
                         if (lastRequestTime !== currentRequestTime) return null;
-
-                        if (response.ok) {
-                            return response.json();
-                        }
+                        if (response.ok) return response.json();
                         throw new Error('Parent not found');
                     })
                     .then(data => {
-                        if (!data) return; // Request was outdated
-
+                        if (!data) return;
                         cnicStatus.textContent = '✓ Existing Parent - Details autofilled';
-                        cnicStatus.className = 'text-xs text-green-600 font-semibold';
+                        cnicStatus.className = 'text-[10px] text-green-600 font-bold uppercase';
                         
                         // Autofill fields
-                        if (data.father_name) fatherNameInput.value = data.father_name;
-                        if (data.father_contact) fatherContactInput.value = formatContact(data.father_contact);
+                        if (data.father_name && type === 'cnic') fatherNameInput.value = data.father_name;
+                        if (data.father_cnic && type === 'name') cnicInput.value = formatCnicJS(data.father_cnic);
+                        if (data.father_contact) fatherContactInput.value = formatContactJS(data.father_contact);
                         
                         // Handle Images
                         if (data.father_cnic_front) {
                             cnicFrontInput.removeAttribute('required');
-                            cnicFrontPreview.innerHTML = `<small class="text-green-600">Existing image found: <a href="${data.father_cnic_front}" target="_blank" class="underline">View</a></small>
+                            cnicFrontPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Front: <a href="${data.father_cnic_front}" target="_blank" class="underline">View</a></small>
                             <input type="hidden" name="existing_father_cnic_front" value="${data.father_cnic_front}">`;
                         }
                         
                         if (data.father_cnic_back) {
                             cnicBackInput.removeAttribute('required');
-                            cnicBackPreview.innerHTML = `<small class="text-green-600">Existing image found: <a href="${data.father_cnic_back}" target="_blank" class="underline">View</a></small>
+                            cnicBackPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Back: <a href="${data.father_cnic_back}" target="_blank" class="underline">View</a></small>
                             <input type="hidden" name="existing_father_cnic_back" value="${data.father_cnic_back}">`;
                         }
                     })
                     .catch(error => {
-                        // If this is not the latest request, ignore the error
                         if (lastRequestTime !== currentRequestTime) return;
-
-                        cnicStatus.textContent = 'New Parent (Not found in database)';
-                        cnicStatus.className = 'text-xs text-gray-500';
-                        
+                        cnicStatus.textContent = '';
                         <?php if (!$id): ?>
                         cnicFrontPreview.innerHTML = '';
                         cnicBackPreview.innerHTML = '';
                         <?php endif; ?>
                     });
-            }, 500); // 500ms debounce
+            }, 500);
+        }
+
+        cnicInput.addEventListener('input', function() {
+            lookupParent('cnic', this.value.trim());
         });
+
+        // Blurred lookup removed for name as suggestions handle it now, but we can keep it as backup
+        // Or just let suggestions handle it. Let's keep the cnic one.
 
         // CNIC Formatting Logic
         const cnicInputs = document.querySelectorAll('.cnic-input');

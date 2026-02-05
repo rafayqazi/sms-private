@@ -20,6 +20,11 @@ if (isset($_GET['edit'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+
     $profileImage = '';
     // If editing and no new image, keep old one (handled in db update)
     // If new image uploaded, process it
@@ -31,13 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $fileExt = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
         $allowed = ['jpg', 'jpeg', 'png'];
+        $allowedMime = ['image/jpeg', 'image/png'];
+        $maxSize = 2 * 1024 * 1024; // 2MB
         
-        if (in_array($fileExt, $allowed)) {
-            $fileName = uniqid() . '.' . $fileExt;
-            $targetFile = $uploadDir . $fileName;
-            
-            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $targetFile)) {
-                $profileImage = $targetFile;
+        if (in_array($fileExt, $allowed) && $_FILES['profile_image']['size'] <= $maxSize) {
+            $check = getimagesize($_FILES['profile_image']['tmp_name']);
+            if ($check !== false && in_array($check['mime'], $allowedMime)) {
+                $fileName = uniqid('T-', true) . '.' . $fileExt;
+                $targetFile = $uploadDir . $fileName;
+                
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $targetFile)) {
+                    $profileImage = $targetFile;
+                }
             }
         }
     }
@@ -96,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <form action="" method="POST" enctype="multipart/form-data" class="p-4 md:p-8" id="teacherForm">
+        <?php echo csrfInput(); ?>
         
         <!-- Personal Information -->
         <div class="border-b pb-2 mb-6">
@@ -186,8 +197,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Digital Payment / Bank Account number <span class="text-red-500">*</span></label>
-                <select name="payment_type" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Digital Payment / Bank Account number</label>
+                <select name="payment_type" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Type</option>
                     <option value="Bank" <?php echo ($editMode && isset($teacher['payment_type']) && $teacher['payment_type'] == 'Bank') ? 'selected' : ''; ?>>Bank</option>
                     <option value="EasyPaisa" <?php echo ($editMode && isset($teacher['payment_type']) && $teacher['payment_type'] == 'EasyPaisa') ? 'selected' : ''; ?>>EasyPaisa</option>
@@ -196,13 +207,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Account / Mobile No <span class="text-red-500">*</span></label>
-                <input type="text" name="payment_no" required value="<?php echo $editMode ? (isset($teacher['payment_no']) ? htmlspecialchars($teacher['payment_no']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Account / Mobile No</label>
+                <input type="text" name="payment_no" value="<?php echo $editMode ? (isset($teacher['payment_no']) ? htmlspecialchars($teacher['payment_no']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">IBAN <span class="text-red-500">*</span></label>
-                <input type="text" name="iban" id="iban" required maxlength="24" value="<?php echo $editMode ? (isset($teacher['iban']) ? htmlspecialchars($teacher['iban']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="PK36SCBL0000001123456702">
+                <label class="text-sm font-medium text-gray-700">IBAN</label>
+                <input type="text" name="iban" id="iban" maxlength="24" value="<?php echo $editMode ? (isset($teacher['iban']) ? htmlspecialchars($teacher['iban']) : '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="PK36SCBL0000001123456702">
                 <small id="iban_error" class="text-red-500 text-xs hidden"></small>
             </div>
 
@@ -217,18 +228,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Department <span class="text-red-500">*</span></label>
-                <input type="text" name="department" required value="<?php echo $editMode ? (isset($teacher['department']) ? htmlspecialchars($teacher['department']) : 'Sindh Education and Literacy Department') : 'Sindh Education and Literacy Department'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Department</label>
+                <input type="text" name="department" value="<?php echo $editMode ? (isset($teacher['department']) ? htmlspecialchars($teacher['department']) : 'Sindh Education and Literacy Department') : 'Sindh Education and Literacy Department'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Place of Posting <span class="text-red-500">*</span></label>
-                <input type="text" name="posting" required value="<?php echo $editMode ? (isset($teacher['posting']) ? htmlspecialchars($teacher['posting']) : htmlspecialchars($settings['school_name'])) : htmlspecialchars($settings['school_name']); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Place of Posting</label>
+                <input type="text" name="posting" value="<?php echo $editMode ? (isset($teacher['posting']) ? htmlspecialchars($teacher['posting']) : htmlspecialchars($settings['school_name'])) : htmlspecialchars($settings['school_name']); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">BPS (Pay Scale) <span class="text-red-500">*</span></label>
-                <select name="basic_scale" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">BPS (Pay Scale)</label>
+                <select name="basic_scale" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select BPS</option>
                     <?php for($i = 1; $i <= 22; $i++): ?>
                         <option value="<?php echo $i; ?>" <?php echo (($editMode && isset($teacher['basic_scale']) && $teacher['basic_scale'] == $i) || (!$editMode && $i == 14)) ? 'selected' : ''; ?>><?php echo $i; ?></option>

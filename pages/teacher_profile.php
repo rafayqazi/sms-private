@@ -26,9 +26,14 @@ if ($id) {
         <h1 class="text-2xl font-bold">Teacher Profile</h1>
         <p class="text-green-100 mt-1">Manage teaching staff details</p>
     </div>
-    <a href="../index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
-        <i class="fas fa-arrow-left"></i> Dashboard
-    </a>
+    <div class="flex gap-2 w-full md:w-auto">
+        <a href="teacher_form.php" class="bg-white text-primary border border-white px-6 py-2 rounded-md hover:bg-green-50 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
+            <i class="fas fa-plus-circle"></i> Add New Teacher
+        </a>
+        <a href="../index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+    </div>
 </div>
 
 <?php if ($id && $teacher): ?>
@@ -137,69 +142,112 @@ if ($id) {
             <!-- Potential existing filters or search could go here or align right -->
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-100 border-b">
-                        <th class="p-3 w-10">
-                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4">
-                        </th>
-                        <th class="p-3 font-semibold text-gray-700">S#</th>
-                        <th class="p-3 font-semibold text-gray-700">ID</th>
-                        <th class="p-3 font-semibold text-gray-700">Name</th>
-                        <th class="p-3 font-semibold text-gray-700">Designation</th>
-                        <th class="p-3 font-semibold text-gray-700">Department</th>
-                        <th class="p-3 font-semibold text-gray-700">Contact</th>
-                        <th class="p-3 font-semibold text-gray-700">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($allTeachers) > 0): ?>
-                        <?php $i = 1; foreach ($allTeachers as $t): ?>
-                            <tr class="border-b hover:bg-gray-50 transition-colors">
-                                <td class="p-3">
-                                    <input type="checkbox" name="teacher_ids[]" value="<?php echo htmlspecialchars($t['id']); ?>" class="teacher-checkbox rounded border-gray-300 text-primary focus:ring-primary h-4 w-4">
-                                </td>
-                                <td class="p-3 font-mono text-gray-600"><?php echo $i++; ?></td>
-                                <td class="p-3"><?php echo htmlspecialchars($t['id']); ?></td>
-                                <td class="p-3">
-                                    <div class="flex items-center">
-                                        <?php if (!empty($t['profile_image']) && file_exists($t['profile_image'])): ?>
-                                            <img src="<?php echo htmlspecialchars($t['profile_image']); ?>" alt="" class="rounded-full w-8 h-8 mr-2 object-cover object-top">
-                                        <?php else: ?>
-                                            <div class="w-8 h-8 rounded-full bg-gray-200 mr-2 flex items-center justify-center text-gray-500">
-                                                <i class="fas fa-user text-xs"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                        <?php echo htmlspecialchars($t['name']); ?>
-                                    </div>
-                                </td>
-                                <td class="p-3 capitalize"><?php echo htmlspecialchars($t['designation']); ?></td>
-                                <td class="p-3 capitalize"><?php echo htmlspecialchars($t['department']); ?></td>
-                                <td class="p-3"><?php echo htmlspecialchars($t['contact']); ?></td>
-                                <td class="p-3">
-                                    <div class="flex items-center gap-2">
-                                        <a href="teacher_profile.php?id=<?php echo $t['id']; ?>" class="text-blue-500 hover:text-blue-700 transition-colors" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="teacher_form.php?edit=<?php echo $t['id']; ?>" class="text-yellow-500 hover:text-yellow-700 transition-colors" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="../api/delete_teacher.php?id=<?php echo $t['id']; ?>" class="text-red-500 hover:text-red-700 transition-colors" title="Delete" onclick="return confirm('Are you sure you want to delete this teacher?');">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="p-4 text-center text-gray-500">No teachers found.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <div class="mb-4">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary h-5 w-5 cursor-pointer">
+                <label for="selectAll" class="text-gray-600 font-bold text-sm cursor-pointer select-none">Select All Teachers For Bulk Action</label>
+            </div>
         </div>
+
+        <?php if (count($allTeachers) > 0): ?>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <?php foreach ($allTeachers as $t): ?>
+                    <div class="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-6 relative group overflow-hidden border-b-4 border-b-transparent hover:border-b-indigo-500 h-full flex flex-col">
+                        <!-- Bulk Selection -->
+                        <div class="absolute top-4 left-4 z-10">
+                            <input type="checkbox" name="teacher_ids[]" value="<?php echo htmlspecialchars($t['id']); ?>" class="teacher-checkbox rounded-full border-gray-300 text-primary focus:ring-primary h-5 w-5 cursor-pointer transition-transform hover:scale-110">
+                        </div>
+
+                        <!-- Top Toolbar (Visual Only, Actions grouped below) -->
+                        <div class="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="teacher_profile.php?id=<?php echo $t['id']; ?>" class="bg-indigo-50 text-indigo-600 p-2 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm" title="Quick View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+
+                        <!-- Card Content -->
+                        <div class="flex flex-col items-center flex-grow">
+                            <!-- Avatar -->
+                            <div class="relative mb-6">
+                                <?php 
+                                $imgFile = !empty($t['profile_image']) ? $t['profile_image'] : '';
+                                if (!empty($imgFile) && !file_exists($imgFile)) {
+                                    if (file_exists('../' . $imgFile)) $imgFile = '../' . $imgFile;
+                                    else $imgFile = '';
+                                }
+                                ?>
+                                <?php if (!empty($imgFile)): ?>
+                                    <img src="<?php echo htmlspecialchars($imgFile); ?>" alt="" class="w-28 h-28 rounded-3xl object-cover object-top border-4 border-white shadow-lg group-hover:scale-105 transition-transform duration-500">
+                                <?php else: ?>
+                                    <div class="w-28 h-28 rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center text-indigo-500 shadow-inner group-hover:rotate-3 transition-transform">
+                                        <i class="fas fa-user-tie text-4xl"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="absolute -bottom-2 -right-2 bg-indigo-600 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-md uppercase tracking-tighter">
+                                    ID: <?php echo htmlspecialchars($t['id']); ?>
+                                </div>
+                            </div>
+                            
+                            <!-- Name & Title -->
+                            <div class="text-center mb-6">
+                                <h3 class="font-black text-gray-800 text-lg mb-1 leading-tight group-hover:text-indigo-600 transition-colors"><?php echo htmlspecialchars($t['name']); ?></h3>
+                                <div class="flex items-center justify-center gap-2">
+                                    <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
+                                        <?php echo htmlspecialchars($t['designation']); ?>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Meta Info -->
+                            <div class="w-full space-y-3 mb-6">
+                                <div class="flex items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 hover:bg-white transition-colors duration-300">
+                                    <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-building text-indigo-400 text-xs text-center"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tight mb-0.5">Department</p>
+                                        <p class="text-xs text-gray-700 font-semibold truncate"><?php echo htmlspecialchars($t['department']); ?></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50 hover:bg-white transition-colors duration-300">
+                                    <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-phone-alt text-indigo-400 text-xs text-center"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tight mb-0.5">Contact</p>
+                                        <p class="text-xs text-gray-700 font-semibold"><?php echo htmlspecialchars($t['contact']); ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-gray-100">
+                            <a href="teacher_profile.php?id=<?php echo $t['id']; ?>" class="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 flex items-center justify-center shadow-md hover:shadow-indigo-200 transition-all font-bold text-xs gap-1.5" title="Full Bio">
+                                <i class="fas fa-id-card"></i>
+                            </a>
+                            <a href="teacher_form.php?edit=<?php echo $t['id']; ?>" class="bg-amber-500 text-white p-2.5 rounded-xl hover:bg-amber-600 flex items-center justify-center shadow-md hover:shadow-amber-200 transition-all font-bold text-xs gap-1.5" title="Update">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="../api/delete_teacher.php?id=<?php echo $t['id']; ?>" class="bg-rose-500 text-white p-2.5 rounded-xl hover:bg-rose-600 flex items-center justify-center shadow-md hover:shadow-rose-200 transition-all font-bold text-xs gap-1.5" title="Terminate" onclick="return confirm('Are you sure you want to delete this teacher?');">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="bg-gray-50 rounded-3xl p-20 text-center border-2 border-dashed border-gray-200">
+                <div class="w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-users-slash text-gray-300 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">No Teachers Found</h3>
+                <p class="text-gray-500 mb-6">It seems your staff directory is empty.</p>
+                <a href="teacher_form.php" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-200">
+                    <i class="fas fa-plus-circle mr-2"></i> Add First Teacher
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
     
     <script>

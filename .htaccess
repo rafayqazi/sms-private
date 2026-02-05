@@ -1,0 +1,12 @@
+# Prevent directory browsing
+Options -Indexes
+
+# Deny access to sensitive files
+<FilesMatch "\.(csv|json|log|md|sql)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# Specifically deny access to certain folders
+RewriteEngine On
+RewriteRule ^(data|includes|vendor|brain)/ - [F,L]

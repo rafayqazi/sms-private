@@ -1,11 +1,27 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
-// Set session cookie lifetime to 1 day (86400 seconds)
-ini_set('session.gc_maxlifetime', 86400);
-session_set_cookie_params(86400);
+// Set session cookie security parameters
+session_set_cookie_params([
+    'lifetime' => 86400,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']), // Secure if using HTTPS
+    'httponly' => true,                  // Prevent JS access to session cookie
+    'samesite' => 'Lax'                  // Protect against some CSRF
+]);
 
 session_start();
+
+// Regenerate session ID periodically to prevent fixation
+if (!isset($_SESSION['last_regeneration'])) {
+    session_regenerate_id(true);
+    $_SESSION['last_regeneration'] = time();
+} elseif (time() - $_SESSION['last_regeneration'] > 1800) { // Every 30 mins
+    session_regenerate_id(true);
+    $_SESSION['last_regeneration'] = time();
+}
+
 
 // Enforce 1-day timeout
 if (isset($_SESSION['login_time'])) {

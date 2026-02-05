@@ -141,21 +141,27 @@ if (empty($students)) {
                 <div class="flex-1 flex px-3 items-center gap-2 z-10">
                     <!-- Details -->
                     <div class="flex-1">
-                        <div class="grid grid-cols-[45px_1fr] gap-x-1 gap-y-1 text-[9px] leading-tight items-baseline">
+                        <div class="grid grid-cols-[68px_1fr] gap-x-1 gap-y-1 text-[9px] leading-tight items-baseline">
                             <span class="font-bold text-gray-700 uppercase">Name:</span>
                             <span class="font-bold text-gray-900 uppercase truncate"><?php echo htmlspecialchars($student['student_name']); ?></span>
 
-                            <span class="font-bold text-gray-700 uppercase">F/Name:</span>
+                            <span class="font-bold text-gray-700 uppercase">Father Name:</span>
                             <span class="font-bold text-gray-900 uppercase truncate"><?php echo htmlspecialchars($student['father_name']); ?></span>
 
                             <span class="font-bold text-gray-700 uppercase">Class:</span>
-                            <span class="font-bold text-gray-900 uppercase truncate"><?php echo htmlspecialchars($student['current_class']); ?></span>
+                            <span class="font-bold text-gray-900 uppercase truncate lowercase capitalize"><?php echo htmlspecialchars($student['current_class']); ?></span>
 
                             <span class="font-bold text-gray-700 uppercase">GR No:</span>
                             <span class="font-bold text-red-600 uppercase truncate"><?php echo htmlspecialchars($student['gr_no']); ?></span>
                             
                             <span class="font-bold text-gray-700 uppercase">DOB:</span>
                             <span class="font-bold text-gray-900 truncate"><?php echo !empty($student['date_of_birth']) ? date('d-m-Y', strtotime($student['date_of_birth'])) : 'N/A'; ?></span>
+
+                            <span class="font-bold text-gray-700 uppercase">Gender:</span>
+                            <span class="font-bold text-gray-900 uppercase truncate"><?php echo htmlspecialchars($student['gender'] ?? 'N/A'); ?></span>
+
+                            <span class="font-bold text-gray-700 uppercase">Contact:</span>
+                            <span class="font-bold text-gray-900 uppercase truncate"><?php echo htmlspecialchars($student['father_contact'] ?? 'N/A'); ?></span>
                         </div>
                     </div>
 
@@ -180,7 +186,7 @@ if (empty($students)) {
                             }
                             
                             if ($imagePath): ?>
-                                <img src="<?php echo htmlspecialchars($imagePath); ?>" class="w-full h-full object-cover object-top">
+                                <img src="<?php echo htmlspecialchars($imagePath); ?>" class="w-full h-full object-cover object-top" style="object-position: top center;">
                             <?php else: ?>
                                 <span class="text-[8px] text-gray-400 text-center p-1">No Photo</span>
                             <?php endif; ?>
@@ -195,7 +201,7 @@ if (empty($students)) {
                     </div>
                     <div class="text-center">
                         <div class="w-20 border-b border-black mb-0.5"></div>
-                        <p class="text-[6px] font-bold uppercase"><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
+                        <p class="text-[6px] font-bold uppercase">Headmaster: <?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
                     </div>
                 </footer>
                 

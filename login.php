@@ -1,5 +1,16 @@
 <?php
 require_once 'includes/db.php';
+require_once 'includes/functions.php';
+
+// Set session cookie security parameters
+session_set_cookie_params([
+    'lifetime' => 86400,
+    'path' => '/',
+    'secure' => isset($_SERVER['HTTPS']),
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
 session_start();
 $db = new Database();
 $settings = $db->getSchoolSettings();
@@ -12,6 +23,11 @@ if (isset($_SESSION['user'])) {
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+
     $username = $_POST['username'];
     $password = $_POST['password'];
 
@@ -26,6 +42,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['assigned_classes'] = [];
         $_SESSION['login_time'] = time(); // Set login timestamp
         $_SESSION['show_welcome_animation'] = true; // Trigger animation
+        
+        session_regenerate_id(true); // Prevent session fixation
+        
         header("Location: index.php");
         exit;
     } else {
@@ -46,6 +65,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['assigned_classes'] = $userRole['assigned_classes'] ? $userRole['assigned_classes'] : [];
             $_SESSION['login_time'] = time(); // Set login timestamp
             $_SESSION['show_welcome_animation'] = true; // Trigger animation
+            
+            session_regenerate_id(true); // Prevent session fixation
+            
             header("Location: index.php");
             exit;
         } else {
@@ -104,6 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php endif; ?>
 
         <form action="" method="POST" class="space-y-6">
+            <?php echo csrfInput(); ?>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">Username</label>
                 <div class="relative">

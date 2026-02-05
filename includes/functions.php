@@ -176,4 +176,24 @@ function sendRoleChangeEmail($to, $name, $role, $username, $password = null, $ac
     // Note: This requires a configured mail server (e.g., SMTP in php.ini) to work on localhost
     return mail($to, $subject, $message, $headers);
 }
+
+// CSRF Protection Functions
+function generateCsrfToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function verifyCsrfToken($token) {
+    if (!isset($_SESSION['csrf_token']) || empty($token)) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
+
+function csrfInput() {
+    $token = generateCsrfToken();
+    return '<input type="hidden" name="csrf_token" value="' . $token . '">';
+}
 ?>

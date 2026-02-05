@@ -36,8 +36,12 @@ if (isset($_POST['issue_book'])) {
 // Handle Return
 if (isset($_POST['return_book'])) {
     $issueId = $_POST['issue_id'];
-    $remarks = $_POST['remarks'];
-    if ($bookDb->returnBook($issueId, $remarks)) {
+    $condition = $_POST['condition'] ?? 'normal';
+    $damageType = $_POST['damage_type'] ?? '';
+    $damageRemarks = $_POST['damage_remarks'] ?? '';
+    $remarks = $_POST['remarks'] ?? '';
+    
+    if ($bookDb->returnBook($issueId, $condition, $damageType, $damageRemarks, $remarks)) {
         $message = "Book returned successfully.";
     } else {
         $error = "Failed to return book.";
@@ -45,13 +49,31 @@ if (isset($_POST['return_book'])) {
 }
 
 $history = $bookDb->getStudentHistory($studentId);
-$availableBooks = array_filter($bookDb->getAllBooks(), function($b) use ($student) {
-    // Only show books for student's class and having stock
-    return $b['class'] == $student['current_class'] && $b['qty_available'] > 0;
+// Library Mode: Show ALL available books regardless of student class
+$availableBooks = array_filter($bookDb->getAllBooks(), function($b) {
+    return $b['qty_available'] > 0 && (!isset($b['status']) || $b['status'] == 'active');
 });
 ?>
 
 <?php include '../includes/header.php'; ?>
+
+<?php if ($message): ?>
+    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg shadow-md">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-3 text-xl"></i>
+            <p class="font-medium"><?php echo htmlspecialchars($message); ?></p>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if ($error): ?>
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-md">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-3 text-xl"></i>
+            <p class="font-medium"><?php echo htmlspecialchars($error); ?></p>
+        </div>
+    </div>
+<?php endif; ?>
 
 <div class="mb-6">
     <a href="book_bank.php" class="text-teal-600 hover:text-teal-800 flex items-center gap-2 mb-4">
@@ -115,14 +137,20 @@ $availableBooks = array_filter($bookDb->getAllBooks(), function($b) use ($studen
             <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <i class="fas fa-plus-circle text-teal-600"></i> Issue New Book
             </h2>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4 rounded">
+                <p class="text-sm text-blue-800 flex items-center gap-2">
+                    <i class="fas fa-book-reader"></i>
+                    <strong>Library Mode:</strong> Any book from any class can be issued!
+                </p>
+            </div>
             <form method="POST" class="flex flex-col md:flex-row gap-4 items-end">
                 <div class="w-full">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Book (Class <?php echo $student['current_class']; ?>)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Book (Any Class)</label>
                     <select name="book_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500" required>
                         <option value="">-- Choose Book --</option>
                         <?php foreach ($availableBooks as $book): ?>
                             <option value="<?php echo $book['id']; ?>">
-                                <?php echo htmlspecialchars($book['subject']); ?> - <?php echo htmlspecialchars($book['name']); ?> (<?php echo $book['qty_available']; ?> left)
+                                Class <?php echo htmlspecialchars($book['class']); ?> - <?php echo htmlspecialchars($book['subject']); ?> - <?php echo htmlspecialchars($book['name']); ?> (<?php echo $book['qty_available']; ?> left)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -132,7 +160,7 @@ $availableBooks = array_filter($bookDb->getAllBooks(), function($b) use ($studen
                 </button>
             </form>
             <?php if (empty($availableBooks)): ?>
-                <p class="text-xs text-red-500 mt-2">No books available for this class in inventory.</p>
+                <p class="text-xs text-red-500 mt-2">No books available in inventory.</p>
             <?php endif; ?>
         </div>
     </div>
@@ -172,21 +200,76 @@ $availableBooks = array_filter($bookDb->getAllBooks(), function($b) use ($studen
 
 <!-- Return Modal -->
 <div id="returnModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full">
-        <form method="POST" class="p-6">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <form method="POST" class="p-6" id="returnForm">
             <h3 class="text-lg font-bold text-gray-800 mb-2">Return Book</h3>
             <p id="returnBookName" class="text-gray-600 mb-4 text-sm"></p>
             
             <input type="hidden" name="issue_id" id="returnIssueId">
             
+            <!-- Book Condition -->
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Remarks (Condition etc.)</label>
-                <textarea name="remarks" rows="2" class="w-full border border-gray-300 rounded-md p-2 text-sm" placeholder="e.g. Good condition, Torn page..."></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Book Condition <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center justify-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 has-[:checked]:border-green-500 has-[:checked]:bg-green-50 transition-all">
+                        <input type="radio" name="condition" value="normal" checked class="sr-only" onchange="toggleDamageFields(false)">
+                        <span class="flex items-center gap-2 font-medium text-gray-700">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i> Normal
+                        </span>
+                    </label>
+                    <label class="flex items-center justify-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-red-500 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition-all">
+                        <input type="radio" name="condition" value="damaged" class="sr-only" onchange="toggleDamageFields(true)">
+                        <span class="flex items-center gap-2 font-medium text-gray-700">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i> Damaged
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Damage Details (Hidden by default) -->
+            <div id="damageFields" class="mb-4 hidden">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
+                    <p class="text-sm text-red-700 flex items-center gap-2 font-medium mb-2">
+                        <i class="fas fa-info-circle"></i> Warning
+                    </p>
+                    <p class="text-xs text-red-600">
+                        Damaged books will NOT return to stock. They will be moved to damaged inventory.
+                    </p>
+                </div>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Damage Type <span class="text-red-500">*</span>
+                </label>
+                <select name="damage_type" id="damageType" class="w-full border border-gray-300 rounded-lg p-2 mb-3">
+                    <option value="">-- Select Damage Type --</option>
+                    <option value="torn_pages">Torn Pages</option>
+                    <option value="water_damage">Water Damage</option>
+                    <option value="missing_pages">Missing Pages</option>
+                    <option value="cover_damage">Cover Damage</option>
+                    <option value="writing_scribbles">Writing/Scribbles</option>
+                    <option value="binding_broken">Binding Broken</option>
+                    <option value="other">Other</option>
+                </select>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Damage Details <span class="text-red-500">*</span>
+                </label>
+                <textarea name="damage_remarks" id="damageRemarks" rows="2" class="w-full border border-gray-300 rounded-lg p-2" placeholder="Describe the damage in detail..."></textarea>
+            </div>
+
+            <!-- General Remarks -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    General Remarks <span class="text-gray-400">(optional)</span>
+                </label>
+                <textarea name="remarks" rows="2" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="e.g. Late return, Notes..."></textarea>
             </div>
             
             <div class="flex justify-end gap-2">
-                <button type="button" onclick="document.getElementById('returnModal').classList.add('hidden')" class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                <button type="submit" name="return_book" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700">Confirm Return</button>
+                <button type="button" onclick="closeReturnModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button type="submit" name="return_book" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2">
+                    <i class="fas fa-undo"></i> Confirm Return
+                </button>
             </div>
         </form>
     </div>
@@ -197,7 +280,56 @@ $availableBooks = array_filter($bookDb->getAllBooks(), function($b) use ($studen
         document.getElementById('returnIssueId').value = issueId;
         document.getElementById('returnBookName').textContent = `Returning: ${bookName}`;
         document.getElementById('returnModal').classList.remove('hidden');
+        
+        // Reset form
+        document.getElementById('returnForm').reset();
+        document.getElementById('damageFields').classList.add('hidden');
     }
+    
+    function closeReturnModal() {
+        document.getElementById('returnModal').classList.add('hidden');
+        document.getElementById('returnForm').reset();
+    }
+    
+    function toggleDamageFields(show) {
+        const damageFields = document.getElementById('damageFields');
+        const damageType = document.getElementById('damageType');
+        const damageRemarks = document.getElementById('damageRemarks');
+        
+        if (show) {
+            damageFields.classList.remove('hidden');
+            damageType.required = true;
+            damageRemarks.required = true;
+        } else {
+            damageFields.classList.add('hidden');
+            damageType.required = false;
+            damageRemarks.required = false;
+            damageType.value = '';
+            damageRemarks.value = '';
+        }
+    }
+    
+    // Form validation
+    document.getElementById('returnForm').addEventListener('submit', function(e) {
+        const condition = document.querySelector('input[name="condition"]:checked').value;
+        
+        if (condition === 'damaged') {
+            const damageType = document.getElementById('damageType').value;
+            const damageRemarks = document.getElementById('damageRemarks').value.trim();
+            
+            if (!damageType) {
+                e.preventDefault();
+                alert('Please select a damage type.');
+                return false;
+            }
+            
+            if (!damageRemarks) {
+                e.preventDefault();
+                alert('Please describe the damage in detail.');
+                return false;
+            }
+        }
+    });
 </script>
 
 <?php include '../includes/footer.php'; ?>

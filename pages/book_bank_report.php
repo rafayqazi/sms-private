@@ -25,7 +25,12 @@ if ($type == 'issued') {
     }
 
     foreach ($rawIssued as $issue) {
-        $studentId = trim((string)$issue['student_id']);
+        // Only process student records (skip teachers)
+        if (!isset($issue['recipient_type']) || $issue['recipient_type'] !== 'student') {
+            continue;
+        }
+        
+        $studentId = trim((string)$issue['recipient_id']); // Use recipient_id instead of student_id
         $student = null;
         
         // Direct map lookup
@@ -46,6 +51,7 @@ if ($type == 'issued') {
             $issue['student_name'] = $student['student_name'];
             $issue['gr_no'] = $student['gr_no'];
             $issue['class'] = $student['current_class'];
+            $issue['student_id'] = $studentId; // Add for backwards compatibility in view
             
             // Add to data
             $data[] = $issue;

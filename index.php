@@ -82,7 +82,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
 <!-- Quick Actions Section -->
 <div class="mb-8 overflow-x-auto pb-2 no-scrollbar">
     <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-4">
-        <a href="pages/student_form.php" class="flex-1 bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+        <button onclick="openAdmissionModal()" class="flex-1 bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4 text-left">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-user-plus"></i>
             </div>
@@ -90,7 +90,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
                 <div class="font-bold">Admission</div>
                 <div class="text-xs text-indigo-100">New Student</div>
             </div>
-        </a>
+        </button>
         <a href="pages/attendance.php" class="flex-1 bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-check-double"></i>

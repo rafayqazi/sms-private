@@ -211,7 +211,7 @@ if ($currentUserId) {
                         <a href="<?php echo $base_path; ?>pages/students.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'students.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-list w-4 text-center"></i> Student List
                         </a>
-                        <a href="<?php echo $base_path; ?>pages/student_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'student_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                        <a href="javascript:void(0)" onclick="openAdmissionModal()" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'student_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-plus-circle w-4 text-center"></i> Admission
                         </a>
                         <a href="<?php echo $base_path; ?>pages/promote_students.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'promote_students.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
@@ -462,6 +462,10 @@ if ($currentUserId) {
                             
                             <a href="<?php echo $base_path; ?>pages/settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
                                 <i class="fas fa-cog mr-2 w-4"></i> Settings
+                            </a>
+                            
+                            <a href="<?php echo $base_path; ?>pages/school_settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-school mr-2 w-4"></i> School Settings
                             </a>
                             
                             <div class="border-t border-gray-100 my-1"></div>

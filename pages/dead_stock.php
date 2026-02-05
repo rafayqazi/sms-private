@@ -84,6 +84,7 @@ $deadStock = $db->getInventory(['status' => 'Dead Stock']);
                     <tr class="bg-red-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-700 font-bold print:bg-gray-100 print:text-black print:border-black">
                         <th class="p-4 border border-gray-200 print:border-black text-center w-16">ID</th>
                         <th class="p-4 border border-gray-200 print:border-black w-48">Item Name</th>
+                        <th class="p-4 border border-gray-200 print:border-black w-16 text-center">Qty</th>
                         <th class="p-4 border border-gray-200 print:border-black w-24">Purchase Date</th>
                         <th class="p-4 border border-gray-200 print:border-black w-24 text-right">Cost</th>
                         <th class="p-4 border border-gray-200 print:border-black w-32">Disposal Reason</th>
@@ -95,7 +96,7 @@ $deadStock = $db->getInventory(['status' => 'Dead Stock']);
                 <tbody class="divide-y divide-gray-100 print:divide-black">
                     <?php if (empty($deadStock)): ?>
                         <tr>
-                            <td colspan="8" class="p-8 text-center text-gray-500 italic print:text-black border border-gray-200 print:border-black">
+                            <td colspan="9" class="p-8 text-center text-gray-500 italic print:text-black border border-gray-200 print:border-black">
                                 No records found in dead stock register.
                             </td>
                         </tr>
@@ -104,6 +105,7 @@ $deadStock = $db->getInventory(['status' => 'Dead Stock']);
                         <tr class="hover:bg-red-50 transition-colors print:hover:bg-transparent text-sm">
                             <td class="p-3 font-bold text-gray-800 border border-gray-200 print:border-black text-center">#<?php echo str_pad($item['id'], 4, '0', STR_PAD_LEFT); ?></td>
                             <td class="p-3 font-semibold text-gray-800 border border-gray-200 print:border-black"><?php echo htmlspecialchars($item['item_name']); ?></td>
+                            <td class="p-3 font-bold text-gray-800 border border-gray-200 print:border-black text-center"><?php echo $item['quantity']; ?></td>
                             <td class="p-3 text-gray-600 border border-gray-200 print:border-black"><?php echo date('d-m-Y', strtotime($item['purchase_date'])); ?></td>
                             <td class="p-3 font-mono text-gray-700 border border-gray-200 print:border-black text-right"><?php echo $item['cost'] ? number_format($item['cost']) : '-'; ?></td>
                             <td class="p-3 font-bold text-red-700 print:text-black border border-gray-200 print:border-black"><?php echo $item['disposal_reason']; ?></td>

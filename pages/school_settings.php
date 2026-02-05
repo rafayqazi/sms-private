@@ -15,6 +15,11 @@ if (file_exists($settingsFile)) {
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Verification
+    if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
+    
     if (isset($_POST['update_settings'])) {
         $settings['school_name'] = $_POST['school_name'];
         $settings['address_tagline'] = $_POST['address_tagline'];
@@ -57,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form action="" method="POST" class="space-y-8">
+                <?php echo csrfInput(); ?>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
