@@ -1,4 +1,5 @@
 <?php
+session_start();
 // We don't include db.php here to avoid circular redirect if db.php handles the check
 // But we might need settings to show school name
 $settingsFile = __DIR__ . '/data/settings.json';
@@ -96,7 +97,6 @@ if (file_exists($settingsFile)) {
             </button>
             <?php 
             // Only show login or update options if admin_check is requested or user is already admin
-            session_start();
             $isAdmin = (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin');
             
             if (!$isAdmin && isset($_GET['admin_check'])): ?>
