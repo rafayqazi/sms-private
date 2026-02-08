@@ -40,6 +40,10 @@ class Database {
             'student_status', 'is_repeater', 'graduation_year', 'last_class'
         ];
 
+        if (!is_dir(dirname($this->csvFile))) {
+            mkdir(dirname($this->csvFile), 0755, true);
+        }
+
         if (!file_exists($this->csvFile)) {
             $this->writeData([]);
         }
@@ -2200,6 +2204,7 @@ class Database {
         if (isset($data['headmaster_name'])) $current['headmaster_name'] = $data['headmaster_name'];
         if (isset($data['address_tagline'])) $current['address_tagline'] = $data['address_tagline'];
         if (isset($data['semis_code'])) $current['semis_code'] = $data['semis_code'];
+        if (isset($data['school_logo'])) $current['school_logo'] = $data['school_logo'];
         
         return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
     }

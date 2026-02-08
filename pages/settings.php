@@ -1,13 +1,14 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
-require_once '../includes/header.php';
 
-// Only Admin can access settings
-if ($_SESSION['user_type'] !== 'admin') {
-    echo "<script>window.location.href = 'index.php';</script>";
+// Check permissions before including header to allow clean header() redirection
+if (!canAccessPage('settings.php')) {
+    header("Location: ../index.php");
     exit;
 }
+
+require_once '../includes/header.php';
 
 $db = new Database();
 $successMsg = '';
@@ -29,11 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $allowed = ['png', 'jpg', 'jpeg'];
                 $ext = strtolower(pathinfo($_FILES['school_logo']['name'], PATHINFO_EXTENSION));
                 if (in_array($ext, $allowed)) {
-                    // Target: root/GBPS_LOGO.png. Since we are in pages/, we go up one level.
-                    $target = '../GBPS_LOGO.png';
+                    // Create unique filename to avoid browser caching issues
+                    $new_filename = 'school_logo_' . time() . '.' . $ext;
+                    $target_rel = 'uploads/' . $new_filename;
+                    $target_abs = '../' . $target_rel;
                     
-                    // Attempt to upload
-                    if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $target)) {
+                    if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $target_abs)) {
+                        // Update the logo path in the database settings
+                        $db->updateSchoolSettings(['school_logo' => $target_rel]);
                         $successMsg = "Settings and Logo updated successfully!";
                     } else {
                         $successMsg = "Settings updated, but Logo upload failed.";
@@ -46,29 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $errorMsg = "Failed to update settings.";
-        }
-    } elseif (isset($_POST['change_password'])) {
-        $currentPass = $_POST['current_password'];
-        $newPass = $_POST['new_password'];
-        $confirmPass = $_POST['confirm_password'];
-        
-        // Verify current password first
-        if ($db->verifyAdmin($_SESSION['username'], $currentPass)) {
-            if ($newPass === $confirmPass) {
-                if (strlen($newPass) >= 4) {
-                    if ($db->updateAdminPassword($newPass)) {
-                        $successMsg = "Password changed successfully! Please login again with new password.";
-                    } else {
-                        $errorMsg = "Failed to update password.";
-                    }
-                } else {
-                    $errorMsg = "New password must be at least 4 characters long.";
-                }
-            } else {
-                $errorMsg = "New passwords do not match.";
-            }
-        } else {
-            $errorMsg = "Current password is incorrect.";
         }
     } elseif (isset($_POST['activate_license'])) {
         $mac = $_POST['mac_address'];
@@ -112,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $settings = $db->getSchoolSettings();
 ?>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-7xl mx-auto">
+<div class="px-4 md:px-8 py-8 w-full">
+    <div class="max-w-[1600px] mx-auto">
         <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-8 flex items-center gap-3">
             <div class="p-3 bg-teal-100 dark:bg-teal-900 rounded-lg text-teal-600 dark:text-teal-400">
                 <i class="fas fa-cog"></i>
@@ -140,9 +121,9 @@ $settings = $db->getSchoolSettings();
         <?php endif; ?>
 
         <!-- Vertical Layout: Sidebar + Content -->
-        <div class="flex gap-6 items-start">
+        <div class="flex flex-col lg:flex-row gap-6 items-start">
             <!-- Left Sidebar Navigation -->
-            <div class="w-64 flex-shrink-0">
+            <div class="w-full lg:w-64 flex-shrink-0">
                 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden sticky top-6">
                     <div class="p-4 border-b border-gray-100 dark:border-gray-800">
                         <h3 class="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wide">Navigation</h3>
@@ -151,10 +132,6 @@ $settings = $db->getSchoolSettings();
                         <a href="?tab=general" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'general' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
                             <i class="fas fa-school w-5 text-center"></i>
                             <span>General Settings</span>
-                        </a>
-                        <a href="?tab=security" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'security' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
-                            <i class="fas fa-lock w-5 text-center"></i>
-                            <span>Security</span>
                         </a>
                         <a href="?tab=users" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'users' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
                             <i class="fas fa-users-cog w-5 text-center"></i>
@@ -173,8 +150,7 @@ $settings = $db->getSchoolSettings();
             </div>
 
             <!-- Right Content Area -->
-            <div class="flex-1">
-                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+            <div class="flex-1 w-full bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden p-6 md:p-8">
 
                 <?php if ($activeTab === 'general'): ?>
                     <form action="?tab=general" method="POST" class="space-y-6" enctype="multipart/form-data">
@@ -209,7 +185,12 @@ $settings = $db->getSchoolSettings();
                                 <label class="block text-sm font-medium text-gray-700 mb-2">School Logo</label>
                                 <div class="flex items-center gap-4">
                                     <div class="w-16 h-16 border rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
-                                        <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Current Logo" class="max-w-full max-h-full object-contain">
+                                        <?php 
+                                        $logoUrl = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                                                   ? '../' . $settings['school_logo'] 
+                                                   : '../GBPS_LOGO.png'; 
+                                        ?>
+                                        <img src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Current Logo" class="max-w-full max-h-full object-contain">
                                     </div>
                                     <div class="flex-1">
                                         <input type="file" name="school_logo" accept="image/png, image/jpeg"
@@ -228,38 +209,6 @@ $settings = $db->getSchoolSettings();
                         <div class="pt-4 border-t flex justify-end">
                             <button type="submit" name="save_general" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-md flex items-center gap-2">
                                 <i class="fas fa-save"></i> Save Changes
-                            </button>
-                        </div>
-                    </form>
-                <?php elseif ($activeTab === 'security'): ?>
-                    <form action="?tab=security" method="POST" class="space-y-6 max-w-lg mx-auto">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                            <p class="text-sm text-yellow-800">
-                                <i class="fas fa-info-circle mr-1"></i> You are changing the password for the admin account <strong><?php echo htmlspecialchars($settings['admin_username']); ?></strong>.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                            <input type="password" name="current_password" required placeholder="Enter current password"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                            <input type="password" name="new_password" required placeholder="Enter new password" minlength="4"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                            <input type="password" name="confirm_password" required placeholder="Retype new password"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
-                        </div>
-
-                        <div class="pt-4 border-t flex justify-end">
-                            <button type="submit" name="change_password" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-md flex items-center gap-2">
-                                <i class="fas fa-key"></i> Update Password
                             </button>
                         </div>
                     </form>

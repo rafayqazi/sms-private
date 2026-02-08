@@ -42,7 +42,7 @@ if ($class) {
     <div class="hidden print:block text-center mb-6 border-b pb-4">
         <div class="flex flex-col items-center justify-center">
             <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="School Logo" class="w-24 h-24 object-contain mb-2">
-            <h2 class="text-2xl font-bold text-gray-800">GBPS Ali Bux Jarwar</h2>
+            <h2 class="text-2xl font-bold text-gray-800"><?php echo htmlspecialchars($headerSettings['school_name'] ?? 'School Name'); ?></h2>
             <p class="text-gray-600">Attendance Report</p>
         </div>
     </div>

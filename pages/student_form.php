@@ -9,6 +9,7 @@ if (!canAccessPage('student_form.php')) {
 }
 
 $db = new Database();
+$formSettings = $db->getSchoolSettings();
 
 $student = null;
 $id = isset($_GET['id']) ? $_GET['id'] : null;
@@ -351,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <div class="flex flex-col space-y-2 lg:col-span-2">
                 <label class="text-sm font-medium text-gray-700">School Name <span class="text-red-500">*</span></label>
-                <input type="text" name="school_name" id="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : 'GBPS Ali Bux Jarwar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <input type="text" name="school_name" id="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : htmlspecialchars($formSettings['school_name'] ?? 'GBPS Ali Bux Jarwar'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">

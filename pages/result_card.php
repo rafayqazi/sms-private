@@ -46,7 +46,10 @@ if (!$student) {
 
     <div class="max-w-4xl mx-auto border-2 border-black p-8 print:border-none print:p-0">
         <div class="text-center border-b-2 border-black pb-4 mb-8">
-            <h1 class="text-3xl font-bold uppercase">GBPS Ali Bux Jarwar</h1>
+            <h1 class="text-3xl font-bold uppercase"><?php 
+                $settings = $db->getSchoolSettings();
+                echo htmlspecialchars($settings['school_name'] ?? 'School Name'); 
+            ?></h1>
             <h2 class="text-xl font-medium mt-2">Result Sheet of Terminal Examination 2024-25</h2>
         </div>
 

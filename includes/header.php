@@ -2,6 +2,11 @@
 require_once 'auth_session.php';
 require_once 'functions.php';
 
+// Personalized Greeting Logic
+$hour = date('H');
+$timeGreeting = ($hour < 12) ? 'Good Morning' : 'Good Evening';
+$username = $_SESSION['username'] ?? 'User';
+
 // Determine if we're in a subdirectory
 $base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
 
@@ -164,7 +169,12 @@ if ($currentUserId) {
     <div class="app-container flex min-h-screen bg-gray-50 dark:bg-gray-950">
         <aside class="sidebar group w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col fixed h-full overflow-y-auto transition-all duration-300 z-50 md:translate-x-0 -translate-x-full [&.collapsed]:w-16" id="sidebar">
             <div class="brand min-h-[5rem] p-4 group-[.collapsed]:justify-center group-[.collapsed]:cursor-pointer border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 bg-gray-50/50 dark:bg-gray-900/50">
-                <img src="<?php echo $base_path; ?>GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+                <?php 
+                $logoUrl = (!empty($headerSettings['school_logo']) && file_exists($base_path . $headerSettings['school_logo'])) 
+                           ? $base_path . $headerSettings['school_logo'] 
+                           : $base_path . 'GBPS_LOGO.png'; 
+                ?>
+                <img src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
                 <div class="flex flex-col group-[.collapsed]:hidden">
                     <span class="text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight leading-tight" title="<?php echo htmlspecialchars($headerSettings['school_name']); ?>">
                         <?php echo htmlspecialchars($headerSettings['school_name']); ?>
@@ -419,11 +429,15 @@ if ($currentUserId) {
                     <div class="relative group">
                         <button id="user-menu-btn" class="flex items-center gap-2 md:gap-3 focus:outline-none">
                             <div class="text-right hidden md:block">
-                                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200"><?php echo getUserDisplayName(); ?></div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo getUserRoleBadge(); ?></div>
+                                <div class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest leading-none mb-1">
+                                    <?php echo $timeGreeting; ?>, Welcome
+                                </div>
+                                <div class="text-sm font-black text-gray-800 dark:text-gray-100 leading-tight">
+                                    <?php echo htmlspecialchars($username); ?>
+                                </div>
                             </div>
-                            <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold border-2 border-indigo-50 dark:border-indigo-900 transition-colors group-hover:border-indigo-200">
-                                <?php echo strtoupper(substr(getUserDisplayName(), 0, 1)); ?>
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-black border-2 border-white dark:border-gray-800 shadow-sm transition-all group-hover:scale-110 group-hover:border-indigo-200">
+                                <?php echo strtoupper(substr($username, 0, 1)); ?>
                             </div>
                             <i class="fas fa-chevron-down text-xs text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors hidden sm:block"></i>
                         </button>
@@ -431,7 +445,8 @@ if ($currentUserId) {
                         <!-- Dropdown Menu -->
                         <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 hidden group-hover:block hover:block transition-all transform origin-top-right z-50">
                             <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 md:hidden">
-                                <div class="text-sm font-semibold text-gray-800 dark:text-white"><?php echo getUserDisplayName(); ?></div>
+                                <div class="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none mb-1"><?php echo $timeGreeting; ?>, Welcome</div>
+                                <div class="text-sm font-black text-gray-800 dark:text-white"><?php echo htmlspecialchars($username); ?></div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400"><?php echo getUserRoleBadge(); ?></div>
                             </div>
                             

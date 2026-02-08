@@ -255,35 +255,74 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <!-- Featured Project -->
-            <div class="bg-gradient-to-br from-indigo-50 to-white rounded-2xl shadow-lg border border-indigo-100 p-8">
-                <h3 class="text-xl font-black text-indigo-900 mb-4 flex items-center gap-3">
-                    <i class="fas fa-robot text-2xl animate-bounce"></i> FYP: COVID-19 Inspection Robot
-                </h3>
-                <p class="text-gray-700 text-sm leading-relaxed mb-6">
-                    Fully functional inspection robot using **IoT, AI, and Machine Learning**. 
-                    Designed to prevent person-to-person spread in crowded areas. Proved as a position-winner project at SAU University.
-                    <br>
-                    <a href="https://github.com/rafayqazi/Covid-19-Inspection-Robot" target="_blank" class="mt-2 inline-flex items-center gap-2 text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
-                        <i class="fab fa-github"></i> View Project on GitHub
-                    </a>
-                </p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-indigo-50">
-                        <i class="fas fa-mask text-indigo-500 mb-1"></i>
-                        <p class="text-[9px] font-bold text-gray-500">Mask Detection</p>
+            <!-- Featured Projects -->
+            <div class="space-y-6">
+                <!-- Project 1: SMS -->
+                <div class="bg-gradient-to-br from-indigo-900 to-indigo-800 rounded-2xl shadow-xl border border-indigo-700 p-8 text-white relative overflow-hidden group">
+                    <div class="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700">
+                        <i class="fas fa-university text-9xl"></i>
                     </div>
-                    <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-indigo-50">
-                        <i class="fas fa-thermometer-half text-red-500 mb-1"></i>
-                        <p class="text-[9px] font-bold text-gray-500">Temp Check</p>
+                    
+                    <h3 class="text-xl font-black mb-4 flex items-center gap-3">
+                        <i class="fas fa-code-branch text-2xl text-yellow-400"></i> Current Project: School Management System
+                    </h3>
+                    
+                    <p class="text-indigo-100/80 text-sm leading-relaxed mb-6 max-w-xl">
+                        A premium, fully-integrated school hub designed for performance and scale. 
+                        Features a sleek **AJAX-powered dashboard**, real-time **Inventory tracking**, 
+                        and complex **Automated Result Generation** logic with secure multi-role access.
+                    </p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-center hover:bg-white/20 transition-colors">
+                            <i class="fas fa-chart-line text-green-400 mb-1"></i>
+                            <p class="text-[9px] font-black uppercase tracking-wider">Auto-Reports</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-center hover:bg-white/20 transition-colors">
+                            <i class="fas fa-boxes text-blue-400 mb-1"></i>
+                            <p class="text-[9px] font-black uppercase tracking-wider">Inventory+v2</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-center hover:bg-white/20 transition-colors">
+                            <i class="fas fa-user-shield text-purple-400 mb-1"></i>
+                            <p class="text-[9px] font-black uppercase tracking-wider">RBAC Security</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-center hover:bg-white/20 transition-colors">
+                            <i class="fas fa-database text-amber-400 mb-1"></i>
+                            <p class="text-[9px] font-black uppercase tracking-wider">SQL Optimized</p>
+                        </div>
                     </div>
-                    <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-indigo-50">
-                        <i class="fas fa-pump-soap text-green-500 mb-1"></i>
-                        <p class="text-[9px] font-bold text-gray-500">Sanitization</p>
-                    </div>
-                    <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-indigo-50">
-                        <i class="fas fa-vial text-blue-500 mb-1"></i>
-                        <p class="text-[9px] font-bold text-gray-500">Vaccine Verify</p>
+                </div>
+
+                <!-- Project 2 (Previous): COVID Robot -->
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-lg border border-gray-100 p-8 group">
+                    <h3 class="text-xl font-black text-gray-900 mb-4 flex items-center gap-3">
+                        <i class="fas fa-robot text-2xl text-indigo-600 animate-bounce"></i> FYP: COVID-19 Inspection Robot
+                    </h3>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-6">
+                        Fully functional inspection robot using **IoT, AI, and Machine Learning**. 
+                        Designed to prevent person-to-person spread in crowded areas. Proved as a position-winner project at SAU University.
+                        <br>
+                        <a href="https://github.com/rafayqazi/Covid-19-Inspection-Robot" target="_blank" class="mt-2 inline-flex items-center gap-2 text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
+                            <i class="fab fa-github"></i> View Project on GitHub
+                        </a>
+                    </p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 group-hover:border-indigo-200 transition-colors">
+                            <i class="fas fa-mask text-indigo-500 mb-1"></i>
+                            <p class="text-[9px] font-bold text-gray-500">Mask Detection</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 group-hover:border-indigo-200 transition-colors">
+                            <i class="fas fa-thermometer-half text-red-500 mb-1"></i>
+                            <p class="text-[9px] font-bold text-gray-500">Temp Check</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 group-hover:border-indigo-200 transition-colors">
+                            <i class="fas fa-pump-soap text-green-500 mb-1"></i>
+                            <p class="text-[9px] font-bold text-gray-500">Sanitization</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm text-center border border-gray-100 group-hover:border-indigo-200 transition-colors">
+                            <i class="fas fa-vial text-blue-500 mb-1"></i>
+                            <p class="text-[9px] font-bold text-gray-500">Vaccine Verify</p>
+                        </div>
                     </div>
                 </div>
             </div>

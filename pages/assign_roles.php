@@ -4,7 +4,7 @@ require_once '../includes/header.php';
 
 // Check if user can access this page
 if (!canAccessPage('assign_roles.php')) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 

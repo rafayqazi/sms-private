@@ -4,7 +4,7 @@ require_once '../includes/db.php';
 
 // Check if user can access this page
 if (!canAccessPage('alumni.php')) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 $db = new Database();
@@ -57,7 +57,7 @@ rsort($years);
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
     <div class="text-center md:text-left">
         <h1 class="text-3xl font-bold">Alumni Network</h1>
-        <p class="text-green-100 mt-1">Former students of GBPS Ali Bux Jarwar</p>
+        <p class="text-green-100 mt-1">Former students of <?php echo htmlspecialchars($headerSettings['school_name'] ?? 'School Name'); ?></p>
     </div>
     <div class="text-center md:text-right w-full md:w-auto p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/20">
         <div class="text-4xl font-bold"><?php echo count($alumniStudents); ?></div>

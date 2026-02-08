@@ -4,7 +4,7 @@ require_once '../includes/db.php';
 
 // Check if user can access this page
 if (!canAccessPage('students.php')) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 

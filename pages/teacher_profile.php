@@ -4,7 +4,7 @@ require_once '../includes/db.php';
 
 // Check if user can access this page
 if (!canAccessPage('teacher_profile.php')) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 $db = new Database();

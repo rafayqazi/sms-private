@@ -38,22 +38,32 @@
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary/20 rounded-full blur-3xl"></div>
     </div>
 
-    <div class="w-full max-w-2xl glass rounded-[2.5rem] shadow-2xl border border-white/20 overflow-hidden relative z-10">
-        <!-- Progress Bar -->
-        <div class="h-1.5 w-full bg-slate-100 flex">
-            <div id="progress-bar" class="h-full bg-primary step-transition" style="width: 20%"></div>
-        </div>
-
-        <div class="p-8 md:p-12">
-            <!-- Header -->
-            <div class="text-center mb-10">
-                <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-4 shadow-inner">
-                    <i class="fas fa-magic text-2xl"></i>
+    <div class="max-w-xl mx-auto bg-white rounded-[3rem] shadow-[0_20px_70px_rgba(0,0,0,0.08)] overflow-hidden border border-slate-100 animate-slideUp">
+        <div class="px-10 pt-10 pb-6">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                        <i class="fas fa-rocket text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800 tracking-tight">Installation Wizard</h2>
+                        <p class="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-70">Setup your digital hub</p>
+                    </div>
                 </div>
-                <h1 class="text-3xl font-black text-slate-800 tracking-tight">Installation Wizard</h1>
-                <p class="text-slate-500 font-medium text-sm mt-1 uppercase tracking-widest" id="step-title">Welcome & Restore</p>
+                <div class="text-right">
+                    <span id="step-indicator" class="text-3xl font-black text-slate-200 block leading-none">01</span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</span>
+                </div>
             </div>
 
+            <!-- Progress Bar -->
+            <div class="h-1.5 w-full bg-slate-100 rounded-full mb-8 overflow-hidden">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-primary to-emerald-500 transition-all duration-500 rounded-full" style="width: 25%"></div>
+            </div>
+
+            <div id="step-title" class="text-sm font-black text-slate-400 uppercase tracking-widest mb-8 text-center bg-slate-50 py-3 rounded-2xl border border-slate-100">
+                Welcome & Restore
+            </div>            
             <!-- Steps Container -->
             <div id="steps-container" class="min-h-[350px]">
                 
@@ -66,23 +76,23 @@
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                             <div class="group relative">
-                                <input type="file" id="backup_zip" class="hidden" accept=".zip" onchange="handleRestoreSelect(this)">
-                                <div onclick="document.getElementById('backup_zip').click()" class="p-6 border-2 border-dashed border-slate-200 rounded-3xl group-hover:border-primary group-hover:bg-primary/5 transition-all h-full flex flex-col items-center justify-center gap-3 cursor-pointer">
-                                    <i class="fas fa-file-zipper text-3xl text-slate-400 group-hover:text-primary transition-colors"></i>
+                                <input type="file" id="backup_zip" class="hidden" accept=".zip" oninput="handleRestoreSelect(this)">
+                                <div onclick="document.getElementById('backup_zip').click()" class="p-6 border-2 border-dashed border-slate-200 bg-white rounded-3xl group-hover:border-primary group-hover:bg-primary/5 transition-all h-full flex flex-col items-center justify-center gap-3 cursor-pointer">
+                                    <i class="fas fa-file-zipper text-3xl text-slate-400 group-hover:text-primary transition-all duration-300"></i>
                                     <span class="font-bold text-slate-700 block" id="restore-text">Restore Backup</span>
-                                    <span class="text-[10px] text-slate-400 uppercase font-black" id="restore-subtext">Upload ZIP File</span>
+                                    <span class="text-[10px] text-slate-500 uppercase font-black" id="restore-subtext">Upload ZIP File</span>
                                 </div>
                                 
                                 <!-- Confirm Restore Button (Hidden initially) -->
-                                <button id="btn-confirm-restore" onclick="executeRestore()" class="hidden absolute -bottom-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg hover:bg-emerald-600 transition-all uppercase tracking-widest whitespace-nowrap">
+                                <button id="btn-confirm-restore" type="button" onclick="executeRestore()" class="hidden absolute -bottom-4 left-1/2 -translate-x-1/2 bg-secondary text-white text-[10px] font-black px-4 py-2 rounded-full shadow-lg hover:bg-emerald-600 transition-all uppercase tracking-widest whitespace-nowrap z-20">
                                     Confirm & Upload
                                 </button>
                             </div>
                             
-                            <button onclick="nextStep()" class="p-6 border-2 border-slate-200 rounded-3xl hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center gap-3 group">
-                                <i class="fas fa-sparkles text-3xl text-slate-400 group-hover:text-primary transition-colors"></i>
+                            <button type="button" onclick="nextStep()" class="w-full p-6 border-2 border-slate-200 bg-white rounded-3xl hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center gap-3 cursor-pointer group">
+                                <i class="fas fa-sparkles text-3xl text-slate-400 group-hover:text-primary transition-all duration-300"></i>
                                 <span class="font-bold text-slate-700">Fresh Install</span>
-                                <span class="text-[10px] text-slate-400 uppercase font-black">recommended</span>
+                                <span class="text-[10px] text-indigo-500 uppercase font-black">recommended</span>
                             </button>
                         </div>
                     </div>
@@ -109,7 +119,7 @@
                         
                         <div id="error-step-2" class="hidden text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100 animate-pulse"></div>
 
-                        <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-3 mt-8">
+                        <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-3 mt-8 cursor-pointer active:scale-[0.98]">
                             Verify Developer <i class="fas fa-arrow-right"></i>
                         </button>
                     </form>
@@ -130,60 +140,94 @@
                             <input type="text" id="mac-address" required readonly class="w-full px-5 py-4 bg-slate-100 border-none rounded-2xl text-slate-500 font-mono font-bold uppercase cursor-not-allowed" value="FETCHING...">
                         </div>
 
-                        <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3">
+                        <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 cursor-pointer active:scale-[0.98]">
                             Bind & Activate <i class="fas fa-key"></i>
                         </button>
                     </form>
                 </div>
 
-                <!-- Step 4: School Config -->
+                <!-- Step 4: System Setup & Admin -->
                 <div id="step-4" class="step-content hidden animate-fade">
-                    <form id="form-step-4" onsubmit="saveSettings(event)" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">School Name</label>
-                                <input type="text" id="sch-name" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. GBPS Ali Bux Jarwar">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">SEMIS Code</label>
-                                <input type="text" id="sch-semis" class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. 424010147">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">HM Name</label>
-                                <input type="text" id="sch-hm" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Signature name">
-                            </div>
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">School Address</label>
-                                <input type="text" id="sch-addr" class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="District & Taluka">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-primary hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 mt-6">
-                            Next Stage <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Step 5: Admin User -->
-                <div id="step-5" class="step-content hidden animate-fade">
-                    <form id="form-step-5" onsubmit="createAdmin(event)" class="space-y-6">
-                        <p class="text-sm text-slate-500 text-center">Finally, create your primary administrator account.</p>
+                    <form id="form-step-4" onsubmit="finalizeSetup(event)" class="space-y-6">
                         
+                        <!-- Section: School Info -->
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Admin Username</label>
-                                <input type="text" id="adm-user" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Login name">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-lg flex items-center justify-center text-primary text-[10px]">
+                                    <i class="fas fa-school"></i>
+                                </div>
+                                <h4 class="text-xs font-black text-slate-800 uppercase tracking-widest">School Settings</h4>
                             </div>
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">Admin Password</label>
-                                <input type="password" id="adm-pass" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Min 4 characters">
+
+                            <!-- Logo Upload -->
+                            <div class="flex flex-col items-center p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                <div class="relative group mb-4">
+                                    <input type="file" id="sch-logo" name="school_logo" accept="image/*" class="hidden" onchange="previewLogo(this)">
+                                    <div onclick="document.getElementById('sch-logo').click()" class="w-32 h-32 rounded-[2rem] border-4 border-white bg-white flex items-center justify-center cursor-pointer shadow-xl shadow-slate-200/50 hover:scale-105 transition-all overflow-hidden relative group">
+                                        <img id="logo-preview" src="" class="hidden w-full h-full object-cover">
+                                        <div id="logo-placeholder" class="text-center">
+                                            <i class="fas fa-cloud-upload-alt text-3xl text-primary mb-2"></i>
+                                            <span class="block text-[10px] text-slate-400 font-bold uppercase">Logo</span>
+                                        </div>
+                                        <div class="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black uppercase">
+                                            Update Logo
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" onclick="document.getElementById('sch-logo').click()" class="text-[10px] font-black text-primary uppercase tracking-widest bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm hover:bg-primary hover:text-white hover:border-primary transition-all">
+                                        Select School Logo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="col-span-1 md:col-span-2">
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">School Name</label>
+                                    <input type="text" id="sch-name" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. GBPS Ali Bux Jarwar">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">SEMIS Code</label>
+                                    <input type="text" id="sch-semis" class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Optional">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">HM Name</label>
+                                    <input type="text" id="sch-hm" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="HM Name">
+                                </div>
+                                <div class="col-span-1 md:col-span-2">
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">School Address</label>
+                                    <input type="text" id="sch-addr" class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="City / District">
+                                </div>
                             </div>
                         </div>
-                        
-                        <div id="error-step-5" class="hidden text-red-500 text-xs font-bold text-center bg-red-50 py-3 rounded-xl border border-red-100"></div>
 
-                        <button type="submit" class="w-full bg-secondary hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-secondary/20 transition-all flex items-center justify-center gap-3 mt-8">
-                            Complete Setup <i class="fas fa-check-double"></i>
+                        <hr class="border-slate-100">
+
+                        <!-- Section: Admin User -->
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-6 h-6 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary text-[10px]">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <h4 class="text-xs font-black text-slate-800 uppercase tracking-widest">Admin Account Creation</h4>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Admin Username</label>
+                                    <input type="text" id="adm-user" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. admin">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Admin Password</label>
+                                    <input type="password" id="adm-pass" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Min 4 chars">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="error-step-4" class="hidden text-red-500 text-[10px] font-black text-center bg-red-50 py-3 rounded-2xl border border-red-100 uppercase tracking-widest"></div>
+
+                        <button type="submit" class="w-full bg-secondary hover:bg-emerald-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-secondary/20 transition-all flex items-center justify-center gap-3 mt-4 cursor-pointer active:scale-[0.98]">
+                            Complete Setup <i class="fas fa-check-double rotate-3 group-hover:rotate-0 transition-transform"></i>
                         </button>
                     </form>
                 </div>
@@ -216,13 +260,12 @@
 
     <script>
         let currentStep = 1;
-        const totalSteps = 5;
+        const totalSteps = 4;
         const titles = [
             "Welcome & Restore",
             "Developer Verification",
             "Machine Licensing",
-            "School Configuration",
-            "Admin Management"
+            "System Setup & Admin"
         ];
 
         function nextStep() {
@@ -240,8 +283,10 @@
         function updateProgress() {
             const bar = document.getElementById('progress-bar');
             const title = document.getElementById('step-title');
+            const indicator = document.getElementById('step-indicator');
             bar.style.width = (currentStep / totalSteps * 100) + '%';
             title.innerText = titles[currentStep - 1];
+            indicator.innerText = currentStep.toString().padStart(2, '0');
         }
 
         // Logic for Step 1: Restore
@@ -347,46 +392,110 @@
 
         async function activateLicense(e) {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalHtml = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Activating...';
+            
             const mac = document.getElementById('mac-address').value;
             const fd = new FormData();
             fd.append('mac_address', mac);
             
-            const res = await fetch('api/installer_actions.php?action=activate_license', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success) nextStep();
-            else alert(data.message);
+            try {
+                const res = await fetch('api/installer_actions.php?action=activate_license', { method: 'POST', body: fd });
+                const text = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch(e) {
+                    throw new Error("Invalid server response: " + text.substring(0, 100));
+                }
+                
+                if (data.success) {
+                    nextStep();
+                } else {
+                    alert("Activation Error: " + (data.message || "Unknown error"));
+                }
+            } catch(e) {
+                console.error("Activation Error:", e);
+                alert("Network or System Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         }
 
-        // Logic for Step 4: Settings
-        async function saveSettings(e) {
+        // Preview Logo
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('logo-preview');
+                    const placeholder = document.getElementById('logo-placeholder');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Logic for Final Step: School Settings & Admin
+        async function finalizeSetup(e) {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalHtml = btn.innerHTML;
+            const errorDiv = document.getElementById('error-step-4');
+            
+            errorDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing Settings...';
+
+            // 1. Save Settings (including Logo)
             const fd = new FormData();
             fd.append('school_name', document.getElementById('sch-name').value);
             fd.append('semis_code', document.getElementById('sch-semis').value);
             fd.append('headmaster_name', document.getElementById('sch-hm').value);
             fd.append('address_tagline', document.getElementById('sch-addr').value);
+            
+            const logoFile = document.getElementById('sch-logo').files[0];
+            if (logoFile) {
+                fd.append('school_logo', logoFile);
+            }
 
-            const res = await fetch('api/installer_actions.php?action=save_settings', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success) nextStep();
-            else alert(data.message);
-        }
+            try {
+                // First call: Save Settings
+                const res1 = await fetch('api/installer_actions.php?action=save_settings', { method: 'POST', body: fd });
+                const data1 = await res1.json();
+                
+                if (!data1.success) {
+                    throw new Error(data1.message || "Failed to save school settings.");
+                }
 
-        // Logic for Step 5: Admin Account
-        async function createAdmin(e) {
-            e.preventDefault();
-            const err = document.getElementById('error-step-5');
-            const fd = new FormData();
-            fd.append('username', document.getElementById('adm-user').value);
-            fd.append('password', document.getElementById('adm-pass').value);
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Admin Account...';
 
-            const res = await fetch('api/installer_actions.php?action=create_admin', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (data.success) {
-                window.location.href = 'login.php?installed=true';
-            } else {
-                err.innerText = data.message;
-                err.classList.remove('hidden');
+                // Second call: Create Admin
+                const adFd = new FormData();
+                adFd.append('username', document.getElementById('adm-user').value);
+                adFd.append('password', document.getElementById('adm-pass').value);
+
+                const res2 = await fetch('api/installer_actions.php?action=create_admin', { method: 'POST', body: adFd });
+                const data2 = await res2.json();
+
+                if (!data2.success) {
+                    throw new Error(data2.message || "Failed to create admin account.");
+                }
+
+                // Success!
+                window.location.href = 'index.php?setup_complete=true';
+
+            } catch(e) {
+                errorDiv.innerText = e.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
         }
     </script>

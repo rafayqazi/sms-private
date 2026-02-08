@@ -100,7 +100,7 @@ function dismissUpdateNotification() {
     <div class="text-center md:text-left relative z-10">
         <h1 class="text-2xl md:text-3xl font-bold">Dashboard</h1>
         <p class="text-green-100 mt-1 flex items-center justify-center md:justify-start gap-2">
-            <i class="fas fa-university"></i> GBPS Ali Bux Jarwar
+            <i class="fas fa-university"></i> <?php echo htmlspecialchars($headerSettings['school_name'] ?? 'School Name'); ?>
         </p>
     </div>
     

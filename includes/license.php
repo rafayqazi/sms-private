@@ -94,6 +94,12 @@ class License {
     public static function activate($mac) {
         $license_key = self::generateLicenseKey($mac);
         
+        // Ensure data directory exists
+        $dir = dirname(self::$license_file);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        
         $data = [
             'license_key' => $license_key,
             'activation_date' => date('Y-m-d H:i:s')

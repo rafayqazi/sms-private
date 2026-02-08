@@ -37,6 +37,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'semis_code' => $_POST['semis_code'] ?? '',
                 'headmaster_name' => $_POST['headmaster_name'] ?? ''
             ];
+
+            // Handle Logo Upload
+            if (isset($_FILES['school_logo']) && $_FILES['school_logo']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = '../uploads/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $fileInfo = pathinfo($_FILES['school_logo']['name']);
+                $extension = strtolower($fileInfo['extension']);
+                $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                
+                if (in_array($extension, $allowed)) {
+                    $fileName = 'school_logo_' . time() . '.' . $extension;
+                    $targetPath = $uploadDir . $fileName;
+                    
+                    if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $targetPath)) {
+                        $data['school_logo'] = 'uploads/' . $fileName;
+                    }
+                }
+            }
             
             if ($db->updateSchoolSettings($data)) {
                 echo json_encode(['success' => true]);
