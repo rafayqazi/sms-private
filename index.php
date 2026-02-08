@@ -151,6 +151,15 @@ function dismissUpdateNotification() {
                 <div class="text-xs text-emerald-100">Mark Today</div>
             </div>
         </a>
+        <a href="pages/settings.php" class="flex-1 bg-gradient-to-br from-slate-600 to-slate-700 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div>
+                <div class="font-bold">Settings</div>
+                <div class="text-xs text-slate-100">System Config</div>
+            </div>
+        </a>
         <a href="pages/results.php" class="flex-1 bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-file-invoice"></i>

@@ -373,6 +373,10 @@ if ($currentUserId) {
                 <a href="<?php echo $base_path; ?>pages/backup_restore.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['backup_restore.php', 'reset_app.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Backup and Restore">
                     <i class="fas fa-database w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Backup and Restore</span>
                 </a>
+
+                <a href="<?php echo $base_path; ?>pages/settings.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Settings">
+                    <i class="fas fa-cog w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Settings</span>
+                </a>
                 <?php endif; ?>
 
                 <a href="<?php echo $base_path; ?>logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors mt-auto w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center" title="Logout">
