@@ -15,10 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-try {
-    $output = [];
-    $debug = [];
-    $return_var = 0;
+    // 0. Perform Mandatory Safety Backup
+    $backupFile = performSilentBackup();
+    if (!$backupFile) {
+        throw new Exception("Safety backup failed. Update aborted for data security.");
+    }
+    $debug['backup'] = "Safety backup created: $backupFile";
 
     // 1. Reset any local changes to ensure clean pull (Safety step)
     // Note: This discards local unauthorized changes. A production system might want to 'stash' instead.

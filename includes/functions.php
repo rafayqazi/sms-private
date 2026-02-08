@@ -217,4 +217,53 @@ function csrfInput() {
     $token = generateCsrfToken();
     return '<input type="hidden" name="csrf_token" value="' . $token . '">';
 }
+
+function performSilentBackup() {
+    $dataDir = __DIR__ . '/../data';
+    $uploadsDir = __DIR__ . '/../uploads';
+    $backupsDir = __DIR__ . '/../backups';
+    
+    if (!is_dir($backupsDir)) {
+        mkdir($backupsDir, 0755, true);
+    }
+    
+    $timestamp = date('Y-m-d_H-i-s');
+    $zipFilename = "SafetyBackup_$timestamp.zip";
+    $zipPath = $backupsDir . '/' . $zipFilename;
+    
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
+        return false;
+    }
+    
+    // Function to add directory recursively
+    $addDir = function($dirPath, $zipPathName) use (&$zip, &$addDir) {
+        if (!is_dir($dirPath)) return;
+        $items = scandir($dirPath);
+        foreach ($items as $item) {
+            if ($item == '.' || $item == '..') continue;
+            $fullPath = $dirPath . DIRECTORY_SEPARATOR . $item;
+            $localPath = $zipPathName . '/' . $item;
+            if (is_dir($fullPath)) {
+                $zip->addEmptyDir($localPath);
+                $addDir($fullPath, $localPath);
+            } else {
+                $zip->addFile($fullPath, $localPath);
+            }
+        }
+    };
+    
+    if (is_dir($dataDir)) {
+        $zip->addEmptyDir('data');
+        $addDir($dataDir, 'data');
+    }
+    
+    if (is_dir($uploadsDir)) {
+        $zip->addEmptyDir('uploads');
+        $addDir($uploadsDir, 'uploads');
+    }
+    
+    $zip->close();
+    return file_exists($zipPath) ? $zipFilename : false;
+}
 ?>
