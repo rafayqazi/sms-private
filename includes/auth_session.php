@@ -51,4 +51,12 @@ if (!isset($_SESSION['user_role'])) {
 if (!isset($_SESSION['assigned_classes'])) {
     $_SESSION['assigned_classes'] = [];
 }
+
+// Auto-check for updates on new session (once per login)
+if (!isset($_SESSION['update_check_done'])) {
+    // Trigger update check asynchronously (non-blocking)
+    $_SESSION['update_check_done'] = false;
+    $_SESSION['updates_available'] = false;
+    $_SESSION['update_notification_dismissed'] = false;
+}
 ?>

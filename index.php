@@ -52,6 +52,57 @@ $lowStockItems = array_filter($allInventory, function($item) {
 
 <?php include 'includes/header.php'; ?>
 
+<!-- Update Notification Banner -->
+<?php if (isset($_SESSION['updates_available']) && $_SESSION['updates_available'] === true && !isset($_SESSION['update_notification_dismissed'])): ?>
+<div id="update-notification-banner" class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-lg shadow-lg mb-6 animate-[slideDown_0.5s_ease-out]">
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-gift text-2xl animate-bounce"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle"></i> New Update Available!
+                </h3>
+                <p class="text-sm text-amber-50">Please update your system to get the latest features and security patches.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <a href="pages/settings.php?tab=updates" class="bg-white hover:bg-amber-50 text-amber-600 font-bold px-6 py-2.5 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                <i class="fas fa-download"></i> Update Now
+            </a>
+            <button onclick="dismissUpdateNotification()" class="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-lg transition-colors" title="Dismiss">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Auto-check for updates on page load -->
+<script>
+// Only check if we haven't checked yet in this session
+if (!sessionStorage.getItem('update_checked')) {
+    fetch('api/check_updates_auto.php')
+        .then(response => response.json())
+        .then(data => {
+            sessionStorage.setItem('update_checked', 'true');
+            if (data.success && data.updates_available) {
+                // Reload to show notification banner
+                location.reload();
+            }
+        })
+        .catch(err => console.log('Update check failed:', err));
+}
+
+function dismissUpdateNotification() {
+    fetch('api/dismiss_update_notification.php')
+        .then(() => {
+            document.getElementById('update-notification-banner').style.display = 'none';
+        });
+}
+</script>
+
 
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
     <!-- Decorative background element -->
