@@ -37,7 +37,8 @@ class Database {
             'father_contact', 'district', 'taluka', 'school_name', 'semis_code', 
             'is_active', 'created_at', 'updated_at', 'father_cnic_front', 
             'father_cnic_back', 'b_form_img', 'profile_image', 'previous_school', 'slc_img',
-            'student_status', 'is_repeater', 'graduation_year', 'last_class'
+            'student_status', 'is_repeater', 'graduation_year', 'last_class',
+            'caste', 'religion', 'place_of_birth'
         ];
 
         if (!is_dir(dirname($this->csvFile))) {

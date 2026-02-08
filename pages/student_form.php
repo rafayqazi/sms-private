@@ -198,9 +198,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'father_contact' => str_replace('-', '', $_POST['father_contact']),
             'district' => $_POST['district'],
             'taluka' => $_POST['taluka'],
+            'caste' => isset($_POST['caste']) ? $_POST['caste'] : '',
+            'religion' => isset($_POST['religion']) ? $_POST['religion'] : '',
+            'place_of_birth' => isset($_POST['place_of_birth']) ? $_POST['place_of_birth'] : '',
             'school_name' => $_POST['school_name'],
-            'semis_code' => $_POST['semis_code'],
-            'semis_code' => $_POST['semis_code'],
             'previous_school' => isset($_POST['previous_school']) ? $_POST['previous_school'] : '',
             'is_active' => 1
         ];
@@ -350,15 +351,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="text" name="taluka" id="taluka" value="<?php echo $student ? htmlspecialchars($student['taluka']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Caste <span class="text-xs text-gray-500">(Optional)</span></label>
+                <input type="text" name="caste" id="caste" value="<?php echo $student ? htmlspecialchars($student['caste'] ?? '') : ''; ?>" placeholder="e.g. Rajput" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Religion <span class="text-xs text-gray-500">(Optional)</span></label>
+                <select name="religion" id="religion" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <option value="">Select Religion</option>
+                    <option value="Islam" <?php echo ($student && isset($student['religion']) && $student['religion'] == 'Islam') ? 'selected' : ''; ?>>Islam</option>
+                    <option value="Hinduism" <?php echo ($student && isset($student['religion']) && $student['religion'] == 'Hinduism') ? 'selected' : ''; ?>>Hinduism</option>
+                    <option value="Christianity" <?php echo ($student && isset($student['religion']) && $student['religion'] == 'Christianity') ? 'selected' : ''; ?>>Christianity</option>
+                    <option value="Other" <?php echo ($student && isset($student['religion']) && $student['religion'] == 'Other') ? 'selected' : ''; ?>>Other</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Place of Birth <span class="text-xs text-gray-500">(Optional)</span></label>
+                <input type="text" name="place_of_birth" id="place_of_birth" value="<?php echo $student ? htmlspecialchars($student['place_of_birth'] ?? '') : ''; ?>" placeholder="City/Village Name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
             <div class="flex flex-col space-y-2 lg:col-span-2">
                 <label class="text-sm font-medium text-gray-700">School Name <span class="text-red-500">*</span></label>
                 <input type="text" name="school_name" id="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : htmlspecialchars($formSettings['school_name'] ?? 'GBPS Ali Bux Jarwar'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
-            <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">SEMIS Code <span class="text-red-500">*</span></label>
-                <input type="text" name="semis_code" id="semis_code" value="<?php echo $student ? htmlspecialchars($student['semis_code']) : '424010147'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-            </div>
+
 
             <?php if ($student && (isset($student['student_status']) && $student['student_status'] === 'Alumni') || isset($_GET['restore'])): ?>
             <div class="col-span-full bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -480,8 +499,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 { id: 'b_form_no', name: "B-Form No" },
                 { id: 'district', name: "District" },
                 { id: 'taluka', name: "Taluka" },
-                { id: 'school_name', name: "School Name" },
-                { id: 'semis_code', name: "SEMIS Code" }
+                { id: 'school_name', name: "School Name" }
             ];
 
             // 1. Handle GR No Field specifically
