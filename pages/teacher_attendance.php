@@ -79,7 +79,7 @@ $existingAttendance = $db->getTeacherAttendance($date);
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold overflow-hidden shadow-sm">
                                             <?php if (!empty($teacher['profile_image'])): ?>
-                                                <img src="../uploads/<?php echo htmlspecialchars($teacher['profile_image']); ?>" class="w-full h-full object-cover">
+                                                <img src="<?php echo htmlspecialchars($teacher['profile_image']); ?>" class="w-full h-full object-cover">
                                             <?php else: ?>
                                                 <?php echo strtoupper(substr($teacher['name'], 0, 1)); ?>
                                             <?php endif; ?>

@@ -245,7 +245,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
                             <div class="relative">
                                 <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-yellow-400' : 'border-gray-200 dark:border-gray-700'; ?> overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
                                     <?php if ($topper['profile_image']): ?>
-                                        <img src="uploads/<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
+                                        <img src="<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-indigo-400 dark:text-indigo-300 font-bold uppercase text-sm">
                                             <?php echo substr($topper['student_name'], 0, 1); ?>
@@ -279,7 +279,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
                             <div class="relative">
                                 <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-emerald-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
                                     <?php if ($atopper['profile_image']): ?>
-                                        <img src="uploads/<?php echo htmlspecialchars($atopper['profile_image']); ?>" class="w-full h-full object-cover">
+                                        <img src="<?php echo htmlspecialchars($atopper['profile_image']); ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-emerald-400 font-bold uppercase text-sm">
                                             <?php echo substr($atopper['student_name'], 0, 1); ?>
@@ -314,7 +314,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
                             <div class="relative">
                                 <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-primary' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
                                     <?php if ($cs['topper_img']): ?>
-                                        <img src="uploads/<?php echo htmlspecialchars($cs['topper_img']); ?>" class="w-full h-full object-cover">
+                                        <img src="<?php echo htmlspecialchars($cs['topper_img']); ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-primary font-bold uppercase text-sm">
                                             <?php echo substr($cs['class_name'], 0, 1); ?>
@@ -396,7 +396,7 @@ $lowStockItems = array_filter($allInventory, function($item) {
                             <div class="flex items-center gap-3 bg-pink-50/50 p-2 rounded-lg border border-pink-100/50">
                                 <div class="w-10 h-10 rounded-full bg-pink-100 border border-pink-200 overflow-hidden shrink-0">
                                     <?php if ($bday['image']): ?>
-                                        <img src="uploads/<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
+                                        <img src="<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-pink-500 font-bold">
                                             <?php echo substr($bday['name'], 0, 1); ?>

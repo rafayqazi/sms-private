@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Error is already set, just fall through to display it
     } else {
         // Handle File Uploads
-        $uploadDir = '../uploads/';
+        $uploadDir = '../uploads/students/';
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
@@ -159,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $check = getimagesize($fileTmpPath);
                     if ($check !== false && in_array($check['mime'], $allowedMimeTypes)) {
                         // Create unique filename: GR-123-field_name-HEX.jpg
-                        $newFileName = 'GR-' . preg_replace('/[^a-zA-Z0-9]/', '', $grNo) . '-' . $field . '-' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
+                        $newFileName = 'GR-' . preg_replace('/[^a-zA-Z0-9]/', '', $grNo) .'-' . $field . '-' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
                         $dest_path = $uploadDir . $newFileName;
 
                         if(move_uploaded_file($fileTmpPath, $dest_path)) {

@@ -160,7 +160,7 @@ usort($individualLogs, function($a, $b) { return strcmp($b['date'], $a['date']);
                                 <div class="flex items-center gap-3 mb-3">
                                     <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                         <?php if ($stats['image']): ?>
-                                            <img src="../uploads/<?php echo htmlspecialchars($stats['image']); ?>" class="w-full h-full object-cover">
+                                            <img src="<?php echo htmlspecialchars($stats['image']); ?>" class="w-full h-full object-cover">
                                         <?php else: ?>
                                             <div class="text-teal-600 font-bold"><?php echo substr($teacherNames[$tid], 0, 1); ?></div>
                                         <?php endif; ?>

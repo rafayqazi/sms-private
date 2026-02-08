@@ -74,7 +74,7 @@ if ($_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
 }
 
 $zipPath = $_FILES['backup_file']['tmp_name'];
-$dataDir = __DIR__ . '/../data/';
+$projectRoot = __DIR__ . '/../';
 
 if (!class_exists('ZipArchive')) {
     echo json_encode(['success' => false, 'message' => 'PHP ZipArchive extension is not enabled in this XAMPP installation. Please enable it in php.ini.']);
@@ -83,15 +83,20 @@ if (!class_exists('ZipArchive')) {
 
 $zip = new ZipArchive();
 if ($zip->open($zipPath) === TRUE) {
-    // Optional: Validate contents before extraction to ensure it only has CSVs if possible
-    // But since it's a full restore, we trust the system-generated ZIP
+    // Create data and uploads directories if they don't exist
+    $dataDir = $projectRoot . 'data';
+    $uploadsDir = $projectRoot . 'uploads';
     
-    // Extract to data directory
-    // We should probably clean the directory first or just overwrite?
-    // The user wants a "Restore" which usually implies overwriting.
+    if (!is_dir($dataDir)) {
+        mkdir($dataDir, 0777, true);
+    }
+    if (!is_dir($uploadsDir)) {
+        mkdir($uploadsDir, 0777, true);
+    }
     
-    // ZipArchive::extractTo overwrites existing files by default
-    if ($zip->extractTo($dataDir)) {
+    // Extract the entire backup to project root
+    // The ZIP contains data/ and uploads/ folders which will merge with existing ones
+    if ($zip->extractTo($projectRoot)) {
         $zip->close();
         ob_end_clean();
         echo json_encode(['success' => true, 'message' => 'Database successfully restored! All data has been updated.']);

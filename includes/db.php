@@ -896,36 +896,39 @@ class Database {
     }
 
     public function resetData() {
-        // 1. Delete all files in the data directory (recursive-style glob)
-        $dataDir = __DIR__ . '/../data/';
-        $it = new RecursiveDirectoryIterator($dataDir, RecursiveDirectoryIterator::SKIP_DOTS);
-        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+    // Helper function to recursively delete a directory
+    $deleteDirectory = function($dir) use (&$deleteDirectory) {
+        if (!is_dir($dir)) return false;
         
-        foreach($files as $file) {
-            if ($file->isDir()){
-                // Optional: keep subdirectories if needed (like tmp), 
-                // but usually we can just clear them. 
-                // For now, let's just delete files to be safe with the folder structure.
-                continue; 
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ($item == '.' || $item == '..') continue;
+            
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $deleteDirectory($path);
             } else {
-                unlink($file->getRealPath());
+                unlink($path);
             }
         }
+        
+        return rmdir($dir);
+    };
 
-        // 2. Delete all files in the uploads directory
-        $uploadsDir = __DIR__ . '/../uploads/';
-        if (is_dir($uploadsDir)) {
-            $upIt = new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS);
-            $upFiles = new RecursiveIteratorIterator($upIt, RecursiveIteratorIterator::CHILD_FIRST);
-            foreach($upFiles as $file) {
-                if ($file->isFile()) {
-                    unlink($file->getRealPath());
-                }
-            }
-        }
-
-        return true;
+    // 1. Completely delete data directory
+    $dataDir = __DIR__ . '/../data';
+    if (is_dir($dataDir)) {
+        $deleteDirectory($dataDir);
     }
+
+    // 2. Completely delete uploads directory
+    $uploadsDir = __DIR__ . '/../uploads';
+    if (is_dir($uploadsDir)) {
+        $deleteDirectory($uploadsDir);
+    }
+
+    return true;
+}
 
     // Student Promotion Methods
     public function getStudentsByClass($class) {
