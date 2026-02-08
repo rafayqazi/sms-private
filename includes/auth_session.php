@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
+// Access path for redirects
+$base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
+
 // Set session cookie security parameters
 session_set_cookie_params([
     'lifetime' => 86400,
@@ -28,13 +31,13 @@ if (isset($_SESSION['login_time'])) {
     if (time() - $_SESSION['login_time'] > 86400) {
         session_unset();
         session_destroy();
-        header("Location: login.php?timeout=1");
+        header("Location: {$base_path}login.php?timeout=1");
         exit();
     }
 }
 
 if (!isset($_SESSION['user'])) {
-    header("Location: login.php");
+    header("Location: {$base_path}login.php");
     exit();
 }
 

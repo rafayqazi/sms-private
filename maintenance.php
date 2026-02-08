@@ -224,32 +224,42 @@ if (file_exists($settingsFile)) {
                     setTimeout(() => modal.classList.add('hidden'), 300);
                 }
 
+
                 function executeUpdate() {
                     const btn = document.getElementById('btn-execute-update');
                     const originalText = btn.innerHTML;
                     btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Updating...';
+                    btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Backing up & Updating...';
 
-                    fetch('api/perform_update.php', { method: 'POST' })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                btn.className = "px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs shadow-lg flex items-center gap-2";
-                                btn.innerHTML = '<i class="fas fa-check"></i> Success!';
-                                setTimeout(() => window.location.reload(), 1500);
-                            } else {
-                                btn.className = "px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-xs shadow-lg flex items-center gap-2";
-                                btn.innerHTML = '<i class="fas fa-times"></i> Error';
-                                alert('Error: ' + data.message);
+                    // 1. Trigger Auto Backup Download First
+                    const dlFrame = document.createElement('iframe');
+                    dlFrame.style.display = 'none';
+                    dlFrame.src = 'api/backup_data_auto.php'; // Path is relative to maintenance.php (root)
+                    document.body.appendChild(dlFrame);
+
+                    // 2. Small delay to allow browser to register download start before performance-heavy update
+                    setTimeout(() => {
+                        fetch('api/perform_update.php', { method: 'POST' })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    btn.className = "px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs shadow-lg flex items-center gap-2";
+                                    btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+                                    setTimeout(() => window.location.reload(), 1500);
+                                } else {
+                                    btn.className = "px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-xs shadow-lg flex items-center gap-2";
+                                    btn.innerHTML = '<i class="fas fa-times"></i> Error';
+                                    alert('Error: ' + data.message);
+                                    btn.disabled = false;
+                                    btn.innerHTML = originalText; 
+                                }
+                            })
+                            .catch(err => {
                                 btn.disabled = false;
-                                btn.innerHTML = originalText; 
-                            }
-                        })
-                        .catch(err => {
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
-                            alert('Network Error.');
-                        });
+                                btn.innerHTML = originalText;
+                                alert('Network Error.');
+                            });
+                    }, 2000);
                 }
                 </script>
             <?php endif; ?>

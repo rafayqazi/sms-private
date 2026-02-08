@@ -107,11 +107,12 @@ class License {
      * Check license and redirect if invalid
      */
     public static function checkAndRedirect() {
-        // Skip check for license error page itself and missing files page
-        $current_page = basename($_SERVER['PHP_SELF']);
-        if ($current_page === 'license_error.php' || $current_page === 'missing_files.php') {
-            return;
-        }
+        // Skip check for installation, license error, and integrity pages
+    $current_page = basename($_SERVER['PHP_SELF']);
+    $installer_pages = ['install.php', 'installer_actions.php', 'restore_data.php', 'get_machine_info.php'];
+    if (in_array($current_page, $installer_pages) || $current_page === 'license_error.php' || $current_page === 'missing_files.php') {
+        return;
+    }    
 
         // 1. Check for .git folder - Software Integrity Protection
         if (!is_dir(__DIR__ . '/../.git')) {

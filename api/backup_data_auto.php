@@ -1,38 +1,26 @@
 <?php
 session_start();
 
-$username = $_SESSION['username'] ?? '';
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['password']) || !$username) {
+if (!isset($_SESSION['user_type']) || ($_SESSION['user_type'] !== 'admin' && $_SESSION['user_role'] !== 'Admin')) {
     header('Content-Type: application/json');
-    die(json_encode(['error' => 'Invalid request']));
+    http_response_code(403);
+    die(json_encode(['error' => 'Unauthorized']));
 }
 
 require_once __DIR__ . '/../includes/db.php';
 $db = new Database();
-$password = $_POST['password'];
 
-if (!$db->verifyAdmin($username, $password)) {
-    $userRole = $db->getUserRoleByUsername($username);
-    if (!($userRole && $userRole['role'] === 'Admin' && password_verify($password, $userRole['password_hash']))) {
-        header('Content-Type: application/json');
-        die(json_encode(['error' => 'Invalid password']));
-    }
-}
-
-// Get school name
 $settings = $db->getSchoolSettings();
 $schoolName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $settings['school_name'] ?? 'School');
-$zipFilename = $schoolName . '_Backup_' . date('Y-m-d_H-i-s') . '.zip';
-$tempZip = __DIR__ . '/../temp_backup_' . uniqid() . '.zip';
+$zipFilename = $schoolName . '_AutoBackup_' . date('Y-m-d_H-i-s') . '.zip';
+$tempZip = __DIR__ . '/../temp_autobackup_' . uniqid() . '.zip';
 
-// Create ZIP
 $zip = new ZipArchive();
 if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
     header('Content-Type: application/json');
-    die(json_encode(['error' => 'Cannot create ZIP file']));
+    die(json_encode(['error' => 'Cannot create ZIP']));
 }
 
-// Function to add directory to ZIP
 function addDirectoryToZip($zip, $dirPath, $zipPath = '') {
     if (!is_dir($dirPath)) return 0;
     
@@ -58,7 +46,6 @@ function addDirectoryToZip($zip, $dirPath, $zipPath = '') {
     return $count;
 }
 
-// Add data folder
 $dataDir = __DIR__ . '/../data';
 $dataCount = 0;
 if (is_dir($dataDir)) {
@@ -66,7 +53,6 @@ if (is_dir($dataDir)) {
     $dataCount = addDirectoryToZip($zip, $dataDir, 'data');
 }
 
-// Add uploads folder
 $uploadsDir = __DIR__ . '/../uploads';
 $uploadsCount = 0;
 if (is_dir($uploadsDir)) {
@@ -76,20 +62,14 @@ if (is_dir($uploadsDir)) {
 
 $zip->close();
 
-// Check if ZIP was created successfully
-if (!file_exists($tempZip)) {
+if (!file_exists($tempZip) || filesize($tempZip) == 0) {
+    if (file_exists($tempZip)) unlink($tempZip);
     header('Content-Type: application/json');
-    die(json_encode(['error' => 'ZIP file was not created']));
+    die(json_encode(['error' => 'ZIP empty. Files: data=' . $dataCount . ', uploads=' . $uploadsCount]));
 }
 
 $fileSize = filesize($tempZip);
-if ($fileSize == 0) {
-    unlink($tempZip);
-    header('Content-Type: application/json');
-    die(json_encode(['error' => 'ZIP is empty. Files added: data=' . $dataCount . ', uploads=' . $uploadsCount]));
-}
 
-// Send the file
 header('Content-Type: application/octet-stream');
 header('Content-Disposition: attachment; filename="' . $zipFilename . '"');
 header('Content-Length: ' . $fileSize);

@@ -77,6 +77,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $errorMsg = "Failed to save license data.";
         }
+    } elseif (isset($_POST['add_user'])) {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+        $role = $_POST['role'];
+        $result = $db->createUserRole(0, $role, $username, $password);
+        if ($result['success']) {
+            $successMsg = "User created successfully!";
+        } else {
+            $errorMsg = $result['message'];
+        }
+    } elseif (isset($_POST['update_user'])) {
+        $id = $_POST['user_id'];
+        $username = $_POST['username'];
+        $password = $_POST['password']; // Optional password change
+        $role = $_POST['role'];
+        $result = $db->updateUserRoleById($id, $role, $username, $password);
+        if ($result['success']) {
+            $successMsg = "User updated successfully!";
+        } else {
+            $errorMsg = $result['message'];
+        }
+    } elseif (isset($_POST['delete_user'])) {
+        $id = $_POST['user_id'];
+        $result = $db->deleteUserRoleById($id);
+        if ($result['success']) {
+            $successMsg = "User deleted successfully!";
+        } else {
+            $errorMsg = $result['message'];
+        }
     }
 }
 
@@ -84,16 +113,16 @@ $settings = $db->getSchoolSettings();
 ?>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <h2 class="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3">
-            <div class="p-3 bg-teal-100 rounded-lg text-teal-600">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-8 flex items-center gap-3">
+            <div class="p-3 bg-teal-100 dark:bg-teal-900 rounded-lg text-teal-600 dark:text-teal-400">
                 <i class="fas fa-cog"></i>
             </div>
             Settings
         </h2>
 
         <?php if ($successMsg): ?>
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow-sm flex items-center justify-between" role="alert">
+            <div class="bg-green-100 dark:bg-green-900/20 border-l-4 border-green-500 text-green-700 dark:text-green-400 p-4 mb-6 rounded shadow-sm flex items-center justify-between" role="alert">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-check-circle"></i>
                     <span><?php echo $successMsg; ?></span>
@@ -102,7 +131,7 @@ $settings = $db->getSchoolSettings();
         <?php endif; ?>
 
         <?php if ($errorMsg): ?>
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm flex items-center justify-between" role="alert">
+            <div class="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-400 p-4 mb-6 rounded shadow-sm flex items-center justify-between" role="alert">
                  <div class="flex items-center gap-2">
                     <i class="fas fa-exclamation-circle"></i>
                     <span><?php echo $errorMsg; ?></span>
@@ -110,23 +139,43 @@ $settings = $db->getSchoolSettings();
             </div>
         <?php endif; ?>
 
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div class="flex border-b">
-                <a href="?tab=general" class="flex-1 py-4 text-center font-semibold transition-colors <?php echo $activeTab === 'general' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-500 hover:bg-gray-50'; ?>">
-                    <i class="fas fa-school mr-2"></i> General Settings
-                </a>
-                <a href="?tab=security" class="flex-1 py-4 text-center font-semibold transition-colors <?php echo $activeTab === 'security' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-500 hover:bg-gray-50'; ?>">
-                    <i class="fas fa-lock mr-2"></i> Security
-                </a>
-                <a href="?tab=licensing" class="flex-1 py-4 text-center font-semibold transition-colors <?php echo $activeTab === 'licensing' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-500 hover:bg-gray-50'; ?>">
-                    <i class="fas fa-key mr-2"></i> Licensing
-                </a>
-                <a href="?tab=updates" class="flex-1 py-4 text-center font-semibold transition-colors <?php echo $activeTab === 'updates' ? 'bg-teal-50 text-teal-700 border-b-2 border-teal-600' : 'text-gray-500 hover:bg-gray-50'; ?>">
-                    <i class="fas fa-sync-alt mr-2"></i> Software Updates
-                </a>
+        <!-- Vertical Layout: Sidebar + Content -->
+        <div class="flex gap-6 items-start">
+            <!-- Left Sidebar Navigation -->
+            <div class="w-64 flex-shrink-0">
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden sticky top-6">
+                    <div class="p-4 border-b border-gray-100 dark:border-gray-800">
+                        <h3 class="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wide">Navigation</h3>
+                    </div>
+                    <nav class="p-2">
+                        <a href="?tab=general" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'general' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
+                            <i class="fas fa-school w-5 text-center"></i>
+                            <span>General Settings</span>
+                        </a>
+                        <a href="?tab=security" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'security' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
+                            <i class="fas fa-lock w-5 text-center"></i>
+                            <span>Security</span>
+                        </a>
+                        <a href="?tab=users" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'users' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
+                            <i class="fas fa-users-cog w-5 text-center"></i>
+                            <span>User Management</span>
+                        </a>
+                        <a href="?tab=licensing" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'licensing' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
+                            <i class="fas fa-key w-5 text-center"></i>
+                            <span>Licensing</span>
+                        </a>
+                        <a href="?tab=updates" class="flex items-center gap-3 px-4 py-3 mb-1 rounded-lg text-sm font-medium transition-all <?php echo $activeTab === 'updates' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-l-4 border-teal-600' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'; ?>">
+                            <i class="fas fa-sync-alt w-5 text-center"></i>
+                            <span>Software Updates</span>
+                        </a>
+                    </nav>
+                </div>
             </div>
 
-            <div class="p-8">
+            <!-- Right Content Area -->
+            <div class="flex-1">
+                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+
                 <?php if ($activeTab === 'general'): ?>
                     <form action="?tab=general" method="POST" class="space-y-6" enctype="multipart/form-data">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -214,6 +263,68 @@ $settings = $db->getSchoolSettings();
                             </button>
                         </div>
                     </form>
+                <?php elseif ($activeTab === 'users'): ?>
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">System Users</h3>
+                                <p class="text-sm text-gray-500">Manage standalone users and their access roles.</p>
+                            </div>
+                            <button onclick="openAddUserModal()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-bold transition-colors flex items-center gap-2 shadow-sm">
+                                <i class="fas fa-user-plus"></i> Add New User
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 text-gray-600 uppercase text-xs font-bold">
+                                    <tr>
+                                        <th class="px-6 py-4">Username</th>
+                                        <th class="px-6 py-4">Role</th>
+                                        <th class="px-6 py-4">Linked To</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <?php 
+                                    $allRoles = $db->getAllUserRoles();
+                                    foreach ($allRoles as $user): 
+                                        $linkedTo = "Standalone Account";
+                                        if ($user['teacher_id'] > 0) {
+                                            $teacher = $db->getTeacher($user['teacher_id']);
+                                            $linkedTo = $teacher ? htmlspecialchars($teacher['name']) . " (Teacher)" : "Unknown Teacher";
+                                        }
+                                    ?>
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 font-semibold text-gray-800"><?php echo htmlspecialchars($user['username']); ?></td>
+                                            <td class="px-6 py-4">
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase <?php echo $user['role'] === 'Admin' ? 'bg-indigo-100 text-indigo-700' : ($user['role'] === 'Editor' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700'); ?>">
+                                                    <?php echo htmlspecialchars($user['role']); ?>
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-gray-500"><?php echo $linkedTo; ?></td>
+                                            <td class="px-6 py-4 text-right">
+                                                <div class="flex justify-end gap-2">
+                                                    <button onclick='openEditUserModal(<?php echo json_encode($user); ?>)' class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit User">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button onclick="confirmDeleteUser(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete User">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <?php if (empty($allRoles)): ?>
+                                        <tr>
+                                            <td colspan="4" class="px-6 py-12 text-center text-gray-500 italic">No system users found.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 <?php elseif ($activeTab === 'licensing'): ?>
                     <div class="max-w-xl mx-auto space-y-8">
                         <?php 
@@ -490,37 +601,186 @@ $settings = $db->getSchoolSettings();
                         }, 300);
                     }
 
+
                     function executeUpdate() {
                         const btn = document.getElementById('btn-execute-update');
                         const originalText = btn.innerHTML;
                         btn.disabled = true;
-                        btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Pulling Changes...';
+                        btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Backing up & Updating...';
 
-                        fetch('../api/perform_update.php', { method: 'POST' })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    btn.className = "px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-lg flex items-center gap-2";
-                                    btn.innerHTML = '<i class="fas fa-check"></i> Done! Reloading...';
-                                    setTimeout(() => {
-                                        window.location.reload();
-                                    }, 1500);
-                                } else {
-                                    btn.className = "px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg flex items-center gap-2";
-                                    btn.innerHTML = '<i class="fas fa-times"></i> Failed';
-                                    alert('Update Error: ' + data.message);
+                        // 1. Trigger Auto Backup Download First
+                        const dlFrame = document.createElement('iframe');
+                        dlFrame.style.display = 'none';
+                        dlFrame.src = '../api/backup_data_auto.php';
+                        document.body.appendChild(dlFrame);
+                        
+                        // 2. Small delay to allow browser to register download start before performance-heavy update
+                        setTimeout(() => {
+                            fetch('../api/perform_update.php', { method: 'POST' })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        btn.className = "px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm shadow-lg flex items-center gap-2";
+                                        btn.innerHTML = '<i class="fas fa-check"></i> Done! Reloading...';
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 1500);
+                                    } else {
+                                        btn.className = "px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg flex items-center gap-2";
+                                        btn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                                        alert('Update Error: ' + data.message);
+                                        btn.disabled = false;
+                                        btn.innerHTML = originalText; 
+                                    }
+                                })
+                                .catch(err => {
                                     btn.disabled = false;
-                                    btn.innerHTML = originalText; 
-                                }
-                            })
-                            .catch(err => {
-                                btn.disabled = false;
-                                btn.innerHTML = originalText;
-                                alert('Network Error during update.');
-                            });
+                                    btn.innerHTML = originalText;
+                                    alert('Network Error during update.');
+                                });
+                        }, 2000);
                     }
                     </script>
                 <?php endif; ?>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transition-all transform scale-95 opacity-0" id="addUserModalContent">
+        <div class="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-user-plus text-teal-600"></i> Add New System User
+            </h3>
+            <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form action="?tab=users" method="POST" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input type="text" name="username" required placeholder="User's login name"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required placeholder="Min 4 characters" minlength="4"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select name="role" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+                    <option value="Admin">Admin (Full Access)</option>
+                    <option value="Viewer">Viewer (Read Only)</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" name="add_user" class="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-md transition-colors">
+                    Create User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transition-all transform scale-95 opacity-0" id="editUserModalContent">
+        <div class="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-user-edit text-indigo-600"></i> Edit System User
+            </h3>
+            <button onclick="closeEditUserModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form action="?tab=users" method="POST" class="p-6 space-y-4">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input type="text" name="username" id="edit_username" required
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New Password (Leave blank to keep current)</label>
+                <input type="password" name="password" placeholder="New password (optional)" minlength="4"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select name="role" id="edit_role" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+                    <option value="Admin">Admin (Full Access)</option>
+                    <option value="Viewer">Viewer (Read Only)</option>
+                </select>
+            </div>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+                <button type="submit" name="update_user" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete User Form (Hidden) -->
+<form id="deleteUserForm" action="?tab=users" method="POST" class="hidden">
+    <input type="hidden" name="user_id" id="delete_user_id">
+    <input type="hidden" name="delete_user" value="1">
+</form>
+
+                </div> <!-- End of content area bg-white -->
+            </div> <!-- End of flex-1 content column -->
+        </div> <!-- End of flex layout (sidebar + content) -->
+    </div> <!-- End of max-w-7xl mx-auto -->
+</div> <!-- End of container -->
+
+<script>
+function openAddUserModal() {
+    const modal = document.getElementById('addUserModal');
+    const content = document.getElementById('addUserModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeAddUserModal() {
+    const modal = document.getElementById('addUserModal');
+    const content = document.getElementById('addUserModalContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function openEditUserModal(user) {
+    document.getElementById('edit_user_id').value = user.id;
+    document.getElementById('edit_username').value = user.username;
+    document.getElementById('edit_role').value = user.role;
+    
+    const modal = document.getElementById('editUserModal');
+    const content = document.getElementById('editUserModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeEditUserModal() {
+    const modal = document.getElementById('editUserModal');
+    const content = document.getElementById('editUserModalContent');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function confirmDeleteUser(id, username) {
+    if (confirm('Are you sure you want to delete the user "' + username + '"? This action cannot be undone.')) {
+        document.getElementById('delete_user_id').value = id;
+        document.getElementById('deleteUserForm').submit();
+    }
+}
+</script>
 
 <?php include '../includes/footer.php'; ?>

@@ -1,15 +1,11 @@
 # Sensitive Data - Do not commit
 # Ignore all CSV files everywhere
 *.csv
-# Ignore all files in data directory except the folder itself
-data/*
-# But allow specific non-sensitive directory structure if needed (none for now)
-# Ignore specific files that might be in data
-data/settings.json
-data/subject_config.json
-data/license.php
 
-# Uploads directory (keep structure, not files)
+# Ignore entire data directory and all contents
+data/
+
+# Ignore entire uploads directory and all contents (keep structure, not files)
 uploads/*
 !uploads/.gitkeep
 

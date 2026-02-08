@@ -33,6 +33,10 @@ function isEditor() {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'Editor';
 }
 
+function isViewer() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'Viewer';
+}
+
 function isSuperAdmin() {
     return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin';
 }
@@ -47,6 +51,22 @@ function canAccessPage($page) {
     if (isAdmin()) {
         return true;
     }
+
+    // Viewer restrictions - Read only access to specific pages
+    if (isViewer()) {
+        $allowedPages = [
+            'index.php',
+            'students.php',
+            'student_profile.php',
+            'teacher_profile.php',
+            'attendance_view.php',
+            'view_results.php',
+            'book_bank.php',
+            'inventory.php',
+            'messages.php'
+        ];
+        return in_array($page, $allowedPages);
+    }
     
     // Editor restrictions - can only access attendance pages
     if (isEditor()) {
@@ -59,7 +79,8 @@ function canAccessPage($page) {
             'teacher_profile.php',
             'parents.php',
             'reset_app.php',
-            'assign_roles.php'
+            'assign_roles.php',
+            'settings.php'
         ];
         
         return !in_array($page, $restrictedPages);

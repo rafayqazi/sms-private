@@ -2,6 +2,7 @@
 date_default_timezone_set('Asia/Karachi'); // Set timezone to Pakistan/Karachi
 
 require_once __DIR__ . '/license.php';
+require_once __DIR__ . '/install_check.php';
 License::checkAndRedirect();
 
 // Maintenance Mode Check
@@ -36,7 +37,7 @@ class Database {
             'father_contact', 'district', 'taluka', 'school_name', 'semis_code', 
             'is_active', 'created_at', 'updated_at', 'father_cnic_front', 
             'father_cnic_back', 'b_form_img', 'profile_image', 'previous_school', 'slc_img',
-            'student_status', 'is_repeater'
+            'student_status', 'is_repeater', 'graduation_year', 'last_class'
         ];
 
         if (!file_exists($this->csvFile)) {
@@ -58,9 +59,14 @@ class Database {
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
             $fileHeaders = fgetcsv($handle, 1000, ","); // Skip headers
             while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                if (count($row) == count($this->headers)) {
-                    $data[] = array_combine($this->headers, $row);
+                // Adjust row to match headers length (for robustness against schema updates)
+                if (count($row) < count($this->headers)) {
+                    $row = array_pad($row, count($this->headers), '');
+                } elseif (count($row) > count($this->headers)) {
+                    $row = array_slice($row, 0, count($this->headers));
                 }
+                
+                $data[] = array_combine($this->headers, $row);
             }
             fclose($handle);
         }
@@ -206,6 +212,26 @@ class Database {
             }
         }
         return null;
+    }
+
+    public function bulkRestoreStudents($ids, $targetClass) {
+        $students = $this->readData();
+        $count = 0;
+        foreach ($students as &$student) {
+            if (in_array($student['id'], $ids)) {
+                $student['student_status'] = 'Active';
+                $student['current_class'] = $targetClass;
+                $student['graduation_year'] = '';
+                $student['last_class'] = '';
+                $student['updated_at'] = date('Y-m-d H:i:s');
+                $count++;
+            }
+        }
+        
+        if ($count > 0) {
+            return $this->writeData($students);
+        }
+        return false;
     }
 
     public function getStudentByGrNo($grNo) {
@@ -870,27 +896,31 @@ class Database {
     }
 
     public function resetData() {
-        // 1. Truncate CSVs (Keep Headers)
-        $files = [
-            __DIR__ . '/../data/database.csv' => ['id', 'gr_no', 'student_name', 'father_name', 'gender', 'surname', 'religion', 'caste', 'date_of_birth', 'age', 'place_of_birth', 'b_form_no', 'admission_date', 'current_class', 'father_cnic', 'father_contact', 'district', 'taluka', 'union_council', 'school_name', 'semis_code', 'is_active', 'created_at', 'updated_at', 'father_cnic_front', 'father_cnic_back', 'b_form_img', 'profile_image', 'previous_school', 'slc_img'],
-            __DIR__ . '/../data/teachers.csv' => ['id', 'name', 'father_name', 'gender', 'cnic', 'dob', 'age', 'contact', 'email', 'address', 'designation', 'department', 'posting', 'basic_scale', 'retirement_date', 'payment_type', 'payment_no', 'iban', 'profile_image'],
-            __DIR__ . '/../data/attendance.csv' => ['date', 'class', 'student_id', 'status']
-        ];
-
-        foreach ($files as $file => $headers) {
-            if (file_exists($file)) {
-                $fp = fopen($file, 'w');
-                fputcsv($fp, $headers);
-                fclose($fp);
+        // 1. Delete all files in the data directory (recursive-style glob)
+        $dataDir = __DIR__ . '/../data/';
+        $it = new RecursiveDirectoryIterator($dataDir, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+        
+        foreach($files as $file) {
+            if ($file->isDir()){
+                // Optional: keep subdirectories if needed (like tmp), 
+                // but usually we can just clear them. 
+                // For now, let's just delete files to be safe with the folder structure.
+                continue; 
+            } else {
+                unlink($file->getRealPath());
             }
         }
 
-        // 2. Delete Uploads
-        $uploadsDir = __DIR__ . '/../uploads';
-        $files = glob($uploadsDir . '/*');
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
+        // 2. Delete all files in the uploads directory
+        $uploadsDir = __DIR__ . '/../uploads/';
+        if (is_dir($uploadsDir)) {
+            $upIt = new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS);
+            $upFiles = new RecursiveIteratorIterator($upIt, RecursiveIteratorIterator::CHILD_FIRST);
+            foreach($upFiles as $file) {
+                if ($file->isFile()) {
+                    unlink($file->getRealPath());
+                }
             }
         }
 
@@ -969,7 +999,7 @@ class Database {
         return $this->writeData($students);
     }
 
-    public function createUserRole($teacherId, $role, $username, $password, $classes) {
+    public function createUserRole($teacherId, $role, $username, $password, $classes = []) {
         $file = __DIR__ . '/../data/user_roles.csv';
         $headers = ['id', 'teacher_id', 'role', 'username', 'password_hash', 'assigned_classes', 'created_at', 'updated_at'];
 
@@ -985,8 +1015,8 @@ class Database {
             return ['success' => false, 'message' => 'Username already exists'];
         }
 
-        // Check if teacher already has a role
-        if ($this->getUserRoleByTeacherId($teacherId)) {
+        // Check if teacher already has a role (only for actual teachers)
+        if ($teacherId > 0 && $this->getUserRoleByTeacherId($teacherId)) {
             return ['success' => false, 'message' => 'Teacher already has a role assigned'];
         }
 
@@ -1025,7 +1055,7 @@ class Database {
         }
         fputcsv($fp, $record);
         fclose($fp);
-        return ['success' => true, 'message' => 'Role assigned successfully'];
+        return ['success' => true, 'message' => 'User created successfully'];
     }
 
     public function getUserRoleByUsername($username) {
@@ -1068,7 +1098,7 @@ class Database {
         return null;
     }
 
-    public function updateUserRole($teacherId, $role, $username, $password, $classes) {
+    public function updateUserRole($teacherId, $role, $username, $password, $classes = []) {
         $file = __DIR__ . '/../data/user_roles.csv';
         if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
 
@@ -1081,9 +1111,10 @@ class Database {
         $found = false;
 
         while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            if ($row[1] == $teacherId) {
+            // Only update record where teacher_id matches and is > 0
+            if ($teacherId > 0 && $row[1] == $teacherId) {
                 // Check if username changed and if new username exists
-                if ($row[3] != $username && $this->isUsernameExists($username)) {
+                if ($row[3] != $username && $this->isUsernameExists($username, $teacherId)) {
                     fclose($handle);
                     return ['success' => false, 'message' => 'Username already exists'];
                 }
@@ -1124,6 +1155,65 @@ class Database {
         return ['success' => true, 'message' => 'Role updated successfully'];
     }
 
+    public function updateUserRoleById($id, $role, $username, $password, $classes = []) {
+        $file = __DIR__ . '/../data/user_roles.csv';
+        if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
+
+        $rows = [];
+        $handle = @fopen($file, "r");
+        if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
+
+        $headers = fgetcsv($handle, 1000, ",");
+        $rows[] = $headers;
+        $found = false;
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if ($row[0] == $id) {
+                // Check if username changed and if new username exists
+                if ($row[3] != $username) {
+                    $existingUser = $this->getUserRoleByUsername($username);
+                    if ($existingUser && $existingUser['id'] != $id) {
+                        fclose($handle);
+                        return ['success' => false, 'message' => 'Username already exists'];
+                    }
+                }
+
+                // Update record
+                $passwordHash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : $row[4];
+                $classesJson = json_encode($classes);
+                
+                $updatedRow = [
+                    $id,
+                    $row[1], // teacher_id
+                    $role,
+                    $username,
+                    $passwordHash,
+                    $classesJson,
+                    $row[6], // created_at
+                    date('Y-m-d H:i:s') // updated_at
+                ];
+                $rows[] = $updatedRow;
+                $found = true;
+            } else {
+                $rows[] = $row;
+            }
+        }
+        fclose($handle);
+
+        if (!$found) {
+            return ['success' => false, 'message' => 'User not found'];
+        }
+
+        $fp = @fopen($file, 'w');
+        if ($fp === false) return ['success' => false, 'message' => 'Could not write to user_roles.csv'];
+
+        foreach ($rows as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return ['success' => true, 'message' => 'User updated successfully'];
+    }
+
     public function deleteUserRole($teacherId) {
         $file = __DIR__ . '/../data/user_roles.csv';
         if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
@@ -1133,11 +1223,15 @@ class Database {
         if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
 
         $found = false;
+        $headers = fgetcsv($handle, 1000, ",");
+        $rows[] = $headers;
+
         while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            if ($row[1] != $teacherId) {
-                $rows[] = $row;
-            } else {
+            // Only delete if teacherId matches and is > 0
+            if ($teacherId > 0 && $row[1] == $teacherId) {
                 $found = true;
+            } else {
+                $rows[] = $row;
             }
         }
         fclose($handle);
@@ -1154,6 +1248,41 @@ class Database {
         }
         fclose($fp);
         return ['success' => true, 'message' => 'Role removed successfully'];
+    }
+
+    public function deleteUserRoleById($id) {
+        $file = __DIR__ . '/../data/user_roles.csv';
+        if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
+
+        $rows = [];
+        $handle = @fopen($file, "r");
+        if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
+
+        $found = false;
+        $headers = fgetcsv($handle, 1000, ",");
+        $rows[] = $headers;
+
+        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            if ($row[0] == $id) {
+                $found = true;
+            } else {
+                $rows[] = $row;
+            }
+        }
+        fclose($handle);
+
+        if (!$found) {
+            return ['success' => false, 'message' => 'User not found'];
+        }
+
+        $fp = @fopen($file, 'w');
+        if ($fp === false) return ['success' => false, 'message' => 'Could not write to user_roles.csv'];
+
+        foreach ($rows as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return ['success' => true, 'message' => 'User deleted successfully'];
     }
 
     public function getAllUserRoles() {

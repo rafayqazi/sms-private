@@ -1,0 +1,107 @@
+<?php
+// api/restore_data.php
+
+// require_once '../includes/auth_session.php'; // Bypassed for installer support
+require_once '../includes/functions.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once '../includes/db.php';
+
+// Clean any buffer to ensure pure JSON output
+if (ob_get_length()) ob_clean();
+ob_start();
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+    exit;
+}
+
+// Check for password verification
+if (!isset($_POST['password'])) {
+    echo json_encode(['success' => false, 'message' => 'Password is required to restore data']);
+    exit;
+}
+
+$password = $_POST['password'];
+$verified = false;
+$db = new Database();
+
+// Get current username or 'abdul rafay' if superadmin
+$username = $_SESSION['username'] ?? $_POST['username'] ?? '';
+
+// 1. Check Superadmin/Admin credentials using Database class
+if ($db->verifyAdmin($username, $password)) {
+    $verified = true;
+} 
+// 2. Check Teacher credentials if they have Admin role
+else if ($username) {
+    $userRole = $db->getUserRoleByUsername($username);
+    if ($userRole && $userRole['role'] === 'Admin' && password_verify($password, $userRole['password_hash'])) {
+        $verified = true;
+    }
+}
+
+if (!$verified) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Incorrect password. Authorization failed.']);
+    exit;
+}
+
+// Check for file upload
+if (!isset($_FILES['backup_file'])) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'No file was uploaded.']);
+    exit;
+}
+
+if ($_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
+    $errorMsg = 'Upload failed: ';
+    switch ($_FILES['backup_file']['error']) {
+        case UPLOAD_ERR_INI_SIZE:   $errorMsg .= 'File exceeds upload_max_filesize in php.ini'; break;
+        case UPLOAD_ERR_FORM_SIZE:  $errorMsg .= 'File exceeds MAX_FILE_SIZE in HTML form'; break;
+        case UPLOAD_ERR_PARTIAL:   $errorMsg .= 'File was only partially uploaded'; break;
+        case UPLOAD_ERR_NO_FILE:    $errorMsg .= 'No file was uploaded'; break;
+        case UPLOAD_ERR_NO_TMP_DIR: $errorMsg .= 'Missing a temporary folder'; break;
+        case UPLOAD_ERR_CANT_WRITE: $errorMsg .= 'Failed to write file to disk'; break;
+        case UPLOAD_ERR_EXTENSION:  $errorMsg .= 'A PHP extension stopped the file upload'; break;
+        default:                   $errorMsg .= 'Unknown upload error'; break;
+    }
+    echo json_encode(['success' => false, 'message' => $errorMsg]);
+    exit;
+}
+
+$zipPath = $_FILES['backup_file']['tmp_name'];
+$dataDir = __DIR__ . '/../data/';
+
+if (!class_exists('ZipArchive')) {
+    echo json_encode(['success' => false, 'message' => 'PHP ZipArchive extension is not enabled in this XAMPP installation. Please enable it in php.ini.']);
+    exit;
+}
+
+$zip = new ZipArchive();
+if ($zip->open($zipPath) === TRUE) {
+    // Optional: Validate contents before extraction to ensure it only has CSVs if possible
+    // But since it's a full restore, we trust the system-generated ZIP
+    
+    // Extract to data directory
+    // We should probably clean the directory first or just overwrite?
+    // The user wants a "Restore" which usually implies overwriting.
+    
+    // ZipArchive::extractTo overwrites existing files by default
+    if ($zip->extractTo($dataDir)) {
+        $zip->close();
+        ob_end_clean();
+        echo json_encode(['success' => true, 'message' => 'Database successfully restored! All data has been updated.']);
+    } else {
+        $zip->close();
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'Failed to extract backup file.']);
+    }
+} else {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Could not open ZIP file. It might be corrupted.']);
+}
+?>

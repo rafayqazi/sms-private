@@ -151,7 +151,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </form>
 
         <div class="text-center mt-8 text-sm text-slate-400">
-            &copy; <?php echo date('Y'); ?> GBPS Ali Bux Jarwar. All rights reserved.
+            &copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($settings['school_name']); ?>. All rights reserved.
         </div>
     </div>
 

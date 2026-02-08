@@ -184,6 +184,7 @@ if ($currentUserId) {
                 </a>
 
                 <!-- Class Management -->
+                <?php if (!isViewer()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
                     <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['manage_classes.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Class Management">
                         <div class="flex items-center gap-3">
@@ -197,9 +198,10 @@ if ($currentUserId) {
                         </a>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Students Dropdown -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
                     <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['students.php', 'student_form.php', 'promote_students.php', 'alumni.php', 'print_id_card.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Students">
                         <div class="flex items-center gap-3">
@@ -228,7 +230,7 @@ if ($currentUserId) {
                 <?php endif; ?>
 
                 <!-- Teachers Dropdown (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
                     <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['teacher_form.php', 'teacher_profile.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Teachers">
                         <div class="flex items-center gap-3">
@@ -248,7 +250,7 @@ if ($currentUserId) {
                 <?php endif; ?>
 
                 <!-- Parents Dropdown (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
                     <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['parents.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Parents">
                         <div class="flex items-center gap-3">
@@ -273,18 +275,22 @@ if ($currentUserId) {
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
                     <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['attendance.php', 'attendance_view.php', 'teacher_attendance.php', 'teacher_attendance_view.php']) ? '!flex' : ''; ?>">
+                        <?php if (!isViewer()): ?>
                         <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest group-[.collapsed]:hidden">Students</div>
                         <a href="<?php echo $base_path; ?>pages/attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-user-check w-4 text-center text-[10px]"></i> Mark Student
                         </a>
+                        <?php endif; ?>
                         <a href="<?php echo $base_path; ?>pages/attendance_view.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'attendance_view.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-list-alt w-4 text-center text-[10px]"></i> Student Reports
                         </a>
                         
+                        <?php if (!isViewer()): ?>
                         <div class="px-4 py-2 mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest group-[.collapsed]:hidden">Teachers</div>
                         <a href="<?php echo $base_path; ?>pages/teacher_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_attendance.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-chalkboard-teacher w-4 text-center text-[10px]"></i> Mark Teacher
                         </a>
+                        <?php endif; ?>
                         <a href="<?php echo $base_path; ?>pages/teacher_attendance_view.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'teacher_attendance_view.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-clipboard-user w-4 text-center text-[10px]"></i> Teacher Reports
                         </a>
@@ -300,18 +306,22 @@ if ($currentUserId) {
                         <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
                     </button>
                     <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? '!flex' : ''; ?>">
+                        <?php if (!isViewer()): ?>
                         <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
                             <i class="fas fa-edit w-4 text-center"></i> Enter Marks
                         </a>
+                        <?php endif; ?>
                         <a href="<?php echo $base_path; ?>pages/view_results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'view_results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
                             <i class="fas fa-eye w-4 text-center"></i> View Results
                         </a>
+                        <?php if (!isViewer()): ?>
                         <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
                             <i class="fas fa-id-card w-4 text-center"></i> Print Exam Slips
                         </a>
                         <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
                             <i class="fas fa-clipboard-list w-4 text-center"></i> Examination Attendance
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -332,6 +342,7 @@ if ($currentUserId) {
                         <a href="<?php echo $base_path; ?>pages/inventory.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'inventory.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-list w-4 text-center"></i> Dashboard
                         </a>
+                        <?php if (!isViewer()): ?>
                         <a href="<?php echo $base_path; ?>pages/inventory_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'inventory_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-plus-circle w-4 text-center"></i> Add Item
                         </a>
@@ -341,6 +352,7 @@ if ($currentUserId) {
                         <a href="<?php echo $base_path; ?>pages/dead_stock.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'dead_stock.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-book-dead w-4 text-center"></i> Dead Stock
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -353,27 +365,14 @@ if ($currentUserId) {
                 </a>
 
                 <!-- Assign User Role & Extras (Admin Only) -->
-                <?php if (isAdmin() || isSuperAdmin()): ?>
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
                 <a href="<?php echo $base_path; ?>pages/assign_roles.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'assign_roles.php' ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Assign User Role">
                     <i class="fas fa-user-shield w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Assign User Role</span>
                 </a>
                 
-                <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['reset_app.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Backup and Restore">
-                        <div class="flex items-center gap-3">
-                            <i class="fas fa-database w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Backup and Restore</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
-                    </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['reset_app.php']) ? '!flex' : ''; ?>">
-                        <button onclick="openBackupModal()" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 transition-colors w-full text-left">
-                            <i class="fas fa-download w-4 text-center"></i> Backup Data
-                        </button>
-                        <a href="<?php echo $base_path; ?>pages/reset_app.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'reset_app.php' ? 'text-red-700 bg-red-50' : ''; ?>">
-                            <i class="fas fa-exclamation-triangle w-4 text-center"></i> Reset App
-                        </a>
-                    </div>
-                </div>
+                <a href="<?php echo $base_path; ?>pages/backup_restore.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['backup_restore.php', 'reset_app.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Backup and Restore">
+                    <i class="fas fa-database w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Backup and Restore</span>
+                </a>
                 <?php endif; ?>
 
                 <a href="<?php echo $base_path; ?>logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors mt-auto w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center" title="Logout">
@@ -605,43 +604,5 @@ if ($currentUserId) {
                 });
             }
         });
-
-        // Backup Password Modal Logic
-        function openBackupModal() {
-            document.getElementById('backupModal').classList.remove('hidden');
-        }
-
-        function closeBackupModal() {
-            document.getElementById('backupModal').classList.add('hidden');
-        }
     </script>
 
-    <!-- Secure Backup Modal -->
-    <div id="backupModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-[scaleIn_0.3s_ease-out]">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-lock text-orange-600"></i> Security Check
-                </h3>
-                <button onclick="closeBackupModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <p class="text-gray-600 mb-6">Please enter your password to authorize the database backup download.</p>
-            
-            <form action="<?php echo $base_path; ?>api/backup_data.php" method="POST" target="_blank" onsubmit="setTimeout(closeBackupModal, 1000)">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" placeholder="Enter Admin Password">
-                </div>
-                
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeBackupModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors">Cancel</button>
-                    <button type="submit" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors shadow-sm flex items-center gap-2">
-                        <i class="fas fa-download"></i> Download Backup
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
