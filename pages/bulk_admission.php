@@ -1,13 +1,8 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
-require_once '../includes/header.php';
 
-$db = new Database();
-$errorMsg = '';
-$successMsg = '';
-
-// Sample CSV Download
+// Sample CSV Download - MUST BE BEFORE ANY HTML OUTPUT
 if (isset($_GET['download_sample'])) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="student_import_sample.csv"');
@@ -17,6 +12,12 @@ if (isset($_GET['download_sample'])) {
     fclose($output);
     exit;
 }
+
+require_once '../includes/header.php';
+
+$db = new Database();
+$errorMsg = '';
+$successMsg = '';
 
 // Step 1: Upload CSV
 // Step 2: Map Columns
