@@ -41,3 +41,8 @@ All modals should follow the standard established in `pages/backup_restore.php`:
 
 - **Backend Verification**: Every AJAX-triggered action must be re-verified on the server using `Database->verifyAdmin()` or similar robust methods.
 - **CSRF & Session**: Ensure all API endpoints include `auth_session.php` to protect against unauthorized access.
+
+## 5. Printing & PDF Standards
+
+- **html2pdf.js Integration**: All PDF printing and generation within the software MUST use the **html2pdf.js** library. This ensures that documents are rendered consistently as high-quality PDFs without relying solely on the browser's print dialog, providing a more professional "Export to PDF" experience.
+- **Configuration**: Always use high-quality rendering (e.g., `scale: 2`) and define precise page formats (e.g., `format: 'a4'`) to match official document standards.

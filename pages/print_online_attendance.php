@@ -167,7 +167,7 @@ foreach ($allSubjects as $sub) {
                 </div>
                 <div class="text-center">
                     <div class="h-8 border-b border-black w-32 mb-1"></div>
-                    <p><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
+                    <p>PRINCIPAL : <?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
                 </div>
             </div>
         </div>

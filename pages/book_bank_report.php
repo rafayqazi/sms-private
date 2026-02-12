@@ -171,7 +171,7 @@ $settings = $db->getSchoolSettings();
             </div>
             <div class="text-center">
                 <p class="font-bold text-lg mb-2 text-black"><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
-                <p class="font-bold border-t border-black pt-2 px-10 text-black">Headmaster Signature</p>
+                <p class="font-bold border-t border-black pt-2 px-10 text-black">PRINCIPAL Signature</p>
             </div>
         </div>
     </div>

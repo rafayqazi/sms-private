@@ -33,7 +33,7 @@ class Database {
         // New Schema Headers
         $this->headers = [
             'id', 'gr_no', 'student_name', 'father_name', 'gender', 'date_of_birth', 
-            'admission_date', 'current_class', 'age', 'b_form_no', 'father_cnic', 
+            'admission_date', 'admission_class', 'current_class', 'age', 'b_form_no', 'father_cnic', 
             'father_contact', 'district', 'taluka', 'school_name', 'semis_code', 
             'is_active', 'created_at', 'updated_at', 'father_cnic_front', 
             'father_cnic_back', 'b_form_img', 'profile_image', 'previous_school', 'slc_img',
@@ -2180,7 +2180,7 @@ class Database {
         $defaults = [
             "school_name" => "Government Boys Primary School Ali Bux Jarwar",
             "address_tagline" => "District Ghotki",
-            "headmaster_name" => "Signature Headmaster____________",
+        "headmaster_name" => "Signature PRINCIPAL____________",
             "semis_code" => "424010147",
             "admin_username" => "GBPSalibuxjarwar",
             "admin_password_hash" => '$2y$10$/pdBSPF3.tIje1liRt5pw.bMBGIPzYA07tgV4raAyO1Qx4XSDGOrW'

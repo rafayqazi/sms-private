@@ -191,8 +191,8 @@
                                     <input type="text" id="sch-semis" class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="Optional">
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">HM Name</label>
-                                    <input type="text" id="sch-hm" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="HM Name">
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">PRINCIPAL Name</label>
+                                    <input type="text" id="sch-hm" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="PRINCIPAL Name">
                                 </div>
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">School Address</label>

@@ -32,6 +32,10 @@ if (empty($students)) {
     echo '</div>';
     exit;
 }
+
+$logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+            ? '../' . $settings['school_logo'] 
+            : '../assets/branding/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -120,16 +124,15 @@ if (empty($students)) {
         <div class="card-container bg-white shadow-xl rounded-lg overflow-hidden relative border border-gray-200" style="width: 86mm; height: 54mm;">
             <div class="id-card">
                 <!-- Background Watermark -->
-                <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" class="watermark" alt="Watermark">
+                <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" class="watermark" alt="Watermark">
 
                 <!-- Header -->
                 <header class="bg-primary text-white p-1 flex items-center justify-between border-b-2 border-secondary z-10" style="background-color: #15803d; border-color: #f59e0b;">
                     <div class="flex items-center gap-2">
-                        <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="h-8 w-8 bg-white rounded-full p-0.5 object-contain">
+                        <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" alt="Logo" class="h-8 w-8 bg-white rounded-full p-0.5 object-contain">
                         <div>
                             <h1 class="text-[9px] font-bold uppercase leading-tight tracking-wide"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
                             <p class="text-[6px] uppercase tracking-widest leading-none"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
-                            <p class="text-[6px] uppercase tracking-widest leading-none">SEMIS CODE : <?php echo htmlspecialchars($settings['semis_code']); ?></p>
                         </div>
                     </div>
                     <div class="text-[7px] font-bold bg-green-700 text-white px-1 py-0.5 rounded uppercase" style="background-color: #15803d !important; color: white !important; -webkit-print-color-adjust: exact;">
@@ -201,7 +204,7 @@ if (empty($students)) {
                     </div>
                     <div class="text-center">
                         <div class="w-20 border-b border-black mb-0.5"></div>
-                        <p class="text-[6px] font-bold uppercase">Headmaster: <?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
+                        <p class="text-[6px] font-bold uppercase">PRINCIPAL: <?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
                     </div>
                 </footer>
                 

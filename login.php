@@ -112,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="absolute bottom-12 left-12 z-20 animate-fade">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
-                        <img src="GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-12 h-12 object-contain">
+                        <img src="assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-12 h-12 object-contain">
                     </div>
                     <div>
                         <h2 class="text-white text-xl font-black tracking-tight leading-none"><?php echo htmlspecialchars($settings['school_name']); ?></h2>
@@ -132,13 +132,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="w-full lg:w-2/5 flex items-center justify-center bg-white p-8 md:p-12 relative overflow-y-auto">
             <div class="w-full max-w-sm animate-slideUp">
                 
-                <!-- Mobile Logo (Visible only on mobile) -->
-                <div class="lg:hidden text-center mb-10">
-                    <img src="GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-20 h-20 object-contain mx-auto mb-4">
-                    <h1 class="text-xl font-black text-slate-800 tracking-tight leading-none"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
-                </div>
+                <!-- School Branding (Visible on all devices) -->
+                <div class="mb-10 text-center flex flex-col items-center">
+                    <div class="mb-6 flex flex-col items-center">
+                        <div class="w-24 h-24 bg-white p-4 rounded-full shadow-lg border border-slate-100 mb-4 flex items-center justify-center">
+                            <img src="assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-full h-full object-contain">
+                        </div>
+                        <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-tight uppercase mb-2">
+                            <?php echo htmlspecialchars($settings['school_name']); ?>
+                        </h1>
+                        <?php if (!empty($settings['address_tagline'])): ?>
+                            <p class="text-sm font-bold text-slate-500 uppercase tracking-widest px-8">
+                                <?php echo htmlspecialchars($settings['address_tagline']); ?>
+                            </p>
+                        <?php endif; ?>
+                    </div>
 
-                <div class="mb-10 text-center lg:text-left">
+                    <div class="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-8"></div>
+
                     <div class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2 pl-1">
                         <?php 
                             $h = date('H');
@@ -191,8 +202,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </button>
                 </form>
 
-                <div class="mt-12 text-center text-[10px] font-black text-black uppercase tracking-widest">
-                    &copy; <?php echo date('Y'); ?> System Secure Build &bull; v2.0
+                <div class="mt-12 text-center text-[10px] uppercase tracking-widest">
+                    <div class="font-black text-slate-900 mb-1">
+                        &copy; <?php echo date('Y'); ?> System Secure Build &bull; v2.0
+                    </div>
+                    <div class="font-bold text-slate-400">
+                        Developed by <span class="text-indigo-400">Rafay Qazi</span>
+                    </div>
                 </div>
             </div>
         </div>

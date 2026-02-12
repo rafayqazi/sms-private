@@ -192,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'gender' => $_POST['gender'],
             'date_of_birth' => $_POST['date_of_birth'],
             'admission_date' => $_POST['admission_date'],
+            'admission_class' => $_POST['admission_class'] ?? '',
             'current_class' => $_POST['current_class'],
             'b_form_no' => str_replace('-', '', $_POST['b_form_no']),
             'father_cnic' => str_replace('-', '', $_POST['father_cnic']),
@@ -291,6 +292,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Admission Date <span class="text-red-500">*</span></label>
                 <input type="date" name="admission_date" id="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Admission Class <span class="text-red-500">*</span></label>
+                <select name="admission_class" id="admission_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <option value="">Select Class</option>
+                    <?php
+                    foreach ($classes as $c) {
+                        $selected = ($student && ($student['admission_class'] ?? '') == $c) ? 'selected' : '';
+                        echo "<option value=\"$c\" $selected>$c</option>";
+                    }
+                    ?>
+                </select>
             </div>
 
             <!-- Removed duplicated Profile Image upload from here -->
@@ -495,6 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 { id: 'gender', name: "Gender" },
                 { id: 'date_of_birth', name: "Date of Birth" },
                 { id: 'admission_date', name: "Admission Date" },
+                { id: 'admission_class', name: "Admission Class" },
                 { id: 'father_contact', name: "Father's Contact" },
                 { id: 'b_form_no', name: "B-Form No" },
                 { id: 'district', name: "District" },

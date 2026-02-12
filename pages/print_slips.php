@@ -38,45 +38,49 @@ usort($students, function($a, $b) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examination Slips - Class <?php echo htmlspecialchars($class); ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 0.5cm;
+                margin: 0;
             }
             body {
                 background: white;
-                font-family: 'Times New Roman', Times, serif;
             }
             .no-print {
                 display: none !important;
             }
-            /* Aim for 2 slips per page */
             .slip-container {
-                min-height: 48vh; /* Use min-height to allow expansion */
-                margin-bottom: 2vh;
-                page-break-inside: avoid;
-                border: 2px solid #000;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-            }
-            .page-break {
+                height: 100vh;
+                margin: 0 !important;
+                border: none !important;
                 page-break-after: always;
             }
         }
         
         .slip-container {
-            border: 2px solid #000;
-            padding: 1.5rem;
+            width: 210mm;
+            height: 296.5mm; /* Reduced slightly to avoid sub-pixel bleed */
+            padding: 10mm; /* Reduced padding */
             background: white;
-            margin-bottom: 2rem;
-            max-width: 21cm;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 0 auto 10px;
             display: flex;
             flex-direction: column;
-            min-height: 14cm; /* Approximate half A4 height for screen view */
+            position: relative;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden; /* Prevent bleed */
+        }
+
+        .border-slips {
+            border: 3px double #4f46e5;
+            padding: 8mm; /* Reduced padding */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
         /* Watermark */
@@ -86,185 +90,227 @@ usort($students, function($a, $b) {
             left: 50%;
             transform: translate(-50%, -50%);
             opacity: 0.05;
-            width: 300px;
+            width: 300px; /* Reduced width */
             pointer-events: none;
             z-index: 0;
         }
+
+        .school-color-text { color: #4f46e5; }
+        .school-color-bg { background-color: #4f46e5; }
+        .school-color-border { border-color: #4f46e5; }
     </style>
 </head>
-<body class="bg-gray-100 p-8 min-h-screen">
+<body class="bg-slate-50 p-6 min-h-screen">
 
-    <div class="max-w-4xl mx-auto mb-8 no-print flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-800">Previewing Slips</h1>
-        <button onclick="window.print()" class="bg-indigo-600 text-white px-6 py-2 rounded shadow hover:bg-indigo-700 font-bold flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Print Slips
-        </button>
+    <div class="max-w-[210mm] mx-auto mb-6 no-print flex justify-between items-center bg-white p-5 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+        <div>
+            <h1 class="text-xl font-black text-slate-800 uppercase tracking-tight">Examination Slips</h1>
+            <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">Preview & Export Class <?php echo htmlspecialchars($class); ?></p>
+        </div>
+        <div class="flex gap-3">
+            <button id="downloadPdfBtn" class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-200/50 hover:bg-emerald-700 font-black flex items-center gap-2 transition-all active:scale-95 text-[10px] uppercase tracking-widest">
+                <i class="fas fa-file-pdf"></i>
+                Download PDF
+            </button>
+            <button onclick="window.print()" class="bg-slate-900 text-white px-6 py-2.5 rounded-xl shadow-lg shadow-slate-200/50 hover:bg-black font-black flex items-center gap-2 transition-all active:scale-95 text-[10px] uppercase tracking-widest">
+                <i class="fas fa-print"></i>
+                Print Slips
+            </button>
+        </div>
     </div>
 
+    <div id="slips-wrapper">
     <?php 
-    $count = 0;
     foreach ($students as $student): 
-        $count++;
     ?>
     
-    <div class="slip-container relative overflow-hidden">
-        <!-- Watermark -->
-        <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" class="watermark">
+    <div class="slip-container">
+        <div class="border-slips">
+            <!-- Watermark -->
+            <img src="../assets/branding/logo.png?v=<?php echo time(); ?>" class="watermark">
 
-        <!-- Header -->
-        <div class="flex items-center gap-4 mb-4 border-b-2 border-black pb-4 relative z-10">
-            <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-20 h-20 object-contain">
-            <div class="flex-1 text-center">
-                <h1 class="text-3xl font-bold uppercase tracking-wide font-serif"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
-                <p class="text-sm font-semibold uppercase tracking-widest mt-1"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
-                <p class="text-sm font-bold uppercase tracking-widest mt-1">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?></p>
+            <!-- Header -->
+            <div class="flex items-center gap-6 mb-6 border-b-2 school-color-border pb-4 relative z-10 text-center">
+                <img src="../assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-24 h-24 object-contain">
+                <div class="flex-1">
+                    <h1 class="text-4xl font-black uppercase tracking-tight school-color-text mb-1"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
+                    <p class="text-base font-bold uppercase tracking-[0.2em] text-slate-600"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
+                </div>
             </div>
-            <div class="w-20"></div> <!-- Spacer for centering -->
-        </div>
 
-        <div class="text-center mb-6 relative z-10">
-            <h2 class="inline-block bg-black text-white px-8 py-1 font-bold text-xl uppercase tracking-wider rounded-sm">
-                Examination Slip
-            </h2>
-            <h3 class="text-lg font-bold mt-2 text-gray-800 uppercase border-b border-gray-400 inline-block px-4">
-                <?php echo htmlspecialchars($examName); ?>
-            </h3>
-        </div>
-
-        <!-- Student Info Grid -->
-        <div class="grid grid-cols-[1fr_auto] gap-6 relative z-10">
-            <div class="space-y-3">
-                <div class="grid grid-cols-[120px_1fr] gap-2 items-end">
-                    <span class="font-bold text-lg">Name:</span>
-                    <div class="border-b-2 border-black border-dotted font-serif text-xl capitalize px-2">
-                        <?php echo htmlspecialchars($student['student_name']); ?>
-                    </div>
+            <div class="text-center mb-6 relative z-10">
+                <div class="inline-block school-color-bg text-white px-8 py-2 font-black text-xl uppercase tracking-[0.1em] rounded-xl shadow-lg shadow-indigo-200">
+                    Examination Slip
                 </div>
-                
-                <div class="grid grid-cols-[120px_1fr] gap-2 items-end">
-                    <span class="font-bold text-lg">Father Name:</span>
-                    <div class="border-b-2 border-black border-dotted font-serif text-xl capitalize px-2">
-                        <?php echo htmlspecialchars($student['father_name']); ?>
-                    </div>
+                <div class="mt-4">
+                    <span class="text-base font-black text-slate-800 uppercase border-b-2 border-dotted school-color-border px-6 py-0.5">
+                        <?php echo htmlspecialchars($examName); ?>
+                    </span>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="grid grid-cols-[80px_1fr] gap-2 items-end">
-                        <span class="font-bold text-lg">Class:</span>
-                        <div class="border-b-2 border-black border-dotted font-serif text-xl px-2">
-                            <?php echo htmlspecialchars($student['current_class']); ?>
+            <!-- Student Info -->
+            <div class="grid grid-cols-[1fr_auto] gap-8 relative z-10 mb-6">
+                <div class="space-y-4">
+                    <div class="flex items-end gap-3">
+                        <span class="font-black text-base school-color-text uppercase tracking-widest shrink-0">Student Name:</span>
+                        <div class="flex-1 border-b-2 border-slate-300 font-bold text-xl capitalize px-3 pb-0.5 text-slate-800">
+                            <?php echo htmlspecialchars($student['student_name']); ?>
                         </div>
                     </div>
-                    <div class="grid grid-cols-[80px_1fr] gap-2 items-end">
-                        <span class="font-bold text-lg">GR No:</span>
-                        <div class="border-b-2 border-black border-dotted font-serif text-xl px-2 font-mono">
-                            <?php echo htmlspecialchars($student['gr_no']); ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Photo Area -->
-            <div class="w-32 h-36 border-2 border-black flex items-center justify-center bg-gray-50">
-                <?php 
-                $imagePath = '';
-                if (!empty($student['profile_image'])) {
-                    $possiblePaths = [
-                        '../' . $student['profile_image'],
-                        $student['profile_image'],
-                        '../pages/' . $student['profile_image'],
-                        '../../' . $student['profile_image']
-                    ];
-                    foreach ($possiblePaths as $path) {
-                        if (file_exists($path)) {
-                            $imagePath = $path;
-                            break;
-                        }
-                    }
-                }
-                
-                if ($imagePath): ?>
-                    <img src="<?php echo htmlspecialchars($imagePath); ?>" class="w-full h-full object-cover object-top">
-                <?php else: ?>
-                    <span class="text-xs text-center text-gray-400 font-bold uppercase">Attach<br>Photo</span>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Instructions / Blank Table -->
-        <div class="mt-6 relative z-10">
-            <table class="w-full border-2 border-black">
-                <thead>
-                    <tr class="bg-gray-100 border-b-2 border-black">
-                        <th class="border-r border-black py-1 px-2 text-left text-sm w-1/4">Subject</th>
-                        <th class="border-r border-black py-1 px-2 text-center text-sm w-24">Date</th>
-                        <th class="border-r border-black py-1 px-2 text-center text-sm w-24">Day</th>
-                        <th class="border-r border-black py-1 px-2 text-center text-sm w-24">Time</th>
-                        <th class="py-1 px-2 text-left text-sm">Invigilator Sign</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $subjects = isset($_GET['subjects']) ? $_GET['subjects'] : [];
-                    $dates = isset($_GET['dates']) ? $_GET['dates'] : [];
-                    $days = isset($_GET['days']) ? $_GET['days'] : [];
-                    $times = isset($_GET['times']) ? $_GET['times'] : [];
                     
-                    // Default rows if empty (for preview)
-                    if (empty($subjects)) {
-                        for($i=0; $i<4; $i++) {
-                            echo '<tr class="border-b border-black h-8"><td class="border-r border-black"></td><td class="border-r border-black"></td><td class="border-r border-black"></td><td class="border-r border-black"></td><td></td></tr>';
-                        }
-                    } else {
-                        for($i=0; $i < count($subjects); $i++) {
-                            $sub = isset($subjects[$i]) ? htmlspecialchars($subjects[$i]) : '';
-                            $date = isset($dates[$i]) ? date('d-m-Y', strtotime($dates[$i])) : '';
-                            $day = isset($days[$i]) ? htmlspecialchars($days[$i]) : '';
-                            $time = isset($times[$i]) ? htmlspecialchars($times[$i]) : '';
-                            
-                            echo '<tr class="border-b border-black h-7 text-sm">';
-                            echo '<td class="border-r border-black px-2 py-1 font-semibold">' . $sub . '</td>';
-                            echo '<td class="border-r border-black px-2 py-1 text-center">' . $date . '</td>';
-                            echo '<td class="border-r border-black px-2 py-1 text-center">' . $day . '</td>';
-                            echo '<td class="border-r border-black px-2 py-1 text-center">' . $time . '</td>';
-                            echo '<td class="px-2 py-1"></td>';
-                            echo '</tr>';
+                    <div class="flex items-end gap-3">
+                        <span class="font-black text-base school-color-text uppercase tracking-widest shrink-0">Father Name:</span>
+                        <div class="flex-1 border-b-2 border-slate-300 font-bold text-xl capitalize px-3 pb-0.5 text-slate-800">
+                            <?php echo htmlspecialchars($student['father_name']); ?>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="flex items-end gap-3">
+                            <span class="font-black text-base school-color-text uppercase tracking-widest shrink-0">Class:</span>
+                            <div class="flex-1 border-b-2 border-slate-300 font-black text-xl px-3 pb-0.5 text-slate-800">
+                                <?php echo htmlspecialchars($student['current_class']); ?>
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-3">
+                            <span class="font-black text-base school-color-text uppercase tracking-widest shrink-0">GR No:</span>
+                            <div class="flex-1 border-b-2 border-slate-300 font-black text-xl px-3 pb-0.5 text-indigo-600 tracking-tighter">
+                                #<?php echo htmlspecialchars($student['gr_no']); ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Area -->
+                <div class="w-36 h-40 border-4 school-color-border rounded-2xl overflow-hidden shadow-xl shadow-slate-200 bg-slate-50 flex items-center justify-center relative">
+                    <?php 
+                    $imagePath = '';
+                    if (!empty($student['profile_image'])) {
+                        $possiblePaths = ['../' . $student['profile_image'], $student['profile_image']];
+                        foreach ($possiblePaths as $path) {
+                            if (file_exists($path)) { $imagePath = $path; break; }
                         }
                     }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Footer -->
-        <div class="mt-auto pt-6 flex justify-between items-end z-10 w-full">
-            <div class="text-xs">
-                <p><strong>Note:</strong> 1. Bring this slip daily.</p>
-                <p class="ml-[34px]">2. Mobile phones are not allowed.</p>
+                    if ($imagePath): ?>
+                        <img src="<?php echo htmlspecialchars($imagePath); ?>" class="w-full h-full object-cover object-top">
+                    <?php else: ?>
+                        <div class="text-center">
+                            <i class="fas fa-camera text-2xl text-slate-200 mb-1"></i>
+                            <span class="block text-[8px] text-slate-300 font-black uppercase tracking-widest">Photo</span>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="text-center">
-                <div class="w-40 border-b-2 border-black mb-1"></div>
-                <span class="font-bold text-sm uppercase">Headmaster Signature</span>
+
+            <!-- Subjects Table -->
+            <div class="mt-2 relative z-10 flex-1">
+                <table class="w-full border-collapse rounded-2xl overflow-hidden shadow-lg shadow-slate-100 border border-slate-200">
+                    <thead>
+                        <tr class="school-color-bg text-white uppercase text-xs font-black tracking-widest">
+                            <th class="py-4 px-4 text-left border-r border-white/20">Examination Subjects</th>
+                            <th class="py-4 px-4 text-center border-r border-white/20 w-28">Date</th>
+                            <th class="py-4 px-4 text-center border-r border-white/20 w-28">Day</th>
+                            <th class="py-4 px-4 text-center border-r border-white/20 w-28">Timing</th>
+                            <th class="py-4 px-4 text-left w-36">Invigilator</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-slate-700">
+                        <?php 
+                        $subjects = $_GET['subjects'] ?? [];
+                        $dates = $_GET['dates'] ?? [];
+                        $days = $_GET['days'] ?? [];
+                        $times = $_GET['times'] ?? [];
+                        
+                        if (empty($subjects)) {
+                            for($i=0; $i<6; $i++) {
+                                echo '<tr class="border-b border-slate-100 h-10 bg-white"><td class="border-r border-slate-100"></td><td class="border-r border-slate-100"></td><td class="border-r border-slate-100"></td><td class="border-r border-slate-100"></td><td></td></tr>';
+                            }
+                        } else {
+                            for($i=0; $i < count($subjects); $i++) {
+                                $sub = htmlspecialchars($subjects[$i] ?? '');
+                                $date = isset($dates[$i]) ? date('d-m-Y', strtotime($dates[$i])) : '';
+                                $day = htmlspecialchars($days[$i] ?? '');
+                                $time = htmlspecialchars($times[$i] ?? '');
+                                $bgColor = ($i % 2 == 0) ? 'bg-white' : 'bg-slate-50/50';
+                                
+                                echo "<tr class='border-b border-slate-100 h-10 $bgColor font-bold text-xs'>";
+                                echo '<td class="border-r border-slate-100 px-4 py-2">' . $sub . '</td>';
+                                echo '<td class="border-r border-slate-100 px-4 py-2 text-center">' . $date . '</td>';
+                                echo '<td class="border-r border-slate-100 px-4 py-2 text-center">' . $day . '</td>';
+                                echo '<td class="border-r border-slate-100 px-4 py-2 text-center">' . $time . '</td>';
+                                echo '<td class="px-4 py-2"></td>';
+                                echo '</tr>';
+                            }
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Instructions & Signature -->
+            <div class="mt-6 flex justify-between items-end relative z-10 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <div class="text-[10px] space-y-1">
+                    <div class="flex items-center gap-2 text-slate-800 font-black uppercase tracking-tight">
+                        <i class="fas fa-exclamation-triangle school-color-text"></i>
+                        Security Instructions
+                    </div>
+                    <p class="text-slate-500 font-bold ml-5">1. Bring this original slip daily for verification.</p>
+                    <p class="text-slate-500 font-bold ml-5">2. Electronic devices & mobiles are strictly prohibited.</p>
+                    <p class="text-slate-500 font-bold ml-5">3. Be present in hall 15 mins before exam starts.</p>
+                </div>
+                <div class="text-center group pr-6">
+                    <div class="w-36 border-b-2 school-color-border mb-2 group-hover:scale-105 transition-transform"></div>
+                    <span class="font-black text-[10px] uppercase tracking-widest school-color-text">School Principal</span>
+                </div>
             </div>
         </div>
     </div>
+    <?php endforeach; ?>
+    </div>
 
-    <?php 
-        // Page break after every 2 slips
-        if ($count % 2 == 0 && $count < count($students)) {
-            echo '<div class="page-break"></div>';
-        }
-    endforeach; 
-    
-    if (empty($students)):
-    ?>
-        <div class="text-center py-20">
-            <h2 class="text-2xl font-bold text-gray-400">No students found in Class <?php echo htmlspecialchars($class); ?></h2>
+    <?php if (empty($students)): ?>
+        <div class="bg-white rounded-3xl shadow-xl p-20 text-center max-w-2xl mx-auto border border-slate-100">
+            <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-200">
+                <i class="fas fa-users-slash text-4xl"></i>
+            </div>
+            <h2 class="text-3xl font-black text-slate-800 mb-2">No Students Found</h2>
+            <p class="text-slate-500 font-medium">There are no active students in Class <?php echo htmlspecialchars($class); ?> for this exam.</p>
         </div>
     <?php endif; ?>
 
+    <script>
+        document.getElementById('downloadPdfBtn').addEventListener('click', function() {
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-lg"></i>';
+
+            const element = document.getElementById('slips-wrapper');
+            const opt = {
+                margin: [0, 0, 0, 0],
+                filename: 'Exam_Slips_Class_<?php echo addslashes($class); ?>.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }).catch(err => {
+                console.error('PDF Generation Error:', err);
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                alert('An error occurred during PDF generation. Please use the Print option.');
+            });
+        });
+    </script>
 </body>
 </html>

@@ -315,7 +315,7 @@ if (!$student) {
         <!-- Signature -->
         <div class="absolute bottom-12 right-12">
             <div class="border-t-2 border-black w-72 pt-2 text-center">
-                <p class="font-bold text-xl text-black"><?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
+                <p class="font-bold text-xl text-black">PRINCIPAL : <?php echo htmlspecialchars($settings['headmaster_name']); ?></p>
             </div>
         </div>
     </div>

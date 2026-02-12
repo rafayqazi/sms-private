@@ -19,16 +19,16 @@ if (!$student) {
     die("Student not found.");
 }
 
-// If result not found, initialize empty structure
 if (!$result) {
     $result = [
         'english' => 0, 'math' => 0, 'social_studies' => 0, 'general_science' => 0, 
         'mt' => 0, 'islamiyat' => 0, 'nmt' => 0,
         'total_max' => 700, 'total_obtained' => 0, 'percentage' => 0, 'grade' => '-',
-        'other_subjects' => '{}' // Empty JSON
+        'other_subjects' => '{}'
     ];
-    // Add extra subjects logic if needed, but for now basic is fine
 }
+
+$brandColor = "#0c0784";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,240 +37,275 @@ if (!$result) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Result Card - <?= htmlspecialchars($student['student_name']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Precision A4 Print Styles */
-        @media print {
-            @page {
-                size: A4;
-                margin: 0 !important;
-            }
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white;
-                -webkit-print-color-adjust: exact;
-            }
-            .no-print { display: none !important; }
-            
-            /* The core "A4 Page" container */
-            .print-page {
-                width: 210mm;
-                height: 297mm;
-                display: flex !important;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                overflow: hidden;
-                position: relative;
-                box-sizing: border-box;
-            }
-        }
-
-        /* Screen Preview Styles */
-        body { 
-            font-family: 'Times New Roman', Times, serif; 
-            background-color: #f3f4f6;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
         
-        .print-page {
-            background: white;
-            width: 210mm;
-            min-height: 297mm;
-            margin: 20px auto;
-            padding: 10mm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        body { 
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
         }
 
-        .marksheet-card {
-            width: 190mm;
-            border: 2px solid #1f2937;
-            padding: 8mm;
-            position: relative;
+        .brand-text { color: <?= $brandColor ?>; }
+        .brand-bg { background-color: <?= $brandColor ?>; }
+        .brand-border { border-color: <?= $brandColor ?>; }
+
+        /* A4 Page Container */
+        .a4-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 10px auto;
             background: white;
             box-sizing: border-box;
+            position: relative;
+            padding: 10mm;
+            overflow: hidden;
+        }
+
+        .inner-border {
+            border: 3px solid <?= $brandColor ?>;
+            height: 100%;
+            padding: 8mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
         .watermark {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.08;
-            width: 120mm;
-            pointer-events: none;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            opacity: 0.04;
+            width: 140mm;
             z-index: 0;
         }
 
-        .content-relative {
+        .content {
             position: relative;
             z-index: 10;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #1f2937; padding: 6px 10px; }
-        .border-dotted { border-bottom: 2px dotted #1f2937; }
-        
+        th { 
+            background-color: <?= $brandColor ?>; 
+            color: white;
+            text-transform: uppercase;
+            font-size: 11px;
+            padding: 10px;
+        }
+        th, td { border: 1.2px solid <?= $brandColor ?>; padding: 8px 12px; }
+
+        .field-label { font-weight: 700; color: #000; font-size: 13px; text-transform: uppercase; }
+        .field-value { border-bottom: 2px solid #e2e8f0; font-weight: 600; font-size: 15px; margin-left: 8px; flex: 1; color: #000; }
+
         @media print {
+            body { background: transparent; }
+            .a4-container { margin: 0; box-shadow: none; }
             .no-print { display: none !important; }
         }
     </style>
 </head>
-<body class="bg-white">
-    <div class="fixed top-4 right-4 no-print">
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Print Result
+<body>
+    <!-- Controls -->
+    <div class="fixed top-4 right-4 flex gap-2 no-print z-50">
+        <button id="downloadBtn" onclick="generatePDF()" class="brand-bg hover:opacity-90 text-white font-bold py-2.5 px-6 rounded-lg shadow-xl flex items-center gap-2">
+            <i class="fas fa-download"></i> Save as PDF
+        </button>
+        <button onclick="window.print()" class="bg-gray-800 text-white font-bold py-2.5 px-6 rounded-lg">
+            <i class="fas fa-print"></i> Print
         </button>
     </div>
 
-    <div class="print-page">
-        <!-- Watermark -->
-        <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" class="watermark">
-        
-        <div class="marksheet-card content-relative">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-8">
-                <div class="w-24 h-24 flex-shrink-0">
-                    <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>" alt="Logo" class="w-full h-full object-contain">
-                </div>
-                <div class="flex-1 text-center px-4">
-                    <h1 class="text-2xl font-bold text-gray-900 uppercase leading-tight"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
-                    <h2 class="text-lg font-bold text-gray-800 uppercase mt-1 whitespace-nowrap"><?php echo htmlspecialchars($settings['address_tagline']); ?></h2>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?></p>
-                    <h3 class="text-lg font-semibold text-gray-600 mt-2 uppercase">Result Card - <?= $examType ?> Examination</h3>
-                    <p class="text-sm text-gray-500 mt-1">Session <?= $year ?>-<?= $year+1 ?></p>
-                </div>
-                <!-- Student Profile Image -->
-                <?php 
-                    $imagePath = $student['profile_image'];
-                    if (!$imagePath || !file_exists($imagePath)) {
-                        $imagePath = 'https://ui-avatars.com/api/?name=' . urlencode($student['student_name']) . '&background=random&size=128';
-                    }
-                ?>
-                <div class="w-24 h-24 flex-shrink-0 border border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
-                    <img src="<?= htmlspecialchars($imagePath) ?>" alt="Student Photo" class="w-full h-full object-cover object-top">
-                </div>
-            </div>
+    <div id="capture">
+    <div class="a4-container">
+        <div class="inner-border">
+            <?php 
+            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                        ? '../' . $settings['school_logo'] 
+                        : '../assets/branding/logo.png';
+            ?>
+            <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark">
+            
+            <div class="content">
+                <!-- Header with Logo and Photo -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-slate-100">
+                    <!-- Left: School Logo -->
+                    <div class="w-24 h-24 flex-shrink-0">
+                        <img src="<?= $logoPath ?>?v=<?= time() ?>" alt="Logo" class="w-full h-full object-contain">
+                    </div>
 
-            <!-- Student Info -->
-            <div class="grid grid-cols-2 gap-4 mb-8 text-sm">
-                <div class="flex">
-                    <span class="font-bold w-24 text-gray-700">Name:</span>
-                    <span class="border-b border-gray-400 flex-1 font-semibold"><?= htmlspecialchars($student['student_name']) ?></span>
-                </div>
-                <div class="flex">
-                    <span class="font-bold w-24 text-gray-700">Father Name:</span>
-                    <span class="border-b border-gray-400 flex-1 font-semibold"><?= htmlspecialchars($student['father_name']) ?></span>
-                </div>
-                <div class="flex">
-                    <span class="font-bold w-24 text-gray-700">Class:</span>
-                    <span class="border-b border-gray-400 flex-1 font-semibold"><?= htmlspecialchars($student['current_class']) ?></span>
-                </div>
-                <div class="flex">
-                    <span class="font-bold w-24 text-gray-700">GR No:</span>
-                    <span class="border-b border-gray-400 flex-1 font-semibold"><?= htmlspecialchars($student['gr_no']) ?></span>
-                </div>
-            </div>
+                    <!-- Center: School Details -->
+                    <div class="flex-1 text-center px-4">
+                        <!-- 1. School Name (One Line) -->
+                        <h1 class="text-2xl font-black brand-text uppercase leading-tight"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
+                        
+                        <!-- 2. Address (One Line) -->
+                        <p class="text-[13px] font-bold text-slate-600 uppercase mt-1">
+                            <?php echo htmlspecialchars($settings['address_tagline']); ?>
+                        </p>
+                        
+                        <!-- 3. Examination Name (One Line) -->
+                        <div class="mt-4">
+                            <h2 class="text-lg font-extrabold text-black underline decoration-2 decoration-indigo-300 uppercase tracking-widest">
+                                <?= $examType ?> EXAMINATION - SESSION <?= $year ?>
+                            </h2>
+                        </div>
+                    </div>
 
-            <!-- Marks Table -->
-            <table class="w-full mb-8 text-sm">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="px-4 py-2 text-left">Subject</th>
-                        <th class="px-4 py-2 text-center w-24">Max Marks</th>
-                        <th class="px-4 py-2 text-center w-24">Obtained</th>
-                        <th class="px-4 py-2 text-left">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $subjects = [
-                        'English' => 'english',
-                        'Mathematics' => 'math',
-                        'Social Studies' => 'social_studies',
-                        'General Science' => 'general_science',
-                        'Mother Tongue (MT)' => 'mt',
-                        'Islamiyat' => 'islamiyat',
-                        'N.M.T' => 'nmt'
-                    ];
-                    foreach ($subjects as $label => $key):
-                        $marks = $result[$key];
-                        $remark = '';
-                        $displayMarks = $marks;
-                        if (strtoupper($marks) === 'A') {
-                            $displayMarks = 'A';
-                            $remark = 'Absent';
+                    <!-- Right: Student Photo -->
+                    <?php 
+                        $imagePath = $student['profile_image'];
+                        if (!$imagePath || !file_exists('../' . $imagePath)) {
+                            // High-quality UI-Avatar as fallback
+                            $imagePath = 'https://ui-avatars.com/api/?name=' . urlencode($student['student_name']) . '&background=0c0784&color=fff&size=200&bold=true';
                         } else {
-                            $remark = ((float)$marks >= 33) ? 'Pass' : 'Fail';
+                            $imagePath = '../' . $imagePath;
                         }
                     ?>
-                    <tr>
-                        <td class="px-4 py-2"><?= $label ?></td>
-                        <td class="px-4 py-2 text-center">100</td>
-                        <td class="px-4 py-2 text-center font-bold font-mono"><?= $displayMarks ?></td>
-                        <td class="px-4 py-2 text-sm italic"><?= $remark ?></td>
-                    </tr>
-                    <?php endforeach; ?>
+                    <div class="w-24 h-28 border-2 brand-border bg-white flex-shrink-0 rounded-lg overflow-hidden p-1 shadow-sm">
+                        <img src="<?= htmlspecialchars($imagePath) ?>" class="w-full h-full object-cover object-top rounded-md">
+                    </div>
+                </div>
 
-                    <?php 
-                    $extra = isset($result['other_subjects']) ? json_decode($result['other_subjects'], true) : [];
-                    if (is_array($extra)) {
-                        foreach ($extra as $subject => $mark) {
-                            $displayMark = $mark;
-                            $remark = '';
-                            if (strtoupper($mark) === 'A') {
-                                $displayMark = 'A';
-                                $remark = 'Absent';
-                            } else {
-                                $remark = ((float)$mark >= 33) ? 'Pass' : 'Fail';
+                <!-- Marksheet Identifiers -->
+                <div class="grid grid-cols-2 gap-x-10 gap-y-4 mb-8">
+                    <div class="flex items-end">
+                        <span class="field-label">Student:</span>
+                        <span class="field-value uppercase"><?= htmlspecialchars($student['student_name']) ?></span>
+                    </div>
+                    <div class="flex items-end">
+                        <span class="field-label">Father Name:</span>
+                        <span class="field-value uppercase"><?= htmlspecialchars($student['father_name']) ?></span>
+                    </div>
+                    <div class="flex items-end">
+                        <span class="field-label">Class:</span>
+                        <span class="field-value uppercase text-black"><?= htmlspecialchars(!empty($result['class']) ? $result['class'] : $student['current_class']) ?></span>
+                    </div>
+                    <div class="flex items-end">
+                        <span class="field-label">G.R. No:</span>
+                        <span class="field-value font-black"><?= htmlspecialchars($student['gr_no']) ?></span>
+                    </div>
+                </div>
+
+                <!-- Result Table -->
+                <div class="mb-8 border-2 brand-border">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left py-3">Subject Name</th>
+                                <th class="text-center w-28">Max Marks</th>
+                                <th class="text-center w-28">Obtained</th>
+                                <th class="text-left">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <?php
+                            $subjects = [
+                                'English' => 'english',
+                                'Mathematics' => 'math',
+                                'Social Studies' => 'social_studies',
+                                'General Science' => 'general_science',
+                                'Mother Tongue (MT)' => 'mt',
+                                'Islamiyat' => 'islamiyat',
+                                'N.M.T' => 'nmt'
+                            ];
+                            $rowCount = 0;
+                            foreach ($subjects as $label => $key):
+                                $marks = $result[$key];
+                                $passed = ((float)$marks >= 33);
+                                $rowBg = ($rowCount++ % 2 == 0) ? 'bg-white' : 'bg-slate-50';
+                            ?>
+                            <tr class="<?= $rowBg ?> border-b">
+                                <td class="font-bold py-3 px-4 text-black"><?= $label ?></td>
+                                <td class="text-center text-slate-500">100</td>
+                                <td class="text-center font-black <?= $passed ? '' : 'text-red-500' ?>"><?= $marks ?></td>
+                                <td class="font-bold italic text-xs <?= $passed ? 'text-emerald-600' : 'text-red-500' ?>"><?= $passed ? 'PASS' : 'FAIL' ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+
+                            <?php 
+                            $extra = isset($result['other_subjects']) ? json_decode($result['other_subjects'], true) : [];
+                            if (is_array($extra)) {
+                                foreach ($extra as $subject => $mark) {
+                                    $passed = ((float)$mark >= 33);
+                                    $rowBg = ($rowCount++ % 2 == 0) ? 'bg-white' : 'bg-slate-50';
+                                    ?>
+                                    <tr class="<?= $rowBg ?> border-b">
+                                        <td class="font-bold py-3 px-4"><?= ucfirst($subject) ?></td>
+                                        <td class="text-center text-slate-500">100</td>
+                                        <td class="text-center font-black <?= $passed ? '' : 'text-red-500' ?>"><?= $mark ?></td>
+                                        <td class="font-bold italic text-xs <?= $passed ? 'text-emerald-600' : 'text-red-500' ?>"><?= $passed ? 'PASS' : 'FAIL' ?></td>
+                                    </tr>
+                                    <?php
+                                }
                             }
                             ?>
-                            <tr>
-                                <td class="px-4 py-2"><?= ucfirst($subject) ?></td>
-                                <td class="px-4 py-2 text-center">100</td>
-                                <td class="px-4 py-2 text-center font-bold font-mono"><?= $displayMark ?></td>
-                                <td class="px-4 py-2 text-sm italic"><?= $remark ?></td>
+
+                            <tr class="brand-bg text-white font-bold h-14">
+                                <td class="text-right px-6 uppercase tracking-widest text-xs">Total Marks Obtained</td>
+                                <td class="text-center border-l border-white/20"><?= $result['total_max'] ?></td>
+                                <td class="text-center text-xl border-l border-white/20"><?= $result['total_obtained'] ?></td>
+                                <td class="px-4 border-l border-white/20">
+                                     <div class="flex items-center justify-between">
+                                        <span><?= $result['percentage'] ?>%</span>
+                                        <span class="bg-white/20 px-3 py-1 rounded text-xs uppercase">Grade: <?= $result['grade'] ?></span>
+                                     </div>
+                                </td>
                             </tr>
-                            <?php
-                        }
-                    }
-                    ?>
-
-                    <tr class="bg-gray-50 font-bold">
-                        <td class="px-4 py-2 text-right">Total</td>
-                        <td class="px-4 py-2 text-center"><?= $result['total_max'] ?></td>
-                        <td class="px-4 py-2 text-center text-lg"><?= $result['total_obtained'] ?></td>
-                        <td class="px-4 py-2">
-                             <?= $result['percentage'] ?>% (<?= $result['grade'] ?>)
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Footer Signatures -->
-            <div class="flex justify-between items-end mt-12 px-2 text-sm font-bold">
-                <div class="text-center">
-                    <div class="w-48 border-b-2 border-gray-800 mb-1"></div>
-                    <p>Class Teacher : <?= empty($_GET['teacher_name']) ? '________________' : htmlspecialchars($_GET['teacher_name']) ?></p>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="text-center">
-                    <div class="w-48 border-b-2 border-gray-800 mb-1"></div>
-                    <p>Headmaster : <?= htmlspecialchars($settings['headmaster_name']) ?></p>
+
+                <!-- Footer Signatures -->
+                <div class="mt-auto flex justify-between items-end pb-4">
+                    <div class="text-center">
+                        <div class="w-56 border-b-2 border-slate-900 mb-2 h-10"></div>
+                        <p class="text-xs font-bold text-black uppercase">Class Teacher Signature</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-56 border-b-2 border-slate-900 mb-2 h-10"></div>
+                        <p class="text-xs font-bold brand-text uppercase">PRINCIPAL SIGNATURE</p>
+                    </div>
+                </div>
+
+                <!-- Footer Tagline -->
+                <div class="text-center border-t border-slate-100 mt-6 pt-3">
+                    <p class="text-[9px] uppercase tracking-[0.4em] text-slate-300 font-bold">
+                        AQSA School Management System
+                    </p>
                 </div>
             </div>
         </div>
     </div>
+    </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script>
-        window.onload = function() {
-            window.print();
+        function generatePDF() {
+            const element = document.getElementById('capture');
+            const btn = document.getElementById('downloadBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+
+            const opt = {
+                margin: 0,
+                filename: 'Marksheet_<?= addslashes($student['student_name']) ?>.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = '<i class="fas fa-download"></i> Save as PDF';
+                btn.disabled = false;
+            });
         }
     </script>
 </body>

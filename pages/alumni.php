@@ -180,6 +180,9 @@ rsort($years);
                             <button onclick="restoreSingle(<?php echo $student['id']; ?>, '<?php echo addslashes($lastClass); ?>')" class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Quick Restore to <?php echo htmlspecialchars($lastClass); ?>">
                                 <i class="fas fa-undo-alt text-xs"></i>
                             </button>
+                            <a href="student_form.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center hover:bg-yellow-600 hover:text-white transition-all shadow-sm" title="Edit Profile">
+                                <i class="fas fa-edit text-xs"></i>
+                            </a>
                             <a href="student_profile.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Full Profile">
                                 <i class="fas fa-user-graduate text-xs"></i>
                             </a>

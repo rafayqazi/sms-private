@@ -135,7 +135,7 @@ $deadStock = $db->getInventory(['status' => 'Dead Stock']);
         </div>
         <div class="text-center">
             <div class="w-48 border-t border-black mb-2"></div>
-            <p class="font-bold text-sm uppercase">Headmaster Signature</p>
+            <p class="font-bold text-sm uppercase">PRINCIPAL Signature</p>
         </div>
     </div>
 </div>

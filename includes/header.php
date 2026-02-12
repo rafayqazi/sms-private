@@ -25,8 +25,7 @@ if ($currentUserId) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($headerSettings['school_name']); ?> - School Management System</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="<?php echo $base_path; ?>assets/branding/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -76,6 +75,46 @@ if ($currentUserId) {
         .dark th { background-color: #1f2937 !important; color: #e5e7eb !important; border-color: #374151 !important; }
         .dark td { border-color: #1f2937 !important; }
         .dark select, .dark input { background-color: #1f2937 !important; color: #f3f4f6 !important; border-color: #374151 !important; }
+
+        /* Custom Fancy Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.5); 
+            border-radius: 5px;
+        }
+        
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(17, 24, 39, 0.5); 
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #4f46e5 0%, #15803d 100%); 
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #6366f1 0%, #22c55e 100%); 
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4338ca 0%, #166534 100%); 
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4f46e5 0%, #15803d 100%); 
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
     </style>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -172,7 +211,7 @@ if ($currentUserId) {
                 <?php 
                 $logoUrl = (!empty($headerSettings['school_logo']) && file_exists($base_path . $headerSettings['school_logo'])) 
                            ? $base_path . $headerSettings['school_logo'] 
-                           : $base_path . 'GBPS_LOGO.png'; 
+                            : $base_path . 'assets/branding/logo.png'; 
                 ?>
                 <img src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Logo" class="w-10 h-10 object-contain drop-shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
                 <div class="flex flex-col group-[.collapsed]:hidden">
@@ -237,6 +276,13 @@ if ($currentUserId) {
                        </a>
                     </div>
                 </div>
+                <?php endif; ?>
+
+                <!-- Certificates -->
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
+                <a href="<?php echo $base_path; ?>pages/certificates.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'certificates.php' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Certificates">
+                    <i class="fas fa-certificate w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Certificates</span>
+                </a>
                 <?php endif; ?>
 
                 <!-- Teachers Dropdown (Admin Only) -->

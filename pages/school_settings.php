@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $settings['address_tagline'] = $_POST['address_tagline'];
         $settings['headmaster_name'] = $_POST['headmaster_name'];
         $settings['semis_code'] = $_POST['semis_code'];
+        $settings['address'] = $_POST['address'] ?? ''; // Added for consistency with print templates
 // Maintenance mode toggle removed from UI, controlled via settings.json only
 
         if (file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT))) {
@@ -71,12 +72,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-sm font-bold text-gray-700 uppercase tracking-wider">Address Tagline</label>
+                        <label class="text-sm font-bold text-gray-700 uppercase tracking-wider">Address Tagline (Short)</label>
                         <input type="text" name="address_tagline" value="<?php echo htmlspecialchars($settings['address_tagline'] ?? ''); ?>"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-sm font-bold text-gray-700 uppercase tracking-wider">Headmaster Name</label>
+                        <label class="text-sm font-bold text-gray-700 uppercase tracking-wider">Full Address (For Certificates)</label>
+                        <input type="text" name="address" value="<?php echo htmlspecialchars($settings['address'] ?? ''); ?>"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-gray-700 uppercase tracking-wider">PRINCIPAL Name</label>
                         <input type="text" name="headmaster_name" value="<?php echo htmlspecialchars($settings['headmaster_name'] ?? ''); ?>"
                             class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
                     </div>

@@ -175,10 +175,10 @@ $settings = $db->getSchoolSettings();
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Headmaster Name / Signature Text</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">PRINCIPAL Name / Signature Text</label>
                                 <input type="text" name="headmaster_name" value="<?php echo htmlspecialchars($settings['headmaster_name']); ?>" required
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
-                                <p class="text-xs text-gray-500 mt-1">Text to display at the bottom of reports (e.g. "Headmaster Signature").</p>
+                                <p class="text-xs text-gray-500 mt-1">Text to display at the bottom of reports (e.g. "PRINCIPAL Signature").</p>
                             </div>
 
                             <div class="col-span-1 md:col-span-2">

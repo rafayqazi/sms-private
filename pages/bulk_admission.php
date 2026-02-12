@@ -33,6 +33,7 @@ $fieldsToMap = [
     'gender' => 'Gender',
     'date_of_birth' => 'Date of Birth (YYYY-MM-DD)',
     'admission_date' => 'Admission Date (YYYY-MM-DD)',
+    'admission_class' => 'Admission Class',
     'current_class' => 'Class',
     'b_form_no' => 'B-Form / ID Number',
     'father_cnic' => 'Father CNIC',
