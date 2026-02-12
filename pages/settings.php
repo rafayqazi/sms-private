@@ -585,9 +585,10 @@ $settings = $db->getSchoolSettings();
                                 .catch(err => {
                                     btn.disabled = false;
                                     btn.innerHTML = originalText;
-                                    alert('Network Error during update.');
+                                    console.error('Update Request Error:', err);
+                                    alert('Network Error during update. This may happen if the backup is still processing. Please wait 10 seconds and try again.');
                                 });
-                        }, 2000);
+                        }, 3000); // Increased to 3s to ensure backup download is registered
                     }
                     </script>
                 <?php endif; ?>

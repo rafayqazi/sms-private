@@ -16,6 +16,9 @@ try {
         throw new Exception('Unauthorized access');
     }
 
+    // RELEASE SESSION LOCK: Critical for avoiding Network Errors during long-running tasks
+    session_write_close();
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception('Invalid request method');
     }
