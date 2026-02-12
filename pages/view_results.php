@@ -67,6 +67,12 @@ if ($selectedClass && $selectedExam && $selectedYear) {
         </div>
 
         <div class="flex flex-col gap-1 w-full md:w-auto">
+             <button type="submit" class="h-[42px] bg-blue-600 text-white px-6 rounded-md hover:bg-blue-700 transition duration-200 flex items-center justify-center whitespace-nowrap shadow-md">
+                <i class="fas fa-search mr-2"></i> Search Results
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-1 w-full md:w-auto">
              <button type="button" onclick="printAllResults()" class="<?= ($selectedClass && $selectedExam && $selectedYear && !empty($students)) ? '' : 'hidden' ?> h-[42px] bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 rounded-md hover:bg-indigo-200 transition duration-200 flex items-center justify-center whitespace-nowrap">
                 <i class="fas fa-print mr-2"></i> Print All Marksheets
             </button>
@@ -444,29 +450,7 @@ function confirmPrint() {
     window.open(`print_all_results.php?class=${encodeURIComponent(classVal)}&exam_type=${encodeURIComponent(examVal)}&year=${encodeURIComponent(yearVal)}&teacher_name=${encodeURIComponent(teacherName)}`, '_blank');
 }
 
-// Real-time loading
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('resultFilterForm');
-    const selects = form.querySelectorAll('select');
-    const yearInput = document.getElementById('yearInput');
-
-    function checkAndSubmit() {
-        let allFilled = true;
-        selects.forEach(select => {
-            if (!select.value) allFilled = false;
-        });
-        if (!yearInput.value) allFilled = false;
-
-        if (allFilled) {
-            form.submit();
-        }
-    }
-
-    selects.forEach(select => {
-        select.addEventListener('change', checkAndSubmit);
-    });
-    yearInput.addEventListener('change', checkAndSubmit);
-});
+// Real-time loading removed as per user request
 </script>
 
 <?php include '../includes/footer.php'; ?>
