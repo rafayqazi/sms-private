@@ -55,53 +55,35 @@ if (!isset($_SESSION['assigned_classes'])) {
 
 // Auto-check for updates on new session (once per login)
 if (!isset($_SESSION['update_check_done']) || $_SESSION['update_check_done'] === false) {
-    // Perform update check
-    $owner = 'rafayqazi';
-    $repo = 'SMS-GBPS-ALI-BUX-JARWAR';
-    $branch = 'main';
+    $_SESSION['updates_available'] = false; // Default to false
     
-    try {
-        $apiUrl = "https://api.github.com/repos/$owner/$repo/commits/$branch";
-        
-        $opts = [
-            'http' => [
-                'method' => 'GET',
-                'header' => [
-                    'User-Agent: PHP',
-                    'Accept: application/vnd.github.v3+json'
-                ],
-                'timeout' => 3 // Quick timeout to avoid blocking
-            ]
-        ];
-        
-        $context = stream_context_create($opts);
-        $response = @file_get_contents($apiUrl, false, $context);
-        
-        if ($response !== false) {
-            $data = json_decode($response, true);
+    // Check if git is available
+    $gitVersion = shell_exec("git --version");
+    if ($gitVersion) {
+        try {
+            // 1. Fetch latest state without pruning to save time, unless crucial
+            // Using a timeout to prevent hanging if network is down
+            // In Windows, timeout is harder, so we trust git's internal timeout or rely on default behavior
+            // We adding 2>&1 to suppress output to screen
+            shell_exec("git fetch origin main 2>&1");
             
-            if (isset($data['sha'])) {
-                $remoteCommit = $data['sha'];
+            // 2. Get local and remote hashes
+            $localHash = trim(shell_exec("git rev-parse HEAD"));
+            $remoteHash = trim(shell_exec("git rev-parse origin/main"));
+            
+            if ($localHash && $remoteHash && $localHash !== $remoteHash) {
+                // Check if we are actually behind
+                $commitsBehind = (int)trim(shell_exec("git rev-list HEAD..origin/main --count"));
                 
-                // Get local commit hash
-                $localCommit = null;
-                $gitRefPath = __DIR__ . '/../.git/refs/heads/' . $branch;
-                if (file_exists($gitRefPath)) {
-                    $localCommit = trim(file_get_contents($gitRefPath));
+                if ($commitsBehind > 0) {
+                    $_SESSION['updates_available'] = true;
+                    $_SESSION['remote_commit'] = substr($remoteHash, 0, 7);
+                    $_SESSION['local_commit'] = substr($localHash, 0, 7);
                 }
-                
-                // Compare commits
-                $_SESSION['updates_available'] = ($localCommit !== $remoteCommit && $localCommit !== null);
-                $_SESSION['remote_commit'] = substr($remoteCommit, 0, 7);
-                $_SESSION['local_commit'] = $localCommit ? substr($localCommit, 0, 7) : 'unknown';
-            } else {
-                $_SESSION['updates_available'] = false;
             }
-        } else {
-            $_SESSION['updates_available'] = false;
+        } catch (Exception $e) {
+            // Silent fail
         }
-    } catch (Exception $e) {
-        $_SESSION['updates_available'] = false;
     }
     
     $_SESSION['update_check_done'] = true;
