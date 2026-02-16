@@ -1,5 +1,6 @@
 <?php
 // pages/update_required.php
+require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 // Start session to check status
