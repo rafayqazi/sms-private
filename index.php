@@ -266,8 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-gray-600 font-medium text-lg mb-1">Attendance Unmarked for Today</p>
                             <p class="text-gray-500 text-sm"><?php echo date('l, F j, Y'); ?></p>
                         </div>
-                        <div class="max-w-md mx-auto bg-white rounded-lg p-4 shadow-sm">
-                            <p class="text-gray-700 font-semibold mb-3 text-sm">Classes:</p>
+                        <div class="max-w-md mx-auto bg-white rounded-lg p-4 shadow-sm max-h-[160px] overflow-y-auto">
+                            <p class="text-gray-700 font-semibold mb-3 text-sm sticky top-0 bg-white pb-2 border-b border-gray-100">Classes:</p>
                             <div class="grid grid-cols-2 gap-2 text-sm">
                                 <?php foreach ($classStats as $className => $stats): ?>
                                     <div class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
