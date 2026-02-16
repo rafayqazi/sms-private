@@ -171,12 +171,32 @@
         Sub LaunchApp
             UpdateStatus "Launching SMS...", 100
             Set shell = CreateObject("WScript.Shell")
-            url = "http://localhost/sms-aqsa/"
+            Set fso = CreateObject("Scripting.FileSystemObject")
+            
+            ' Get current absolute folder path robustly
+            cmd = oHTA.commandLine
+            firstQuote = InStr(cmd, """")
+            lastQuote = InStrRev(cmd, """")
+            If firstQuote > 0 And lastQuote > firstQuote Then
+                htaPath = Mid(cmd, firstQuote + 1, lastQuote - firstQuote - 1)
+                htaDir = fso.GetParentFolderName(htaPath)
+            Else
+                ' Fallback if no quotes
+                htaDir = shell.CurrentDirectory
+            End If
+            
+            ' Extract the folder name from the path
+            folderName = fso.GetBaseName(htaDir)
+            
+            ' Construct the URL dynamically
+            url = "http://localhost/" & folderName & "/"
+            
             ' App mode for professional look
             command = "cmd /c start chrome --app=" & url
             shell.Run command, 0, False
             window.setTimeout "window.close()", 1500
         End Sub
+
     </script>
 </body>
 </html>
