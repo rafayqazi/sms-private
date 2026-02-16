@@ -300,7 +300,7 @@ usort($students, function($a, $b) {
             const options = {
                 margin: 0,
                 filename: 'Exam_Slips_Class_<?php echo addslashes($class); ?>.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
+                image: { type: 'jpeg', quality: 1.0 },
                 html2canvas: { 
                     scale: 2, 
                     useCORS: true,
@@ -308,10 +308,10 @@ usort($students, function($a, $b) {
                     letterRendering: true,
                     backgroundColor: '#ffffff',
                     scrollY: 0,
-                    windowWidth: 1200 
+                    windowWidth: 794 // Exact pixel width of 210mm at 96dpi
                 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-                pagebreak: { mode: 'css' }
+                pagebreak: { mode: ['css', 'legacy'] }
             };
 
             // Use html2pdf worker for better memory management
