@@ -288,8 +288,12 @@ if (count($studentsToPrint) > 1) {
             if (totalCerts === 1) {
                 // Single certificate
                 const element = certificates[0];
-                const studentName = element.querySelector('.field-value').textContent.trim() || 'Certificate';
-                const filename = `School_Leaving_Certificate_${studentName}.pdf`;
+                const studentName = element.getAttribute('data-student-name') || 'Student';
+                const grNo = element.getAttribute('data-gr-no') || '000';
+                const passingYear = element.getAttribute('data-passing-year') || '';
+                
+                // Format: 'Student Name , GR NO , Passing Year , SLC'
+                const filename = `${studentName} , ${grNo} , ${passingYear} , SLC.pdf`;
                 
                 const opt = {
                     margin: 0,
@@ -337,8 +341,13 @@ if (count($studentsToPrint) > 1) {
         });
     </script>
 
-    <?php foreach ($studentsToPrint as $index => $student): ?>
-    <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>">
+    <?php foreach ($studentsToPrint as $index => $student): 
+        $gradYear = $student['graduation_year'] ?? (isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : '');
+    ?>
+    <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>" 
+         data-student-name="<?php echo htmlspecialchars($student['student_name']); ?>"
+         data-gr-no="<?php echo htmlspecialchars($student['gr_no']); ?>"
+         data-passing-year="<?php echo htmlspecialchars($gradYear); ?>">
         <div class="border-outer">
             <div class="border-inner">
                 <img src="../assets/branding/logo.png" class="watermark" alt="">
