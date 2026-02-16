@@ -292,8 +292,8 @@ if (count($studentsToPrint) > 1) {
                 const grNo = element.getAttribute('data-gr-no') || '000';
                 const passingYear = element.getAttribute('data-passing-year') || '';
                 
-                // Format: 'Student Name , GR NO , Passing Year , SLC'
-                const filename = `${studentName} , ${grNo} , ${passingYear} , SLC.pdf`;
+                // Format: 'Name: XYZ , GR: XYZ , Year: XYZ , SLC'
+                const filename = `Name: ${studentName} , GR: ${grNo} , Year: ${passingYear} , SLC.pdf`;
                 
                 const opt = {
                     margin: 0,
