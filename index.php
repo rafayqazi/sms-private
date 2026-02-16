@@ -71,9 +71,15 @@ $lowStockItems = array_filter($allInventory, function($item) {
                 <button onclick="dismissUpdateNotification()" class="absolute -top-12 -right-4 w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full border border-white dark:border-gray-600 shadow-sm transition-all hover:scale-110" title="Close">
                     <i class="fas fa-times text-xs"></i>
                 </button>
-                <a href="pages/settings.php?tab=updates" class="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-200 dark:shadow-none hover:-translate-y-0.5 active:scale-95 uppercase tracking-wider text-sm">
-                    Update System Now
-                </a>
+                <div class="flex flex-col items-center gap-2">
+                    <a href="pages/settings.php?tab=updates" class="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-200 dark:shadow-none hover:-translate-y-0.5 active:scale-95 uppercase tracking-wider text-sm whitespace-nowrap">
+                        Update System Now
+                    </a>
+                    <div class="flex items-center gap-2 text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest bg-orange-100 dark:bg-orange-900/40 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>System locking in: <span id="update-timer">60s</span></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -87,6 +93,31 @@ function dismissUpdateNotification() {
             document.getElementById('update-notification-banner').style.display = 'none';
         });
 }
+
+// Mandatory Update Countdown Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const loginTime = <?php echo $_SESSION['login_time'] ?? time(); ?>;
+    const timerDisplay = document.getElementById('update-timer');
+    const updateBanner = document.getElementById('update-notification-banner');
+    
+    if (timerDisplay && updateBanner) {
+        function updateTimer() {
+            const currentTime = Math.floor(Date.now() / 1000);
+            const secondsElapsed = currentTime - loginTime;
+            const timeLeft = Math.max(0, 60 - secondsElapsed);
+            
+            timerDisplay.innerText = timeLeft + 's';
+            
+            if (timeLeft <= 0) {
+                // Time up! Redirect to lock page
+                window.location.href = 'pages/update_required.php';
+            } else {
+                setTimeout(updateTimer, 1000);
+            }
+        }
+        updateTimer();
+    }
+});
 </script>
 
 

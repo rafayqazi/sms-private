@@ -107,4 +107,24 @@ if (!isset($_SESSION['update_check_done']) || $_SESSION['update_check_done'] ===
     $_SESSION['update_check_done'] = true;
     $_SESSION['update_notification_dismissed'] = false;
 }
+
+// MANDATORY UPDATE SYSTEM: Enforce lock if update is available for more than 1 minute
+if (isset($_SESSION['updates_available']) && $_SESSION['updates_available'] === true) {
+    $currentPage = basename($_SERVER['PHP_SELF']);
+    $isApiCall = (strpos($_SERVER['REQUEST_METHOD'], 'POST') !== false || strpos($_SERVER['PHP_SELF'], '/api/') !== false);
+    $isUpdatePage = ($currentPage === 'update_required.php');
+    $isSettingsUpdate = ($currentPage === 'settings.php' && isset($_GET['tab']) && $_GET['tab'] === 'updates');
+    
+    // Check grace period (60 seconds)
+    if (isset($_SESSION['login_time'])) {
+        $secondsSinceLogin = time() - $_SESSION['login_time'];
+        
+        if ($secondsSinceLogin > 60 && !$isUpdatePage && !$isApiCall && !$isSettingsUpdate) {
+            // Redirect to lock page
+            $lockPath = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? 'update_required.php' : 'pages/update_required.php';
+            header("Location: $lockPath");
+            exit();
+        }
+    }
+}
 ?>
