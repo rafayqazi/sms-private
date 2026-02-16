@@ -45,4 +45,8 @@ All modals should follow the standard established in `pages/backup_restore.php`:
 ## 5. Printing & PDF Standards
 
 - **html2pdf.js Integration**: All PDF printing and generation within the software MUST use the **html2pdf.js** library. This ensures that documents are rendered consistently as high-quality PDFs without relying solely on the browser's print dialog, providing a more professional "Export to PDF" experience.
+- **Consistent Filename Format**: All downloaded PDFs must follow a specific naming convention to ensure easy identification. The format should include descriptive labels and relevant metadata.
+    - **Format**: `Name: [Student Name] , GR: [GR No] , Year: [Year] , [Document Type].pdf`
+    - **Example**: `Name: Ali Khan , GR: 123 , Year: 2026 , SLC.pdf`
 - **Configuration**: Always use high-quality rendering (e.g., `scale: 2`) and define precise page formats (e.g., `format: 'a4'`) to match official document standards.
+
