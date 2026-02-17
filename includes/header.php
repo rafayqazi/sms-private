@@ -128,48 +128,13 @@ if ($currentUserId) {
     </script>
 </head>
 <body class="dark:bg-gray-950 transition-colors duration-300">
-    <!-- Auto Update Notification Banner -->
-    <div id="global-update-banner" class="hidden bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg relative z-[60] transition-all duration-300 transform -translate-y-full">
-        <div class="container mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
-            <div class="flex items-center gap-3">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                <span class="font-bold tracking-wide">Update Available!</span>
-                <span class="opacity-90 hidden sm:inline">A new version of the software is ready to install.</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="<?php echo $base_path; ?>pages/settings.php?tab=updates" class="bg-white text-indigo-600 px-4 py-1.5 rounded-full font-bold text-xs hover:bg-opacity-90 transition-colors shadow-sm whitespace-nowrap">
-                    <i class="fas fa-cloud-download-alt mr-1"></i> Update Now
-                </a>
-                <button onclick="dismissUpdateBanner()" class="text-white/80 hover:text-white transition-colors p-1">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Auto Update Logic -->
+    <!-- Auto Update Logic (Banner Removed per user request) -->
     <?php if (isAdmin()): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
             const LAST_CHECK_KEY = 'sys_last_update_check';
-            const UPDATE_AVAIL_KEY = 'sys_update_available';
             
-            function showBanner() {
-                const banner = document.getElementById('global-update-banner');
-                if(banner) {
-                    banner.classList.remove('hidden', '-translate-y-full');
-                }
-            }
-
-            // Check if we already know an update is available
-            if (localStorage.getItem(UPDATE_AVAIL_KEY) === 'true') {
-                showBanner();
-            }
-
             const lastCheck = parseInt(localStorage.getItem(LAST_CHECK_KEY) || '0');
             const now = Date.now();
 
@@ -180,28 +145,11 @@ if ($currentUserId) {
                     .then(res => res.json())
                     .then(data => {
                         localStorage.setItem(LAST_CHECK_KEY, now.toString());
-                        
-                        if (data.success && data.update_available) {
-                            localStorage.setItem(UPDATE_AVAIL_KEY, 'true');
-                            showBanner();
-                        } else {
-                            localStorage.setItem(UPDATE_AVAIL_KEY, 'false');
-                            const banner = document.getElementById('global-update-banner');
-                            if(banner) banner.classList.add('hidden');
-                        }
+                        // We strictly rely on session-based checks now for the dashboard
                     })
                     .catch(e => console.error('Update Check failed (background)', e));
             }
         });
-
-        function dismissUpdateBanner() {
-            const banner = document.getElementById('global-update-banner');
-            banner.classList.add('-translate-y-full');
-            setTimeout(() => banner.classList.add('hidden'), 300);
-            // Optional: Don't show again this session? 
-            // For now, we keep the localStorage flag true so it shows on reload, unless cleared.
-            // If user wants to permanently dismiss for the day, we could set a 'dismissed_until' flag.
-        }
     </script>
     <?php endif; ?>
 

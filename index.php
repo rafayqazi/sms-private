@@ -72,9 +72,9 @@ $lowStockItems = array_filter($allInventory, function($item) {
                     <i class="fas fa-times text-xs"></i>
                 </button>
                 <div class="flex flex-col items-center gap-2">
-                    <a href="pages/settings.php?tab=updates" class="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-200 dark:shadow-none hover:-translate-y-0.5 active:scale-95 uppercase tracking-wider text-sm whitespace-nowrap">
+                    <button onclick="startInPlaceUpdate()" class="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-200 dark:shadow-none hover:-translate-y-0.5 active:scale-95 uppercase tracking-wider text-sm whitespace-nowrap">
                         Update System Now
-                    </a>
+                    </button>
                     <div class="flex items-center gap-2 text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest bg-orange-100 dark:bg-orange-900/40 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800">
                         <i class="fas fa-hourglass-half"></i>
                         <span>System locking in: <span id="update-timer">60s</span></span>
@@ -789,6 +789,104 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 });
+</script>
+
+<!-- Update Progress Modal -->
+<div id="update-modal" class="fixed inset-0 z-[100] bg-gray-900/80 backdrop-blur-sm hidden flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 relative overflow-hidden">
+        <!-- Background Glow -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16"></div>
+        
+        <div class="relative z-10 text-center">
+            <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-600 dark:text-indigo-400">
+                <i class="fas fa-sync-alt text-2xl animate-spin"></i>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Updating System</h2>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-8" id="modal-status-text">Starting update process...</p>
+            
+            <!-- Progress Bar -->
+            <div class="relative h-4 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
+                <div id="modal-progress-bar" class="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 w-0"></div>
+            </div>
+            <div class="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span id="modal-step-text">Initializing</span>
+                <span id="modal-percent-text">0%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startInPlaceUpdate() {
+    if (!confirm('Are you sure you want to update the system now? The page will reload automatically after completion.')) return;
+    
+    document.getElementById('update-modal').classList.remove('hidden');
+    
+    // Step 1
+    updateUI("Checking system requirements...", "Initializing", 10);
+    
+    setTimeout(() => {
+        updateUI("Creating safety backup...", "Backing Up", 30);
+        
+        // Step 2: Call API
+        performActualUpdate();
+    }, 1500);
+}
+
+function updateUI(statusMsg, stepMsg, percent) {
+    document.getElementById('modal-status-text').innerText = statusMsg;
+    document.getElementById('modal-step-text').innerText = stepMsg;
+    document.getElementById('modal-percent-text').innerText = percent + '%';
+    document.getElementById('modal-progress-bar').style.width = percent + '%';
+}
+
+function performActualUpdate() {
+    fetch('api/perform_update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateUI("Installing new files...", "Installing", 70);
+            
+            // Trigger Backup Download if available
+            if (data.backup_file) {
+                const link = document.createElement('a');
+                link.href = 'backups/' + data.backup_file; // path relative to index.php
+                link.download = data.backup_file;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            setTimeout(() => {
+                updateUI("Finalizing changes...", "Cleaning Up", 90);
+                setTimeout(() => {
+                    updateUI("Update Complete!", "Success", 100);
+                    
+                    // Clear local storage flags
+                    localStorage.removeItem('sys_update_available');
+                    localStorage.removeItem('sys_last_update_check');
+
+                    setTimeout(() => {
+                        alert("System updated successfully! Backup downloaded.");
+                        window.location.reload();
+                    }, 1000);
+                }, 1000);
+            }, 2000);
+        } else {
+            alert("Update Failed: " + data.message);
+            window.location.reload(); // Reload to reset state
+        }
+    })
+    .catch(error => {
+        alert("Network Error: " + error.message);
+        window.location.reload();
+    });
+}
 </script>
 
 <?php include 'includes/footer.php'; ?>

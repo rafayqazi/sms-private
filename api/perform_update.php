@@ -63,8 +63,13 @@ try {
         }
     }
 
-    // 3. Post-update tasks (optional)
-    // could include: composer install, clearing cache, updating database schema, etc.
+    // 3. Post-update tasks
+    // Re-open session to clear update flags upon success
+    session_start();
+    unset($_SESSION['updates_available']);
+    unset($_SESSION['remote_commit']);
+    unset($_SESSION['local_commit']);
+    session_write_close();
 
     // Clean any prior output (warnings, whitespace from includes) so we send clean JSON
     ob_clean();
@@ -72,6 +77,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => "Software updated successfully to the latest version!",
+        'backup_file' => $backupFile, // Return backup filename for download
         'details' => $debug
     ]);
 

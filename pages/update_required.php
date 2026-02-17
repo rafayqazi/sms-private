@@ -200,12 +200,29 @@ $settings = $db->getSchoolSettings();
             .then(data => {
                 if (data.success) {
                     updateUI("Applying changes...", 80);
+                    
+                    // Trigger Backup Download if available
+                    if (data.backup_file) {
+                        const link = document.createElement('a');
+                        link.href = '../backups/' + data.backup_file;
+                        link.download = data.backup_file;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+
                     setTimeout(() => {
                         updateUI("Clearing cache...", 95);
                         setTimeout(() => {
                             updateUI("Software Updated Successfully!", 100);
-                            alert("Software has been updated and unlocked! The page will now reload.");
-                            window.location.href = "../index.php";
+                            alert("Software has been updated and unlocked! The backup has been downloaded. The page will now redirect.");
+                            
+                            // Clear local storage flags
+                            localStorage.removeItem('sys_update_available');
+                            localStorage.removeItem('sys_last_update_check');
+
+                            // Force redirect to index.php
+                            window.location.replace("../index.php");
                         }, 1000);
                     }, 1500);
                 } else {
