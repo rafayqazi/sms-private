@@ -128,7 +128,8 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
-                            <input type="text" name="class_name" required placeholder="e.g. Class 6" value="<?php echo htmlspecialchars($editClass['class_name']); ?>"
+                            <input type="text" name="class_name" id="class_name" required placeholder="e.g. Class 6" value="<?php echo htmlspecialchars($editClass['class_name']); ?>"
+                                oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase()"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                         

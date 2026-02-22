@@ -131,40 +131,82 @@ class Database {
     public function bulkAddStudents($studentsArray) {
         $data = $this->readData();
         
-        // Get Start ID
+        // Index existing students by GR Number for fast lookup
+        $existingStudents = [];
         $lastId = 0;
-        if (!empty($data)) {
-            $lastItem = end($data);
-            $lastId = isset($lastItem['id']) ? (int)$lastItem['id'] : 0;
+        foreach ($data as $index => $s) {
+            if (!empty($s['gr_no'])) {
+                $existingStudents[$s['gr_no']] = $index;
+            }
+            if (isset($s['id'])) {
+                $lastId = max($lastId, (int)$s['id']);
+            }
         }
 
         $now = date('Y-m-d H:i:s');
         $today = new DateTime();
+        $counts = ['added' => 0, 'updated' => 0];
 
         foreach ($studentsArray as $studentData) {
-            $lastId++;
-            $studentData['id'] = $lastId;
-            $studentData['created_at'] = $now;
-            $studentData['updated_at'] = $now;
-            $studentData['is_active'] = isset($studentData['is_active']) ? $studentData['is_active'] : 1;
-
-            // Age calculation
-            if (!empty($studentData['date_of_birth'])) {
-                try {
-                    $dob = new DateTime($studentData['date_of_birth']);
-                    $studentData['age'] = $dob->diff($today)->y;
-                } catch (Exception $e) {
-                    $studentData['age'] = '';
+            $grNo = $studentData['gr_no'] ?? '';
+            
+            if (!empty($grNo) && isset($existingStudents[$grNo])) {
+                // UPDATE existing student
+                $idx = $existingStudents[$grNo];
+                // Preserve original ID and created_at
+                $studentData['id'] = $data[$idx]['id'];
+                $studentData['created_at'] = $data[$idx]['created_at'];
+                $studentData['updated_at'] = $now;
+                
+                // Merge data (incoming data overwrites existing)
+                // We merge with headers to ensure all keys exist
+                foreach ($this->headers as $h) {
+                    if (!isset($studentData[$h])) {
+                        $studentData[$h] = $data[$idx][$h] ?? '';
+                    }
                 }
+                
+                $data[$idx] = $studentData;
+                $counts['updated']++;
             } else {
-                $studentData['age'] = '';
+                // ADD new student
+                $lastId++;
+                $studentData['id'] = $lastId;
+                $studentData['created_at'] = $now;
+                $studentData['updated_at'] = $now;
+                $studentData['is_active'] = isset($studentData['is_active']) ? $studentData['is_active'] : 1;
+                
+                // Ensure all keys exist
+                foreach ($this->headers as $h) {
+                    if (!isset($studentData[$h])) $studentData[$h] = '';
+                }
+
+                $data[] = $studentData;
+                $counts['added']++;
             }
 
-            // Default values for missing fields to avoid array_combine mismatch if internal write logic changes
-            $data[] = $studentData;
+            // Recalculate age for the current studentData (either new or updated)
+            // Note: $studentData might have been moved to $data[$idx] or $data[]
+            // We need to operate on the reference if we want $data to be updated
+            // Re-fetching from $data based on latest addition or update
+            $targetIdx = isset($existingStudents[$grNo]) ? $existingStudents[$grNo] : count($data) - 1;
+            
+            if (!empty($data[$targetIdx]['date_of_birth'])) {
+                try {
+                    $dob = new DateTime($data[$targetIdx]['date_of_birth']);
+                    $data[$targetIdx]['age'] = $dob->diff($today)->y;
+                } catch (Exception $e) {
+                    $data[$targetIdx]['age'] = '';
+                }
+            } else {
+                $data[$targetIdx]['age'] = '';
+            }
         }
 
-        return $this->writeData($data);
+        if ($this->writeData($data)) {
+            return $counts;
+        }
+        return false;
     }
 
     public function getNextGrNo() {
@@ -322,6 +364,13 @@ class Database {
             // Gender Filter
             if (isset($filters['gender']) && !empty($filters['gender'])) {
                 if ($student['gender'] != $filters['gender']) {
+                    $match = false;
+                }
+            }
+
+            // Religion Filter
+            if (isset($filters['religion']) && !empty($filters['religion'])) {
+                if ($student['religion'] != $filters['religion']) {
                     $match = false;
                 }
             }
@@ -2180,6 +2229,8 @@ class Database {
         $defaults = [
             "school_name" => "Government Boys Primary School Ali Bux Jarwar",
             "address_tagline" => "District Ghotki",
+        "school_address" => "Ali Bux Jarwar, Ghotki",
+        "school_contact" => "0300-0000000",
         "headmaster_name" => "Signature PRINCIPAL____________",
             "semis_code" => "424010147",
             "admin_username" => "GBPSalibuxjarwar",
@@ -2204,7 +2255,9 @@ class Database {
         if (isset($data['school_name'])) $current['school_name'] = $data['school_name'];
         if (isset($data['headmaster_name'])) $current['headmaster_name'] = $data['headmaster_name'];
         if (isset($data['address_tagline'])) $current['address_tagline'] = $data['address_tagline'];
-        if (isset($data['semis_code'])) $current['semis_code'] = $data['semis_code'];
+    if (isset($data['school_address'])) $current['school_address'] = $data['school_address'];
+    if (isset($data['school_contact'])) $current['school_contact'] = $data['school_contact'];
+    if (isset($data['semis_code'])) $current['semis_code'] = $data['semis_code'];
         if (isset($data['school_logo'])) $current['school_logo'] = $data['school_logo'];
         
         return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
@@ -2941,5 +2994,139 @@ class Database {
         });
 
         return array_slice($stats, 0, $limit);
+    }
+
+    // --- Fee Management Methods ---
+
+    public function getFeeStructure() {
+        $file = __DIR__ . '/../data/fee_structure.csv';
+        $structure = [];
+        if (file_exists($file)) {
+            if (($handle = fopen($file, "r")) !== FALSE) {
+                $headers = fgetcsv($handle);
+                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    if (count($row) >= 2) {
+                        $structure[$row[0]] = [
+                            'class_name' => $row[0],
+                            'monthly_fee' => (float)$row[1],
+                            'admission_fee' => (float)($row[2] ?? 0),
+                            'exam_fee' => (float)($row[3] ?? 0),
+                            'updated_at' => $row[4] ?? ''
+                        ];
+                    }
+                }
+                fclose($handle);
+            }
+        }
+        return $structure;
+    }
+
+    public function updateFeeStructure($data) {
+        $file = __DIR__ . '/../data/fee_structure.csv';
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['class_name', 'monthly_fee', 'admission_fee', 'exam_fee', 'updated_at']);
+        foreach ($data as $class => $fees) {
+            fputcsv($fp, [
+                $class,
+                $fees['monthly_fee'],
+                $fees['admission_fee'] ?? 0,
+                $fees['exam_fee'] ?? 0,
+                date('Y-m-d H:i:s')
+            ]);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function recordFeePayment($data) {
+        $file = __DIR__ . '/../data/fee_collections.csv';
+        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes'];
+        
+        $id = time() . rand(100, 999);
+        $row = [
+            $id,
+            $data['gr_no'],
+            $data['payment_date'] ?? date('Y-m-d'),
+            $data['month_for'],
+            $data['amount_paid'],
+            $data['discount'] ?? 0,
+            $data['payment_method'] ?? 'Cash',
+            $_SESSION['user_id'] ?? 'System',
+            $data['notes'] ?? ''
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $row);
+        fclose($fp);
+        return $id;
+    }
+
+    public function getFeeCollections($filters = []) {
+        $file = __DIR__ . '/../data/fee_collections.csv';
+        $collections = [];
+        if (file_exists($file)) {
+            if (($handle = fopen($file, "r")) !== FALSE) {
+                $headers = fgetcsv($handle);
+                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    $item = array_combine($headers, $row);
+                    
+                    $match = true;
+                    if (isset($filters['gr_no']) && $item['gr_no'] != $filters['gr_no']) $match = false;
+                    if (isset($filters['month']) && $item['month_for'] != $filters['month']) $match = false;
+                    
+                    if ($match) {
+                        $collections[] = $item;
+                    }
+                }
+                fclose($handle);
+            }
+        }
+        // Latest first
+        usort($collections, function($a, $b) {
+            return strcmp($b['payment_date'], $a['payment_date']);
+        });
+        return $collections;
+    }
+
+    public function getStudentFeeHistory($gr_no) {
+        return $this->getFeeCollections(['gr_no' => $gr_no]);
+    }
+
+    public function getFeeStats() {
+        $collections = $this->getFeeCollections();
+        $thisMonth = date('Y-m');
+        $today = date('Y-m-d');
+        
+        $stats = [
+            'this_month' => 0,
+            'today' => 0,
+            'recent' => array_slice($collections, 0, 5)
+        ];
+
+        foreach ($collections as $c) {
+            if (strpos($c['payment_date'], $thisMonth) === 0) {
+                $stats['this_month'] += (float)$c['amount_paid'];
+            }
+            if ($c['payment_date'] === $today) {
+                $stats['today'] += (float)$c['amount_paid'];
+            }
+        }
+        return $stats;
+    }
+
+    public function getDefaulters($month = null) {
+        if (!$month) $month = date('Y-m');
+        
+        $students = $this->readData(); // All active students
+        $collections = $this->getFeeCollections(['month' => $month]);
+        $paid_gr_nos = array_column($collections, 'gr_no');
+        
+        $defaulters = [];
+        foreach ($students as $s) {
+            if ($s['student_status'] === 'Active' && !in_array($s['gr_no'], $paid_gr_nos)) {
+                $defaulters[] = $s;
+            }
+        }
+        return $defaulters;
     }
 }

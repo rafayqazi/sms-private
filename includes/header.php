@@ -225,6 +225,13 @@ if ($currentUserId) {
                     </div>
                 </div>
                 <?php endif; ?>
+                
+                <!-- Fees Section -->
+                <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>
+                <a href="<?php echo $base_path; ?>pages/fees.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo basename($_SERVER['PHP_SELF']) == 'fees.php' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Fees">
+                    <i class="fas fa-file-invoice-dollar w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Fees & Payments</span>
+                </a>
+                <?php endif; ?>
 
                 <!-- Certificates -->
                 <?php if ((isAdmin() || isSuperAdmin()) && !isViewer()): ?>

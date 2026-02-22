@@ -13,14 +13,17 @@ $db = new Database();
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $classFilter = isset($_GET['class']) ? $_GET['class'] : '';
 $genderFilter = isset($_GET['gender']) ? $_GET['gender'] : '';
+$religionFilter = isset($_GET['religion']) ? $_GET['religion'] : '';
 
 $filters = [
     'search' => $search,
     'class' => $classFilter,
-    'gender' => $genderFilter
+    'gender' => $genderFilter,
+    'religion' => $religionFilter
 ];
 
 $students = $db->filterStudents($filters);
+$classes = $db->getClassNames();
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -35,14 +38,68 @@ $students = $db->filterStudents($filters);
         <a href="bulk_admission.php" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
             <i class="fas fa-file-import"></i> Bulk Admission
         </a>
+        <button onclick="openBulkEditModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
+            <i class="fas fa-edit"></i> Bulk Edit
+        </button>
         <a href="student_form.php" class="bg-secondary text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-md flex items-center justify-center gap-2 font-semibold">
             <i class="fas fa-plus-circle"></i> New Admission
         </a>
     </div>
 </div>
 
+<!-- Bulk Edit Modal -->
+<div id="bulkEditModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex justify-between items-center">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-file-csv"></i> Bulk Edit Students
+            </h3>
+            <button onclick="closeBulkEditModal()" class="text-white/80 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <h4 class="font-bold text-blue-800 text-sm mb-1">Step 1: Download Data</h4>
+                    <p class="text-xs text-blue-600 leading-relaxed">Select a class to download existing student records. You can then edit this file in Excel.</p>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">Select Class</label>
+                    <div class="flex gap-2">
+                        <select id="bulk-edit-class" class="flex-grow border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Classes</option>
+                            <?php
+                            foreach ($classes as $c) {
+                                echo "<option value=\"$c\">$c</option>";
+                            }
+                            ?>
+                        </select>
+                        <button onclick="downloadBulkData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-green-50 border border-green-100 rounded-xl mt-6">
+                    <h4 class="font-bold text-green-800 text-sm mb-1">Step 2: Upload Updates</h4>
+                    <p class="text-xs text-green-600 leading-relaxed">After editing your CSV, upload it using the Bulk Admission tool. Matching GR numbers will be updated.</p>
+                </div>
+                
+                <a href="bulk_admission.php" class="block w-full bg-green-600 text-white text-center py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-lg">
+                    <i class="fas fa-upload mr-2"></i> Go to Upload Tool
+                </a>
+            </div>
+        </div>
+        <div class="p-4 bg-gray-50 text-center">
+            <button onclick="closeBulkEditModal()" class="text-gray-500 font-semibold hover:text-gray-700">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <!-- Charts Section -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
         <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <i class="fas fa-venus-mars text-indigo-500"></i> Gender Distribution
@@ -59,6 +116,14 @@ $students = $db->filterStudents($filters);
             <canvas id="classChart"></canvas>
         </div>
     </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-yellow-500">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-quran text-yellow-500"></i> Religion Distribution
+        </h3>
+        <div class="relative h-64">
+            <canvas id="religionChart"></canvas>
+        </div>
+    </div>
 </div>
 
 <div class="bg-white rounded-lg shadow-lg p-6">
@@ -69,7 +134,6 @@ $students = $db->filterStudents($filters);
                 <select name="class" id="filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                     <option value="">All Classes</option>
                     <?php
-                    $classes = $db->getClassNames();
                     foreach ($classes as $c) {
                         $selected = ($classFilter == $c) ? 'selected' : '';
                         echo "<option value=\"$c\" $selected>$c</option>";
@@ -84,6 +148,19 @@ $students = $db->filterStudents($filters);
                     <option value="">All Genders</option>
                     <option value="Male" <?php echo ($genderFilter == 'Male') ? 'selected' : ''; ?>>Male</option>
                     <option value="Female" <?php echo ($genderFilter == 'Female') ? 'selected' : ''; ?>>Female</option>
+                    <option value="Unknown" <?php echo ($genderFilter == 'Unknown') ? 'selected' : ''; ?>>Unknown</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1 min-w-[150px]">
+                <label class="text-sm font-medium text-gray-700">Religion</label>
+                <select name="religion" id="filter-religion" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                    <option value="">All Religions</option>
+                    <option value="Islam" <?php echo ($religionFilter == 'Islam') ? 'selected' : ''; ?>>Islam</option>
+                    <option value="Hinduism" <?php echo ($religionFilter == 'Hinduism') ? 'selected' : ''; ?>>Hinduism</option>
+                    <option value="Christian" <?php echo ($religionFilter == 'Christian') ? 'selected' : ''; ?>>Christian</option>
+                    <option value="Sikh" <?php echo ($religionFilter == 'Sikh') ? 'selected' : ''; ?>>Sikh</option>
+                    <option value="Other" <?php echo ($religionFilter == 'Other') ? 'selected' : ''; ?>>Other</option>
                 </select>
             </div>
 
@@ -308,6 +385,24 @@ $students = $db->filterStudents($filters);
                 }
             });
         }
+
+        // Bulk Edit Modal Functions
+        window.openBulkEditModal = function() {
+            const modal = document.getElementById('bulkEditModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeBulkEditModal = function() {
+            const modal = document.getElementById('bulkEditModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.downloadBulkData = function() {
+            const classVal = document.getElementById('bulk-edit-class').value;
+            window.location.href = `../api/export_students_csv.php?class=${encodeURIComponent(classVal)}`;
+        };
     });
 </script>
 

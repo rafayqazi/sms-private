@@ -8,8 +8,6 @@ if (!canAccessPage('settings.php')) {
     exit;
 }
 
-require_once '../includes/header.php';
-
 $db = new Database();
 $successMsg = '';
 $errorMsg = '';
@@ -21,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = [
             'school_name' => $_POST['school_name'],
             'address_tagline' => $_POST['address_tagline'],
+            'school_address' => $_POST['school_address'],
+            'school_contact' => $_POST['school_contact'],
             'semis_code' => $_POST['semis_code'],
             'headmaster_name' => $_POST['headmaster_name']
         ];
@@ -38,16 +38,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $target_abs)) {
                         // Update the logo path in the database settings
                         $db->updateSchoolSettings(['school_logo' => $target_rel]);
-                        $successMsg = "Settings and Logo updated successfully!";
+                        $_SESSION['success_message'] = "Settings and Logo updated successfully!";
                     } else {
-                        $successMsg = "Settings updated, but Logo upload failed.";
+                        $_SESSION['success_message'] = "Settings updated, but Logo upload failed.";
                     }
                 } else {
                      $errorMsg = "Invalid logo format. Only PNG, JPG allowed.";
                 }
             } else {
-                $successMsg = "School settings updated successfully!";
+                $_SESSION['success_message'] = "School settings updated successfully!";
             }
+            
+            // Redirect to index after successful update as requested
+            header("Location: ../index.php");
+            exit;
+
         } else {
             $errorMsg = "Failed to update settings.";
         }
@@ -89,6 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+require_once '../includes/header.php';
+
 
 $settings = $db->getSchoolSettings();
 ?>
@@ -165,6 +173,18 @@ $settings = $db->getSchoolSettings();
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Address / Tagline</label>
                                 <input type="text" name="address_tagline" value="<?php echo htmlspecialchars($settings['address_tagline']); ?>"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Full School Address</label>
+                                <input type="text" name="school_address" value="<?php echo htmlspecialchars(isset($settings['school_address']) ? $settings['school_address'] : ''); ?>"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">School Contact No.</label>
+                                <input type="text" name="school_contact" value="<?php echo htmlspecialchars(isset($settings['school_contact']) ? $settings['school_contact'] : ''); ?>"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
                             </div>
 

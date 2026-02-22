@@ -7,6 +7,7 @@ $db = new Database();
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $classFilter = isset($_GET['class']) ? $_GET['class'] : '';
 $genderFilter = isset($_GET['gender']) ? $_GET['gender'] : '';
+$religionFilter = isset($_GET['religion']) ? $_GET['religion'] : '';
 $sortBy = isset($_GET['sort_by']) ? $_GET['sort_by'] : '';
 $order = isset($_GET['order']) ? $_GET['order'] : '';
 
@@ -14,6 +15,7 @@ $filters = [
     'search' => $search,
     'class' => $classFilter,
     'gender' => $genderFilter,
+    'religion' => $religionFilter,
     'sort_by' => $sortBy,
     'order' => $order
 ];
@@ -88,7 +90,8 @@ if (isset($_GET['json']) && $_GET['json'] == '1') {
     $stats = [
         'total' => count($students),
         'gender' => ['Male' => 0, 'Female' => 0],
-        'class' => []
+        'class' => [],
+        'religion' => []
     ];
     
     foreach ($students as $s) {
@@ -99,10 +102,14 @@ if (isset($_GET['json']) && $_GET['json'] == '1') {
         $c = $s['current_class'] ?: 'Unknown';
         if (!isset($stats['class'][$c])) $stats['class'][$c] = 0;
         $stats['class'][$c]++;
+
+        $r = $s['religion'] ?: 'Unknown';
+        if (!isset($stats['religion'][$r])) $stats['religion'][$r] = 0;
+        $stats['religion'][$r]++;
     }
     
     header('Content-Type: application/json');
-    echo json_encode(['html' => $html, 'stats' => $stats]);
+    echo json_encode(['html' => $html, 'stats' => $stats, 'students' => $students]);
     exit;
 }
 ?>

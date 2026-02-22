@@ -120,6 +120,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<!-- Success Notification From Settings/Other pages -->
+<?php if (isset($_SESSION['success_message'])): ?>
+<div class="mb-6 animate-[slideIn_0.5s_ease-out]">
+    <div class="bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 text-emerald-700 dark:text-emerald-400 p-4 rounded-xl shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <i class="fas fa-check-circle text-xl"></i>
+            </div>
+            <span class="font-bold"><?php echo $_SESSION['success_message']; ?></span>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600 transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+<?php unset($_SESSION['success_message']); endif; ?>
 
 
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">

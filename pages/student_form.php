@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $isGrRequired = $classData ? $classData['is_gr_required'] : 1;
 
     // Strict Validation for all fields if GR is required
+    /*
     if ($isGrRequired) {
         if ($grNo === '0' || empty($_POST['gr_no'])) {
             $error = "Error: GR No is required for $currentClass.";
@@ -70,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = "Error: Father's Name is required.";
         }
     }
+    */
 
     if (!empty($error)) {
         $student = $_POST;
@@ -268,8 +270,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Current Class <span class="text-red-500">*</span></label>
-                <select name="current_class" id="current_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Current Class</label>
+                <select name="current_class" id="current_class" onchange="toggleFields()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Class</option>
                     <?php
                     $classes = $db->getClassNames();
@@ -282,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">GR No <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">GR No</label>
                 <?php 
                 $defaultGr = ($student) ? htmlspecialchars($student['gr_no']) : $db->getNextGrNo();
                 ?>
@@ -290,13 +292,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Admission Date <span class="text-red-500">*</span></label>
-                <input type="date" name="admission_date" id="admission_date" required value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Admission Date</label>
+                <input type="date" name="admission_date" id="admission_date" value="<?php echo $student ? date('Y-m-d', strtotime($student['admission_date'])) : date('Y-m-d'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Admission Class <span class="text-red-500">*</span></label>
-                <select name="admission_class" id="admission_class" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">CLASS INTO WHICH ADMITTED</label>
+                <select name="admission_class" id="admission_class" onchange="toggleFields()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Class</option>
                     <?php
                     foreach ($classes as $c) {
@@ -307,28 +309,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </select>
             </div>
 
+            <!-- Dynamic Section: Previous School Info -->
+            <div id="previousSchoolSection" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4 mt-2 hidden">
+                <div class="col-span-full">
+                    <h3 class="text-lg font-semibold text-gray-800">Previous School Information</h3>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Previous School Name</label>
+                    <input type="text" name="previous_school" id="previous_school" value="<?php echo $student ? htmlspecialchars($student['previous_school'] ?? '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm font-medium text-gray-700">SLC Image</label>
+                    <input type="file" name="slc_img" id="slc_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+            </div>
+
             <!-- Removed duplicated Profile Image upload from here -->
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Student Name <span class="text-red-500">*</span></label>
-                <input type="text" name="student_name" required value="<?php echo $student ? htmlspecialchars($student['student_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Student Name</label>
+                <input type="text" name="student_name" value="<?php echo $student ? htmlspecialchars($student['student_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2 relative">
-                <label class="text-sm font-medium text-gray-700">Father's Name <span class="text-red-500">*</span></label>
-                <input type="text" name="father_name" id="father_name" required value="<?php echo $student ? htmlspecialchars($student['father_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="Type to search..." autocomplete="off">
+                <label class="text-sm font-medium text-gray-700">Father's Name</label>
+                <input type="text" name="father_name" id="father_name" value="<?php echo $student ? htmlspecialchars($student['father_name']) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="Type to search..." autocomplete="off">
                 <div id="father_suggestions" class="absolute z-[100] top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-xl mt-1 hidden max-h-60 overflow-y-auto"></div>
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father's CNIC <span class="text-red-500">*</span></label>
-                <input type="text" name="father_cnic" id="father_cnic" required value="<?php echo $student ? formatCnic($student['father_cnic']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Father's CNIC</label>
+                <input type="text" name="father_cnic" id="father_cnic" value="<?php echo $student ? formatCnic($student['father_cnic']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                 <small id="cnic_status" class="text-xs text-gray-500"></small>
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Gender <span class="text-red-500">*</span></label>
-                <select name="gender" id="gender" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                <label class="text-sm font-medium text-gray-700">Gender</label>
+                <select name="gender" id="gender" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Gender</option>
                     <option value="Male" <?php echo ($student && $student['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
                     <option value="Female" <?php echo ($student && $student['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
@@ -336,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Date of Birth <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">Date of Birth</label>
                 <input type="date" name="date_of_birth" id="date_of_birth" value="<?php echo $student ? date('Y-m-d', strtotime($student['date_of_birth'])) : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
@@ -346,22 +363,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">B-Form No <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">B-Form No</label>
                 <input type="text" name="b_form_no" id="b_form_no" value="<?php echo $student ? formatCnic($student['b_form_no']) : ''; ?>" placeholder="xxxxx-xxxxxxx-x" maxlength="15" class="cnic-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Father's Contact <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">Father's Contact</label>
                 <input type="text" name="father_contact" id="father_contact" value="<?php echo $student ? formatContact($student['father_contact']) : ''; ?>" placeholder="xxxx-xxxxxxx" maxlength="12" class="contact-input w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">District <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">District</label>
                 <input type="text" name="district" id="district" value="<?php echo $student ? htmlspecialchars($student['district']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
             <div class="flex flex-col space-y-2">
-                <label class="text-sm font-medium text-gray-700">Taluka <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">Taluka</label>
                 <input type="text" name="taluka" id="taluka" value="<?php echo $student ? htmlspecialchars($student['taluka']) : 'Tando Allahyar'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
@@ -387,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <div class="flex flex-col space-y-2 lg:col-span-2">
-                <label class="text-sm font-medium text-gray-700">School Name <span class="text-red-500">*</span></label>
+                <label class="text-sm font-medium text-gray-700">School Name</label>
                 <input type="text" name="school_name" id="school_name" value="<?php echo $student ? htmlspecialchars($student['school_name']) : htmlspecialchars($formSettings['school_name'] ?? 'GBPS Ali Bux Jarwar'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
 
@@ -405,21 +422,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             </div>
             <?php endif; ?>
-
-            <!-- Dynamic Section: Previous School Info -->
-            <div id="previousSchoolSection" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4 mt-2 hidden">
-                <div class="col-span-full">
-                    <h3 class="text-lg font-semibold text-gray-800">Previous School Information</h3>
-                </div>
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">Previous School Name</label>
-                    <input type="text" name="previous_school" id="previous_school" value="<?php echo $student ? htmlspecialchars($student['previous_school'] ?? '') : ''; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                </div>
-                <div class="flex flex-col space-y-2">
-                    <label class="text-sm font-medium text-gray-700">SLC Image</label>
-                    <input type="file" name="slc_img" id="slc_img" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                </div>
-            </div>
 
             <!-- Documents -->
             <div class="col-span-full border-t pt-4 mt-2">
@@ -465,90 +467,149 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </div>
 
 
-
-
 <script>
     const errorMessage = <?php echo json_encode($error); ?>;
-
     if (errorMessage) {
-        document.addEventListener('DOMContentLoaded', function() {
-            showModal('error', 'Error', errorMessage);
-        });
+        document.addEventListener('DOMContentLoaded', () => showModal('error', 'Error', errorMessage));
     }
 
-    // Dynamic Fields Logic
-    document.addEventListener('DOMContentLoaded', function() {
-        const classSelect = document.getElementById('current_class');
+    // Helper functions for formatting and number to words
+    function formatCnicJS(value) {
+        let val = value.replace(/\D/g, '');
+        if (val.length > 13) val = val.substring(0, 13);
+        if (val.length > 12) {
+            return val.substring(0, 5) + '-' + val.substring(5, 12) + '-' + val.substring(12, 13);
+        } else if (val.length > 5) {
+            return val.substring(0, 5) + '-' + val.substring(5);
+        }
+        return val;
+    }
+
+    function formatContactJS(value) {
+        let val = value.replace(/\D/g, '');
+        if (val.length > 11) val = val.substring(0, 11);
+        if (val.length > 4) {
+            return val.substring(0, 4) + '-' + val.substring(4);
+        }
+        return val;
+    }
+
+    function numberToWords(n) {
+        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        if (n < 20) return units[n];
+        
+        const digit = n % 10;
+        if (n < 100) return tens[Math.floor(n / 10)] + (digit ? ' ' + units[digit] : '');
+        
+        if (n < 1000) return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 == 0 ? '' : ' and ' + numberToWords(n % 100));
+        
+        return numberToWords(Math.floor(n / 1000)) + ' Thousand ' + (n % 1000 != 0 ? numberToWords(n % 1000) : '');
+    }
+
+    /**
+     * MASTER HANDLER FOR DYNAMIC FIELDS
+     * Controls Visibility and Required status based on selected classes
+     */
+    function handleStudentFormFields() {
+        // Core Elements
+        const currentClassSel = document.getElementById('current_class');
+        const admissionClassSel = document.getElementById('admission_class');
         const prevSchoolSection = document.getElementById('previousSchoolSection');
-        const prevSchoolInput = document.getElementById('previous_school');
-        // Note: File inputs cannot be set to required dynamically in a simple way that works across all browsers/validation styles, 
-        // but we can enforce it server-side or just visually show it. For now, we'll just toggle visibility.
-
-        const classes = <?php echo json_encode($db->getClasses()); ?>;
-        const lowClasses = classes.slice(0, 2).map(c => c.class_name); // First two classes for previous school logic
-
+        const slcImgInput = document.getElementById('slc_img');
         const grNoInput = document.getElementById('gr_no_input');
-        const grNoLabel = grNoInput.previousElementSibling;
-        const initialGrNo = <?php echo json_encode($defaultGr); ?>;
 
-        function toggleFields() {
-            const selectedClass = classSelect.value;
-            if (selectedClass && !lowClasses.includes(selectedClass)) {
-                prevSchoolSection.classList.remove('hidden');
-            } else {
-                prevSchoolSection.classList.add('hidden');
+        if (!currentClassSel || !admissionClassSel || !prevSchoolSection) return;
+
+        // 1. PREVIOUS SCHOOL VISIBILITY LOGIC
+        const admissionVal = admissionClassSel.value.toLowerCase().trim();
+        const isEmpty = admissionVal === '';
+        
+        // Hide if: Empty OR contains "one" OR contains "nursery" OR contains "01"
+        const isExcluded = admissionVal.includes('one') || admissionVal.includes('nursery') || admissionVal.includes('01');
+
+        if (!isEmpty && !isExcluded) {
+            // SHOW SECTION
+            prevSchoolSection.classList.remove('hidden');
+            prevSchoolSection.style.display = 'grid'; // Force grid if hidden class fails
+            if (slcImgInput) {
+                slcImgInput.required = false; // Changed to false
+                const label = slcImgInput.previousElementSibling;
+                if (label) label.innerHTML = 'SLC Image'; // Removed asterisk
             }
+        } else {
+            // HIDE SECTION
+            prevSchoolSection.classList.add('hidden');
+            prevSchoolSection.style.display = 'none';
+            if (slcImgInput) {
+                slcImgInput.required = false;
+                const label = slcImgInput.previousElementSibling;
+                if (label) label.innerHTML = 'SLC Image';
+            }
+        }
 
-            // GR No Requirement Logic
-            const selectedClassData = classes.find(c => c.class_name === selectedClass);
-            const isGrRequired = selectedClassData ? parseInt(selectedClassData.is_gr_required) === 1 : true;
+        // 2. GR NO & DYNAMIC REQUIREMENTS LOGIC
+        const classList = <?php echo json_encode($db->getClasses()); ?> || [];
+        const currentVal = currentClassSel.value.trim();
+        const foundClass = classList.find(c => c.class_name === currentVal);
+        
+        // If class not found, default to GR Required: true
+        const isGrRequired = (foundClass) ? (parseInt(foundClass.is_gr_required) === 1) : true;
 
-            // Fields that depend on GR requirement
-            const dynamicFields = [
-                { id: 'father_cnic', name: "Father's CNIC" },
-                { id: 'gender', name: "Gender" },
-                { id: 'date_of_birth', name: "Date of Birth" },
-                { id: 'admission_date', name: "Admission Date" },
-                { id: 'admission_class', name: "Admission Class" },
-                { id: 'father_contact', name: "Father's Contact" },
-                { id: 'b_form_no', name: "B-Form No" },
-                { id: 'district', name: "District" },
-                { id: 'taluka', name: "Taluka" },
-                { id: 'school_name', name: "School Name" }
-            ];
-
-            // 1. Handle GR No Field specifically
+        // Handle GR Number Input
+        if (grNoInput) {
+            const grLabel = grNoInput.previousElementSibling;
             if (!isGrRequired) {
                 grNoInput.required = false;
                 grNoInput.disabled = true;
                 grNoInput.value = '';
-                grNoLabel.innerHTML = 'GR No <span class="text-gray-400 text-xs">(Not Required for ' + selectedClass + ')</span>';
+                if (grLabel) grLabel.innerHTML = 'GR No <span class="text-gray-400 text-xs">(Not Required for ' + currentVal + ')</span>';
             } else {
                 grNoInput.disabled = false;
-                grNoInput.required = true;
-                if (grNoInput.value === '') grNoInput.value = initialGrNo;
-                grNoLabel.innerHTML = 'GR No <span class="text-red-500">*</span>';
-            }
-
-            // 2. Handle all other Dynamic Fields
-            dynamicFields.forEach(field => {
-                const el = document.getElementById(field.id);
-                if (el) {
-                    el.required = isGrRequired;
-                    const label = el.previousElementSibling;
-                    if (label && label.tagName === 'LABEL') {
-                        label.innerHTML = `${field.name} ${isGrRequired ? '<span class="text-red-500">*</span>' : ''}`;
-                    }
+                grNoInput.required = false; // Changed to false
+                if (grNoInput.value === '') {
+                    grNoInput.value = <?php echo json_encode($defaultGr); ?> || '';
                 }
-            });
+                if (grLabel) grLabel.innerHTML = 'GR No'; // Removed asterisk
+            }
         }
 
-        classSelect.addEventListener('change', toggleFields);
-        
-        // Run on load to set initial state (e.g. for edit mode)
-        toggleFields();
+        // Handle Mandatory Fields based on GR Requirement
+        const fieldsToValidate = [
+            { id: 'father_cnic', name: "Father's CNIC" },
+            { id: 'gender', name: "Gender" },
+            { id: 'date_of_birth', name: "Date of Birth" },
+            { id: 'admission_date', name: "Admission Date" },
+            { id: 'admission_class', name: "CLASS INTO WHICH ADMITTED" },
+            { id: 'father_contact', name: "Father's Contact" },
+            { id: 'b_form_no', name: "B-Form No" },
+            { id: 'district', name: "District" },
+            { id: 'taluka', name: "Taluka" },
+            { id: 'school_name', name: "School Name" }
+        ];
 
-        // Parent Autofill Logic
+        fieldsToValidate.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (element) {
+                element.required = false; // Always false as per request
+                const label = element.previousElementSibling;
+                if (label && label.tagName === 'LABEL') {
+                    // label.innerHTML = `${field.name} ${isGrRequired ? '<span class="text-red-500">*</span>' : ''}`;
+                    label.innerHTML = `${field.name}`;
+                }
+            }
+        });
+    }
+
+    // Global toggle mapping
+    window.toggleFields = handleStudentFormFields;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial setup
+        handleStudentFormFields();
+
+        // 3. PARENT AUTOFILL LOGIC
         const cnicInput = document.getElementById('father_cnic');
         const fatherNameInput = document.getElementById('father_name');
         const fatherContactInput = document.getElementById('father_contact');
@@ -557,77 +618,80 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const cnicFrontPreview = document.getElementById('father_cnic_front_preview');
         const cnicBackPreview = document.getElementById('father_cnic_back_preview');
         const cnicStatus = document.getElementById('cnic_status');
-
-        let debounceTimer;
-        // Real-time Name Suggestions
         const fatherSuggestions = document.getElementById('father_suggestions');
 
-        let nameSearchTimer;
-        fatherNameInput.addEventListener('input', function() {
-            const query = this.value.trim();
-            if (query.length < 2) {
-                fatherSuggestions.classList.add('hidden');
-                return;
-            }
+        let debounceTimer;
+        let lastRequestTime = 0;
 
-            clearTimeout(nameSearchTimer);
-            nameSearchTimer = setTimeout(() => {
-                fetch(`../api/search_parents.php?q=${encodeURIComponent(query)}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('API Error');
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            fatherSuggestions.innerHTML = '';
-                            data.forEach(p => {
-                                const div = document.createElement('div');
-                                div.className = 'px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors duration-150';
-                                div.innerHTML = `
-                                    <div class="font-bold text-gray-800 dark:text-gray-200">${p.father_name}</div>
-                                    <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest">${p.father_cnic || 'No CNIC'}</div>
-                                `;
-                                div.onclick = () => {
-                                    fatherNameInput.value = p.father_name;
-                                    cnicInput.value = formatCnicJS(p.father_cnic);
-                                    fatherContactInput.value = formatContactJS(p.father_contact);
-                                    
-                                    // Autofill Images
-                                    if (p.father_cnic_front) {
-                                        cnicFrontInput.removeAttribute('required');
-                                        cnicFrontPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Front: <a href="${p.father_cnic_front}" target="_blank" class="underline">View</a></small>
-                                        <input type="hidden" name="existing_father_cnic_front" value="${p.father_cnic_front}">`;
-                                    }
-                                    if (p.father_cnic_back) {
-                                        cnicBackInput.removeAttribute('required');
-                                        cnicBackPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Back: <a href="${p.father_cnic_back}" target="_blank" class="underline">View</a></small>
-                                        <input type="hidden" name="existing_father_cnic_back" value="${p.father_cnic_back}">`;
-                                    }
+        if (fatherNameInput && fatherSuggestions) {
+            let nameSearchTimer;
+            fatherNameInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    fatherSuggestions.classList.add('hidden');
+                    return;
+                }
 
-                                    fatherSuggestions.classList.add('hidden');
-                                    cnicStatus.textContent = '✓ Existing Parent - Details autofilled';
-                                    cnicStatus.className = 'text-[10px] text-green-600 font-bold uppercase';
-                                };
-                                fatherSuggestions.appendChild(div);
-                            });
-                            fatherSuggestions.classList.remove('hidden');
-                        } else {
+                clearTimeout(nameSearchTimer);
+                nameSearchTimer = setTimeout(() => {
+                    fetch(`../api/search_parents.php?q=${encodeURIComponent(query)}`)
+                        .then(response => {
+                            if (!response.ok) throw new Error('API Error');
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                fatherSuggestions.innerHTML = '';
+                                data.forEach(p => {
+                                    const div = document.createElement('div');
+                                    div.className = 'px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors duration-150';
+                                    div.innerHTML = `
+                                        <div class="font-bold text-gray-800 dark:text-gray-200">${p.father_name}</div>
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest">${p.father_cnic || 'No CNIC'}</div>
+                                    `;
+                                    div.onclick = () => {
+                                        fatherNameInput.value = p.father_name;
+                                        if (cnicInput) cnicInput.value = formatCnicJS(p.father_cnic);
+                                        if (fatherContactInput) fatherContactInput.value = formatContactJS(p.father_contact);
+                                        
+                                        // Autofill Images
+                                        if (p.father_cnic_front && cnicFrontInput && cnicFrontPreview) {
+                                            cnicFrontInput.removeAttribute('required');
+                                            cnicFrontPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Front: <a href="${p.father_cnic_front}" target="_blank" class="underline">View</a></small>
+                                            <input type="hidden" name="existing_father_cnic_front" value="${p.father_cnic_front}">`;
+                                        }
+                                        if (p.father_cnic_back && cnicBackInput && cnicBackPreview) {
+                                            cnicBackInput.removeAttribute('required');
+                                            cnicBackPreview.innerHTML = `<small class="text-green-600 font-bold">✓ Existing Back: <a href="${p.father_cnic_back}" target="_blank" class="underline">View</a></small>
+                                            <input type="hidden" name="existing_father_cnic_back" value="${p.father_cnic_back}">`;
+                                        }
+
+                                        fatherSuggestions.classList.add('hidden');
+                                        if (cnicStatus) {
+                                            cnicStatus.textContent = '✓ Existing Parent - Details autofilled';
+                                            cnicStatus.className = 'text-[10px] text-green-600 font-bold uppercase';
+                                        }
+                                    };
+                                    fatherSuggestions.appendChild(div);
+                                });
+                                fatherSuggestions.classList.remove('hidden');
+                            } else {
+                                fatherSuggestions.classList.add('hidden');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Name search error:', err);
                             fatherSuggestions.classList.add('hidden');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Name search error:', err);
-                        fatherSuggestions.classList.add('hidden');
-                    });
-            }, 300);
-        });
+                        });
+                }, 300);
+            });
 
-        // Hide suggestions on click outside
-        document.addEventListener('click', (e) => {
-            if (!fatherNameInput.contains(e.target) && !fatherSuggestions.contains(e.target)) {
-                fatherSuggestions.classList.add('hidden');
-            }
-        });
+            document.addEventListener('click', (e) => {
+                if (!fatherNameInput.contains(e.target) && !fatherSuggestions.contains(e.target)) {
+                    fatherSuggestions.classList.add('hidden');
+                }
+            });
+        }
 
         function formatCnicJS(value) {
             let val = value.replace(/\D/g, '');

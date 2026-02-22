@@ -7,8 +7,8 @@ if (isset($_GET['download_sample'])) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="student_import_sample.csv"');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['GR Number', 'Student Name', 'Father Name', 'Gender', 'Date of Birth', 'Admission Date', 'Class', 'B-Form No', 'Father CNIC', 'Father Contact', 'District', 'Taluka', 'Previous School', 'Repeater (Yes/No)']);
-    fputcsv($output, ['101', 'Ali Khan', 'Ahmed Khan', 'Male', '2015-05-12', '2024-04-01', 'Class 1', '42401-1234567-1', '42401-7654321-1', '03001234567', 'Ghotki', 'Ubauro', 'N/A', 'No']);
+    fputcsv($output, ['GR Number', 'Student Name', 'Father Name', 'Gender', 'Date of Birth', 'Admission Date', 'Admission Class', 'Current Class', 'B-Form No', 'Father CNIC', 'Father Contact', 'District', 'Taluka', 'Previous School', 'School Name', 'Caste', 'Religion', 'Place of Birth', 'Repeater (Yes/No)']);
+    fputcsv($output, ['101', 'Ali Khan', 'Ahmed Khan', 'Male', '2015-05-12', '2024-04-01', 'One', 'Two', '42401-1234567-1', '42401-7654321-1', '03001234567', 'Tando Allahyar', 'Tando Allahyar', 'N/A', 'Aqsa Higher Secondary School', 'Rajput', 'Islam', 'Tando Allahyar', 'No']);
     fclose($output);
     exit;
 }
@@ -31,17 +31,21 @@ $fieldsToMap = [
     'student_name' => 'Student Name',
     'father_name' => 'Father Name',
     'gender' => 'Gender',
-    'date_of_birth' => 'Date of Birth (YYYY-MM-DD)',
-    'admission_date' => 'Admission Date (YYYY-MM-DD)',
-    'admission_class' => 'Admission Class',
-    'current_class' => 'Class',
-    'b_form_no' => 'B-Form / ID Number',
-    'father_cnic' => 'Father CNIC',
-    'father_contact' => 'Father Contact',
+    'date_of_birth' => 'Date of Birth',
+    'admission_date' => 'Admission Date',
+    'admission_class' => 'CLASS INTO WHICH ADMITTED',
+    'current_class' => 'Current Class',
+    'b_form_no' => 'B-Form No',
+    'father_cnic' => 'Father\'s CNIC',
+    'father_contact' => 'Father\'s Contact',
     'district' => 'District',
     'taluka' => 'Taluka',
-    'previous_school' => 'Previous School',
-    'student_status' => 'Status (Active/Inactive)',
+    'caste' => 'Caste',
+    'religion' => 'Religion',
+    'place_of_birth' => 'Place of Birth',
+    'previous_school' => 'Previous School Name',
+    'school_name' => 'School Name',
+    'student_status' => 'Status (Active/Alumni)',
     'is_repeater' => 'Is Repeater? (Yes/No)'
 ];
 
@@ -73,7 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errorMsg = "Please upload a valid CSV file.";
             } else {
             $tmpName = time() . '_' . bin2hex(random_bytes(4)) . '.csv';
-            $dest = '../data/tmp/' . $tmpName;
+            $tmpDir = '../data/tmp/';
+            if (!is_dir($tmpDir)) {
+                mkdir($tmpDir, 0755, true);
+            }
+            $dest = $tmpDir . $tmpName;
             
             if (move_uploaded_file($file['tmp_name'], $dest)) {
                 $_SESSION['bulk_import_file'] = $dest;
@@ -112,10 +120,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Basic cleanup/validation logic
                 if (empty($student['student_name'])) continue; // Skip rows without name
                 
-                // Handle Repeater Yes/No to 1/0
+                // Data Normalization (Case Insensitivity)
+                
+                // 1. Gender Normalization
+                if (!empty($student['gender'])) {
+                    $g = strtolower(trim($student['gender']));
+                    if ($g === 'male' || $g === 'm') $student['gender'] = 'Male';
+                    elseif ($g === 'female' || $g === 'f') $student['gender'] = 'Female';
+                }
+
+                // 2. Status Normalization
+                if (!empty($student['student_status'])) {
+                    $s = strtolower(trim($student['student_status']));
+                    if ($s === 'active') $student['student_status'] = 'Active';
+                    elseif ($s === 'alumni' || $s === 'inactive' || $s === 'left') $student['student_status'] = 'Alumni';
+                }
+
+                // 3. Religion Normalization
+                if (!empty($student['religion'])) {
+                    $student['religion'] = ucfirst(strtolower(trim($student['religion'])));
+                }
+
+                // 4. Repeater Yes/No to 1/0
                 if (isset($student['is_repeater'])) {
-                    $val = strtolower($student['is_repeater']);
-                    $student['is_repeater'] = ($val === 'yes' || $val === '1' || $val === 'y') ? 1 : 0;
+                    $val = strtolower(trim($student['is_repeater']));
+                    $student['is_repeater'] = ($val === 'yes' || $val === 'true' || $val === '1' || $val === 'y') ? 1 : 0;
                 }
 
                 $studentsToImport[] = $student;
@@ -123,8 +152,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             fclose($handle);
             
             if (!empty($studentsToImport)) {
-                if ($db->bulkAddStudents($studentsToImport)) {
-                    $successMsg = count($studentsToImport) . " students imported successfully!";
+                $result = $db->bulkAddStudents($studentsToImport);
+                if ($result !== false) {
+                    $added = $result['added'];
+                    $updated = $result['updated'];
+                    $successMsg = "Import complete! $added records added, $updated records updated.";
                     unlink($csvFile);
                     unset($_SESSION['bulk_import_file']);
                     $step = 3;
@@ -193,8 +225,8 @@ if ($step == 2 && file_exists($csvPath)) {
         <?php if ($successMsg): ?>
             <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-6 mb-6 rounded-lg text-center">
                 <i class="fas fa-check-circle text-5xl mb-4 block"></i>
-                <h3 class="text-xl font-bold mb-2">Import Complete!</h3>
-                <p><?php echo $successMsg; ?></p>
+                <h3 class="text-xl font-bold mb-2">Import Successful!</h3>
+                <p class="text-lg"><?php echo $successMsg; ?></p>
                 <div class="mt-6 flex justify-center gap-4">
                     <a href="students.php" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700">View Students</a>
                     <a href="bulk_admission.php" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-300">Import More</a>
@@ -219,8 +251,8 @@ if ($step == 2 && file_exists($csvPath)) {
                         <?php echo csrfInput(); ?>
                         <input type="hidden" name="step" value="1">
                         
-                        <div class="border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-indigo-400 transition-colors cursor-pointer group" onclick="document.getElementById('csv_file').click()" id="uploadZone">
-                            <input type="file" name="csv_file" id="csv_file" accept=".csv" class="hidden" onchange="handleFileSelect(this)">
+                        <div class="border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-indigo-400 transition-colors cursor-pointer group" id="uploadZone">
+                            <input type="file" name="csv_file" id="csv_file" accept=".csv" class="hidden">
                             <div id="fileInfo" class="hidden text-indigo-600 font-bold mb-4">
                                 <i class="fas fa-file-csv text-2xl"></i> <span id="fileName"></span>
                             </div>
@@ -237,16 +269,58 @@ if ($step == 2 && file_exists($csvPath)) {
                         </div>
 
                         <script>
-                            function handleFileSelect(input) {
-                                if (input.files && input.files[0]) {
-                                    document.getElementById('uploadPrompt').classList.add('hidden');
-                                    document.getElementById('fileInfo').classList.remove('hidden');
-                                    document.getElementById('fileName').textContent = input.files[0].name;
-                                    document.getElementById('submitBtnContainer').classList.remove('hidden');
-                                    document.getElementById('uploadZone').classList.remove('p-8');
-                                    document.getElementById('uploadZone').classList.add('p-12', 'bg-indigo-50', 'border-indigo-400');
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const zone = document.getElementById('uploadZone');
+                                const input = document.getElementById('csv_file');
+                                const prompt = document.getElementById('uploadPrompt');
+                                const info = document.getElementById('fileInfo');
+                                const nameDisp = document.getElementById('fileName');
+                                const btn = document.getElementById('submitBtnContainer');
+
+                                if (!zone || !input) return;
+
+                                function updateUI() {
+                                    if (input.files && input.files[0]) {
+                                        prompt.classList.add('hidden');
+                                        info.classList.remove('hidden');
+                                        nameDisp.textContent = input.files[0].name;
+                                        btn.classList.remove('hidden');
+                                        zone.classList.remove('p-8');
+                                        zone.classList.add('p-12', 'bg-indigo-50', 'border-indigo-400');
+                                    }
                                 }
-                            }
+
+                                zone.addEventListener('click', () => input.click());
+                                input.addEventListener('change', updateUI);
+
+                                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
+                                    zone.addEventListener(eName, (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }, false);
+                                });
+
+                                ['dragenter', 'dragover'].forEach(eName => {
+                                    zone.addEventListener(eName, () => {
+                                        zone.classList.add('bg-indigo-50', 'border-indigo-400');
+                                    }, false);
+                                });
+
+                                ['dragleave', 'drop'].forEach(eName => {
+                                    zone.addEventListener(eName, () => {
+                                        if (!input.files.length) {
+                                            zone.classList.remove('bg-indigo-50', 'border-indigo-400');
+                                        }
+                                    }, false);
+                                });
+
+                                zone.addEventListener('drop', (e) => {
+                                    if (e.dataTransfer.files.length) {
+                                        input.files = e.dataTransfer.files;
+                                        updateUI();
+                                    }
+                                }, false);
+                            });
                         </script>
 
                         <div class="bg-blue-50 p-4 rounded-xl text-left border border-blue-100">

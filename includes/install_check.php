@@ -8,10 +8,7 @@
 
 function isInstalled() {
     $dbFile = __DIR__ . '/../data/database.csv';
-    $licenseFile = __DIR__ . '/../data/license.php';
-    
-    // System is considered installed only if both files exist
-    return file_exists($dbFile) && file_exists($licenseFile);
+    return file_exists($dbFile);
 }
 
 // Global Redirect Logic
@@ -30,6 +27,15 @@ if (!isInstalled()) {
         exit();
     }
 } else {
+    // If installed, check for license file separately
+    $licenseFile = __DIR__ . '/../data/license.php';
+    if (!file_exists($licenseFile)) {
+        if (!in_array($currentPage, $allowedPages) && $currentPage !== 'license_error.php' && !$inApiDir) {
+            header("Location: " . $prefix . "pages/license_error.php");
+            exit();
+        }
+    }
+
     // If installed, prevent access to install.php
     if ($currentPage === 'install.php') {
         header("Location: " . $prefix . "index.php");
