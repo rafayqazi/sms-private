@@ -18,8 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_class'])) {
         $name = trim($_POST['class_name']);
         $grRequired = isset($_POST['gr_required']) ? 1 : 0;
+        $hasGroup = isset($_POST['has_group']) ? 1 : 0;
         if (!empty($name)) {
-            if ($db->addClass($name, $grRequired)) {
+            if ($db->addClass($name, $grRequired, $hasGroup)) {
                 $successMsg = "Class added successfully!";
             } else {
                 $errorMsg = "Failed to add class.";
@@ -35,11 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($name)) {
             $classes = $db->getClasses();
             $grRequired = isset($_POST['gr_required']) ? 1 : 0;
+            $hasGroup = isset($_POST['has_group']) ? 1 : 0;
             foreach ($classes as &$c) {
                 if ($c['id'] == $id) {
                     $c['class_name'] = $name;
                     $c['sort_order'] = $sortOrder;
                     $c['is_gr_required'] = $grRequired;
+                    $c['has_group'] = $hasGroup;
                     break;
                 }
             }
@@ -145,6 +148,12 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                 class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                             <label for="gr_required" class="text-sm font-medium text-gray-700 cursor-pointer">GR Number Required?</label>
                         </div>
+
+                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                            <input type="checkbox" name="has_group" id="has_group" <?php echo ($editMode ? (isset($editClass['has_group']) && $editClass['has_group'] ? 'checked' : '') : ''); ?> 
+                                class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <label for="has_group" class="text-sm font-medium text-gray-700 cursor-pointer">Group (Pre-Med/Eng)?</label>
+                        </div>
                         
                         <?php if ($editMode): ?>
                             <div class="flex gap-2">
@@ -173,7 +182,8 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                 <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                                     <th class="p-4 w-20">Order</th>
                                     <th class="p-4">Class Name</th>
-                                    <th class="p-4 text-center">GR Required</th>
+                                    <th class="p-4 text-center text-[10px]">GR Required</th>
+                                    <th class="p-4 text-center text-[10px]">Has Group</th>
                                     <th class="p-4 text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -191,11 +201,22 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                         <td class="p-4 font-semibold text-gray-800"><?php echo htmlspecialchars($c['class_name']); ?></td>
                                         <td class="p-4 text-center">
                                             <?php if ($c['is_gr_required']): ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
                                                     Yes
                                                 </span>
                                             <?php else: ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
+                                                    No
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <?php if (isset($c['has_group']) && $c['has_group']): ?>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+                                                    Yes
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
                                                     No
                                                 </span>
                                             <?php endif; ?>

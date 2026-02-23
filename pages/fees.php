@@ -123,6 +123,24 @@ include '../includes/header.php';
             </div>
         </div>
         
+        <!-- Class-wise Breakdown -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 mt-6">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-pie text-indigo-500"></i> Monthly Collections by Class (<?php echo date('F'); ?>)
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <?php foreach ($feeStats['class_breakdown'] as $cls => $amt): ?>
+                <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    <div class="text-[10px] text-gray-500 font-bold uppercase"><?php echo htmlspecialchars($cls); ?></div>
+                    <div class="text-sm font-bold text-gray-900">Rs. <?php echo number_format($amt); ?></div>
+                </div>
+                <?php endforeach; ?>
+                <?php if (empty($feeStats['class_breakdown'])): ?>
+                <div class="col-span-full py-4 text-center text-gray-400 text-sm italic">No collections recorded yet for this month.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">Recent Collections</h3>
@@ -174,22 +192,49 @@ include '../includes/header.php';
     </div>
 
     <div id="content-collect" class="tab-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">Fee Collection Form</h3>
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Student (Name or GR No)</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" id="student_search" class="pl-10 block w-full border border-gray-300 rounded-lg py-3 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Type to search...">
-                        <div id="search_results" class="absolute z-10 w-full bg-white mt-1 border border-gray-200 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto"></div>
+        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Class selection -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-layer-group text-indigo-500"></i> Class View
+                    </h3>
+                    <select id="class_selector" onchange="loadClassStudents()" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">-- Select Class --</option>
+                        <?php foreach ($classes as $c): ?>
+                            <option value="<?php echo $c['class_name']; ?>"><?php echo $c['class_name']; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <div id="class_students_list" class="mt-6 space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
+                        <p class="text-xs text-gray-400 text-center py-8">Select a class to see student list.</p>
                     </div>
                 </div>
+            </div>
 
-                <div id="collection_details" class="hidden animate-fade-in">
-                    <!-- Dynamic content filled via JS -->
+            <!-- Right: Search & Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">Fee Collection Form</h3>
+                    <div class="space-y-6">
+                        <div id="manual_search_container">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Search Student (Name or GR No)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="student_search" class="pl-10 block w-full border border-gray-300 rounded-lg py-3 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Type to search...">
+                                <div id="search_results" class="absolute z-10 w-full bg-white mt-1 border border-gray-200 rounded-lg shadow-xl hidden max-h-60 overflow-y-auto"></div>
+                            </div>
+                        </div>
+
+                        <div id="collection_details" class="hidden animate-fade-in">
+                            <div class="p-12 text-center text-gray-400">
+                                <i class="fas fa-user-check text-4xl mb-3 opacity-20"></i>
+                                <p>Select a student to record fee collection.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -445,6 +490,49 @@ function pickStudent(gr, name) {
     switchTab('collect');
     studentSearch.value = name;
     selectStudent({ gr_no: gr, student_name: name });
+}
+
+function loadClassStudents() {
+    const className = document.getElementById('class_selector').value;
+    const container = document.getElementById('class_students_list');
+    
+    if (!className) {
+        container.innerHTML = '<p class="text-xs text-gray-400 text-center py-8">Select a class to see student list.</p>';
+        return;
+    }
+
+    container.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div>';
+    
+    fetch(`../api/get_class_fee_status.php?class=${encodeURIComponent(className)}`)
+        .then(res => res.json())
+        .then(response => {
+            const data = response.data || [];
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 text-center py-8">No active students in this class.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(s => {
+                const isPaid = s.status === 'Paid';
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-indigo-200 transition cursor-pointer ${isPaid ? 'bg-green-50/30' : 'bg-red-50/30'}`;
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <div class="text-sm font-bold text-gray-800">${s.student_name}</div>
+                        <div class="text-[10px] text-gray-500">GR: ${s.gr_no}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                            ${s.status}
+                        </span>
+                        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                    </div>
+                `;
+                div.onclick = () => selectStudent(s);
+                container.appendChild(div);
+            });
+        });
 }
 
 // Initial loads

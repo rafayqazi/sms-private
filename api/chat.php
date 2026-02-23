@@ -18,7 +18,7 @@ if (empty($userMessage)) {
 }
 
 // --- CONFIGURATION ---
-$apiKey = 'AIzaSyDkKD_4RiBXyCaldHM5zFdtpTGlErImUQw'; 
+$apiKey = 'AIzaSyAVn9ugnmFTzqxLI-AaxzeT1maLGg5X6Tk'; 
 // ---------------------
 
 if (empty($apiKey) || $apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
@@ -31,11 +31,12 @@ $aiContext = new AIContext();
 $systemPrompt = $aiContext->getContext();
 
 // 2. Prepare Payload for Gemini
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . $apiKey;
+$url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
 
 $data = [
     "contents" => [
         [
+            "role" => "user",
             "parts" => [
                 ["text" => $systemPrompt . "\n\nUser Question: " . $userMessage]
             ]
@@ -43,11 +44,13 @@ $data = [
     ]
 ];
 
+$jsonData = json_encode($data);
+
 // 3. Send Request
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Content-Type: application/json'
 ]);

@@ -7,8 +7,8 @@ if (isset($_GET['download_sample'])) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment; filename="student_import_sample.csv"');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['GR Number', 'Student Name', 'Father Name', 'Gender', 'Date of Birth', 'Admission Date', 'Admission Class', 'Current Class', 'B-Form No', 'Father CNIC', 'Father Contact', 'District', 'Taluka', 'Previous School', 'School Name', 'Caste', 'Religion', 'Place of Birth', 'Repeater (Yes/No)']);
-    fputcsv($output, ['101', 'Ali Khan', 'Ahmed Khan', 'Male', '2015-05-12', '2024-04-01', 'One', 'Two', '42401-1234567-1', '42401-7654321-1', '03001234567', 'Tando Allahyar', 'Tando Allahyar', 'N/A', 'Aqsa Higher Secondary School', 'Rajput', 'Islam', 'Tando Allahyar', 'No']);
+    fputcsv($output, ['GR Number', 'Student Name', 'Father Name', 'Gender', 'Date of Birth', 'Admission Date', 'Admission Class', 'Current Class', 'Group (Pre-Med/Eng)', 'B-Form No', 'Father CNIC', 'Father Contact', 'District', 'Taluka', 'Previous School', 'School Name', 'Caste', 'Religion', 'Place of Birth', 'Repeater (Yes/No)']);
+    fputcsv($output, ['101', 'Ali Khan', 'Ahmed Khan', 'Male', '2015-05-12', '2024-04-01', 'One', 'Two', '', '42401-1234567-1', '42401-7654321-1', '03001234567', 'Tando Allahyar', 'Tando Allahyar', 'N/A', 'Aqsa Higher Secondary School', 'Rajput', 'Islam', 'Tando Allahyar', 'No']);
     fclose($output);
     exit;
 }
@@ -35,6 +35,7 @@ $fieldsToMap = [
     'admission_date' => 'Admission Date',
     'admission_class' => 'CLASS INTO WHICH ADMITTED',
     'current_class' => 'Current Class',
+    'student_group' => 'Group (Pre-Med/Eng)',
     'b_form_no' => 'B-Form No',
     'father_cnic' => 'Father\'s CNIC',
     'father_contact' => 'Father\'s Contact',
@@ -145,6 +146,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($student['is_repeater'])) {
                     $val = strtolower(trim($student['is_repeater']));
                     $student['is_repeater'] = ($val === 'yes' || $val === 'true' || $val === '1' || $val === 'y') ? 1 : 0;
+                }
+
+                // 5. GR No Prefixing
+                if (!empty($student['gr_no'])) {
+                    $pureGr = ltrim(preg_replace('/^(P\.E-|P\.M-)/', '', $student['gr_no']), '0');
+                    if ($pureGr === '') $pureGr = '0';
+                    
+                    $group = $student['student_group'] ?? '';
+                    if ($group === 'Pre-Engineering') {
+                        $student['gr_no'] = 'P.E-' . $pureGr;
+                    } elseif ($group === 'Pre-Medical') {
+                        $student['gr_no'] = 'P.M-' . $pureGr;
+                    } else {
+                        $student['gr_no'] = $pureGr;
+                    }
                 }
 
                 $studentsToImport[] = $student;

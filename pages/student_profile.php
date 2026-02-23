@@ -64,9 +64,12 @@ if (!$student) {
             <h3 class="mb-4 border-b pb-2 text-lg font-semibold">Personal Information</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div><strong>Father Name:</strong> <?php echo htmlspecialchars($student['father_name']); ?></div>
+                <div><strong>Caste:</strong> <?php echo htmlspecialchars($student['caste'] ?? '-'); ?></div>
+                <div><strong>Religion:</strong> <?php echo htmlspecialchars($student['religion'] ?? '-'); ?></div>
                 <div><strong>Gender:</strong> <?php echo htmlspecialchars($student['gender']); ?></div>
                 <div><strong>Date of Birth:</strong> <?php echo htmlspecialchars($student['date_of_birth']); ?></div>
                 <div><strong>Age:</strong> <?php echo htmlspecialchars($student['age']); ?> years</div>
+                <div><strong>Place of Birth:</strong> <?php echo htmlspecialchars($student['place_of_birth'] ?? '-'); ?></div>
                 <div><strong>Admission Date:</strong> <?php echo htmlspecialchars($student['admission_date']); ?></div>
                 <div><strong>B-Form No:</strong> <?php echo formatCnic($student['b_form_no']); ?></div>
                 <div><strong>Father CNIC:</strong> <?php echo formatCnic($student['father_cnic']); ?></div>
@@ -74,13 +77,35 @@ if (!$student) {
                 <div><strong>District:</strong> <?php echo htmlspecialchars($student['district']); ?></div>
                 <div><strong>Taluka:</strong> <?php echo htmlspecialchars($student['taluka']); ?></div>
                 <div><strong>School:</strong> <?php echo htmlspecialchars($student['school_name']); ?></div>
-                <div><strong>SEMIS Code:</strong> <?php echo htmlspecialchars($student['semis_code']); ?></div>
                 <?php if (!empty($student['previous_school'])): ?>
                     <div class="col-span-full mt-2 p-3 bg-gray-50 rounded border border-gray-200">
                         <strong>Previous School:</strong> <?php echo htmlspecialchars($student['previous_school']); ?>
                     </div>
                 <?php endif; ?>
             </div>
+
+            <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-8">Academic Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div><strong>Current Class:</strong> <?php echo htmlspecialchars($student['current_class']); ?></div>
+                <div><strong>Admission Class:</strong> <?php echo htmlspecialchars($student['admission_class'] ?? '-'); ?></div>
+                <div><strong>Status:</strong> 
+                    <span class="px-2 py-1 rounded-full text-xs font-bold <?php echo ($student['student_status'] ?? 'Active') === 'Active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'; ?>">
+                        <?php echo htmlspecialchars($student['student_status'] ?? 'Active'); ?>
+                    </span>
+                </div>
+                <div><strong>Is Repeater:</strong> <?php echo ($student['is_repeater'] ?? '0') == '1' ? 'Yes' : 'No'; ?></div>
+                <?php if (!empty($student['student_group'])): ?>
+                    <div><strong>Specialization Group:</strong> <?php echo htmlspecialchars($student['student_group']); ?></div>
+                <?php endif; ?>
+            </div>
+
+            <?php if (($student['student_status'] ?? '') === 'Alumni'): ?>
+            <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-8 text-orange-600">Alumni Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div><strong>Graduation Year:</strong> <?php echo htmlspecialchars($student['graduation_year'] ?? '-'); ?></div>
+                <div><strong>Last Class Attended:</strong> <?php echo htmlspecialchars($student['last_class'] ?? '-'); ?></div>
+            </div>
+            <?php endif; ?>
 
             <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-8">Documents</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -212,7 +237,6 @@ if (!$student) {
                 <div>
                     <h1 class="text-3xl font-extrabold uppercase tracking-wide text-black leading-tight"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
                     <p class="text-lg mt-1 text-gray-800 font-medium whitespace-nowrap"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
-                    <p class="text-sm font-bold uppercase tracking-widest mt-1 text-gray-800">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?></p>
                 </div>
             </div>
             <!-- Photo Box -->
@@ -290,9 +314,35 @@ if (!$student) {
                     <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium text-black"><?php echo formatContact($student['father_contact']); ?></div>
                 </div>
                 <div class="flex-1 flex items-end">
+                    <span class="font-bold w-24 text-black">Caste:</span>
+                    <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium capitalize text-black"><?php echo htmlspecialchars($student['caste'] ?? '-'); ?></div>
+                </div>
+            </div>
+
+            <!-- Row 6 -->
+            <div class="flex gap-8">
+                <div class="flex-1 flex items-end">
+                    <span class="font-bold w-24 text-black">Religion:</span>
+                    <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium capitalize text-black"><?php echo htmlspecialchars($student['religion'] ?? '-'); ?></div>
+                </div>
+                <div class="flex-1 flex items-end">
+                    <span class="font-bold w-36 text-black">Place of Birth:</span>
+                    <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium capitalize text-black"><?php echo htmlspecialchars($student['place_of_birth'] ?? '-'); ?></div>
+                </div>
+            </div>
+
+            <!-- Row 7 -->
+            <div class="flex gap-8">
+                <div class="flex-1 flex items-end">
                     <span class="font-bold w-24 text-black">Address:</span>
                     <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium capitalize truncate text-black"><?php echo htmlspecialchars($student['district']) . ', ' . htmlspecialchars($student['taluka']); ?></div>
                 </div>
+                <?php if (!empty($student['student_group'])): ?>
+                <div class="flex-1 flex items-end">
+                    <span class="font-bold w-24 text-black">Group:</span>
+                    <div class="flex-1 border-b-2 border-black px-2 pb-1 font-medium capitalize text-black"><?php echo htmlspecialchars($student['student_group']); ?></div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 

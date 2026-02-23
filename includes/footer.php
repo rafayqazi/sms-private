@@ -21,12 +21,20 @@
 
     <div id="chat-widget-window" class="fixed bottom-24 right-5 w-[350px] h-[500px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 transition-all duration-300 transform translate-y-5 opacity-0 pointer-events-none [&.open]:translate-y-0 [&.open]:opacity-100 [&.open]:pointer-events-auto">
         <div class="bg-green-700 text-white p-4 flex items-center justify-between">
-            <h3 class="m-0 text-base font-semibold flex items-center"><i class="fas fa-robot mr-2"></i> Ali Bux Jarwar AI</h3>
+            <h3 class="m-0 text-base font-semibold flex items-center">
+                <i class="fas fa-robot mr-2"></i> 
+                <?php 
+                $ai_school_name = $headerSettings['school_name'] ?? 'School';
+                // Optional: Shorten if too long (e.g. "Government Boys Primary School Ali Bux Jarwar" -> "Ali Bux Jarwar AI")
+                // But for now, let's keep it direct as requested.
+                echo htmlspecialchars($ai_school_name); 
+                ?> AI
+            </h3>
             <div id="chat-close" class="cursor-pointer opacity-80 hover:opacity-100"><i class="fas fa-times"></i></div>
         </div>
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col gap-3">
             <div class="max-w-[80%] p-3 rounded-xl text-sm leading-relaxed relative break-words self-start bg-white border border-gray-200 text-gray-800 rounded-bl-sm">
-                Hello! I am the school's AI assistant. I have access to all student, teacher, and attendance records. How can I help you today?
+                Hello! I am the AI assistant for <strong><?php echo htmlspecialchars($ai_school_name); ?></strong>. I have access to all student, teacher, and attendance records. How can I help you today?
             </div>
             <div class="mt-2 mb-2">
                 <p class="text-xs text-gray-400 mb-2 px-2">Suggested Questions:</p>

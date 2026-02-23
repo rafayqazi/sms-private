@@ -29,14 +29,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         die("CSRF token validation failed. Possible attack detected.");
     }
 
+    $studentGroup = $_POST['student_group'] ?? '';
     $grNo = isset($_POST['gr_no']) ? $_POST['gr_no'] : '0';
     $currentClass = $_POST['current_class'];
     
-    // Remove leading zeros (e.g., "01" -> "1", "007" -> "7")
-    $grNo = ltrim($grNo, '0');
-    // If the result is empty (e.g. input was "0" or "00"), set it to "0"
-    if ($grNo === '') {
-        $grNo = '0';
+    // Process GR No with Group prefix
+    $pureGrNo = ltrim(preg_replace('/^(P\.E-|P\.M-)/', '', $grNo), '0');
+    if ($pureGrNo === '') $pureGrNo = '0';
+
+    if ($studentGroup === 'Pre-Engineering') {
+        $grNo = 'P.E-' . $pureGrNo;
+    } elseif ($studentGroup === 'Pre-Medical') {
+        $grNo = 'P.M-' . $pureGrNo;
+    } else {
+        $grNo = $pureGrNo;
     }
 
     // GR No Validation: Required for all classes except those where it's not required in settings
@@ -206,6 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'place_of_birth' => isset($_POST['place_of_birth']) ? $_POST['place_of_birth'] : '',
             'school_name' => $_POST['school_name'],
             'previous_school' => isset($_POST['previous_school']) ? $_POST['previous_school'] : '',
+            'student_group' => $_POST['student_group'] ?? '',
             'is_active' => 1
         ];
 
@@ -280,6 +287,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         echo "<option value=\"$c\" $selected>$c</option>";
                     }
                     ?>
+                </select>
+            </div>
+
+            <div id="groupSection" class="flex flex-col space-y-2 hidden">
+                <label class="text-sm font-medium text-gray-700">Group (Specialization) <span class="text-red-500">*</span></label>
+                <select name="student_group" id="student_group" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <option value="">Select Group</option>
+                    <option value="Pre-Engineering" <?php echo ($student && ($student['student_group'] ?? '') == 'Pre-Engineering') ? 'selected' : ''; ?>>Pre-Engineering</option>
+                    <option value="Pre-Medical" <?php echo ($student && ($student['student_group'] ?? '') == 'Pre-Medical') ? 'selected' : ''; ?>>Pre-Medical</option>
                 </select>
             </div>
 
@@ -517,6 +533,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const currentClassSel = document.getElementById('current_class');
         const admissionClassSel = document.getElementById('admission_class');
         const prevSchoolSection = document.getElementById('previousSchoolSection');
+        const groupSection = document.getElementById('groupSection');
+        const groupSelect = document.getElementById('student_group');
         const slcImgInput = document.getElementById('slc_img');
         const grNoInput = document.getElementById('gr_no_input');
 
@@ -549,33 +567,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
 
-        // 2. GR NO & DYNAMIC REQUIREMENTS LOGIC
+        // 2. GROUP VISIBILITY LOGIC
         const classList = <?php echo json_encode($db->getClasses()); ?> || [];
         const currentVal = currentClassSel.value.trim();
         const foundClass = classList.find(c => c.class_name === currentVal);
-        
-        // If class not found, default to GR Required: true
-        const isGrRequired = (foundClass) ? (parseInt(foundClass.is_gr_required) === 1) : true;
+        const hasGroup = (foundClass) ? (parseInt(foundClass.has_group) === 1) : false;
 
-        // Handle GR Number Input
-        if (grNoInput) {
-            const grLabel = grNoInput.previousElementSibling;
-            if (!isGrRequired) {
-                grNoInput.required = false;
-                grNoInput.disabled = true;
-                grNoInput.value = '';
-                if (grLabel) grLabel.innerHTML = 'GR No <span class="text-gray-400 text-xs">(Not Required for ' + currentVal + ')</span>';
-            } else {
-                grNoInput.disabled = false;
-                grNoInput.required = false; // Changed to false
-                if (grNoInput.value === '') {
-                    grNoInput.value = <?php echo json_encode($defaultGr); ?> || '';
-                }
-                if (grLabel) grLabel.innerHTML = 'GR No'; // Removed asterisk
-            }
+        if (hasGroup) {
+            groupSection.classList.remove('hidden');
+            groupSelect.required = true;
+        } else {
+            groupSection.classList.add('hidden');
+            groupSelect.required = false;
         }
 
-        // Handle Mandatory Fields based on GR Requirement
+        // Live GR Prefix Feedback
+        const updateGrPrefix = () => {
+             const group = groupSelect.value;
+             const grLabel = grNoInput.previousElementSibling;
+             if (grNoInput && grLabel) {
+                 let prefix = '';
+                 if (group === 'Pre-Engineering') prefix = 'P.E-';
+                 else if (group === 'Pre-Medical') prefix = 'P.M-';
+                 
+                 const baseGr = grNoInput.value.replace(/^(P\.E-|P\.M-)/, '');
+                 if (prefix) {
+                     grLabel.innerHTML = `GR No <span class="text-indigo-600 font-bold">(${prefix})</span>`;
+                 } else {
+                     grLabel.innerHTML = `GR No`;
+                 }
+             }
+        };
+
+        if (groupSelect) {
+            groupSelect.onchange = updateGrPrefix;
+            // Run initially
+            updateGrPrefix();
+        }
+
+        // 3. GR NO & DYNAMIC REQUIREMENTS LOGIC
         const fieldsToValidate = [
             { id: 'father_cnic', name: "Father's CNIC" },
             { id: 'gender', name: "Gender" },

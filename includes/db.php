@@ -38,7 +38,7 @@ class Database {
             'is_active', 'created_at', 'updated_at', 'father_cnic_front', 
             'father_cnic_back', 'b_form_img', 'profile_image', 'previous_school', 'slc_img',
             'student_status', 'is_repeater', 'graduation_year', 'last_class',
-            'caste', 'religion', 'place_of_birth'
+            'caste', 'religion', 'place_of_birth', 'student_group'
         ];
 
         if (!is_dir(dirname($this->csvFile))) {
@@ -52,7 +52,7 @@ class Database {
 
     private function getHeaders() {
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
-            $headers = fgetcsv($handle, 1000, ",");
+            $headers = fgetcsv($handle, 0, ",");
             fclose($handle);
             return $headers;
         }
@@ -62,8 +62,8 @@ class Database {
     public function readData() {
         $data = [];
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
-            $fileHeaders = fgetcsv($handle, 1000, ","); // Skip headers
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $fileHeaders = fgetcsv($handle, 0, ","); // Skip headers
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 // Adjust row to match headers length (for robustness against schema updates)
                 if (count($row) < count($this->headers)) {
                     $row = array_pad($row, count($this->headers), '');
@@ -213,9 +213,14 @@ class Database {
         $data = $this->readData();
         $maxGr = 0;
         foreach ($data as $student) {
-            $gr = isset($student['gr_no']) ? (int)$student['gr_no'] : 0;
-            if ($gr > $maxGr) {
-                $maxGr = $gr;
+            $rawGr = isset($student['gr_no']) ? (string)$student['gr_no'] : '0';
+            // Extract only digits
+            $numericGr = preg_replace('/[^0-9]/', '', $rawGr);
+            if ($numericGr !== '') {
+                $gr = (int)$numericGr;
+                if ($gr > $maxGr) {
+                    $maxGr = $gr;
+                }
             }
         }
         return $maxGr + 1;
@@ -347,49 +352,55 @@ class Database {
         $includeAlumni = isset($filters['include_alumni']) ? $filters['include_alumni'] : false;
 
         foreach ($students as $student) {
-            // Skip Alumni students unless explicitly included
-            if (!$includeAlumni && isset($student['student_status']) && $student['student_status'] === 'Alumni') {
-                continue;
-            }
+        // Skip Alumni students unless explicitly included
+        if (!$includeAlumni && isset($student['student_status']) && $student['student_status'] === 'Alumni') {
+            continue;
+        }
 
-            $match = true;
+        $match = true;
 
-            // Class Filter
-            if (isset($filters['class']) && !empty($filters['class'])) {
-                if ($student['current_class'] != $filters['class']) {
-                    $match = false;
-                }
-            }
-
-            // Gender Filter
-            if (isset($filters['gender']) && !empty($filters['gender'])) {
-                if ($student['gender'] != $filters['gender']) {
-                    $match = false;
-                }
-            }
-
-            // Religion Filter
-            if (isset($filters['religion']) && !empty($filters['religion'])) {
-                if ($student['religion'] != $filters['religion']) {
-                    $match = false;
-                }
-            }
-
-            // Search Filter (Name or GR No)
-            if (isset($filters['search']) && !empty($filters['search'])) {
-                $searchTerm = strtolower($filters['search']);
-                $nameMatch = stripos($student['student_name'], $searchTerm) !== false;
-                $grMatch = stripos($student['gr_no'], $searchTerm) !== false;
-                
-                if (!$nameMatch && !$grMatch) {
-                    $match = false;
-                }
-            }
-
-            if ($match) {
-                $results[] = $student;
+        // Class Filter
+        if (!empty($filters['class'])) {
+            $fClass = trim(strtolower($filters['class']));
+            $sClass = trim(strtolower($student['current_class'] ?? ''));
+            if ($sClass !== $fClass) {
+                $match = false;
             }
         }
+
+        // Gender Filter
+        if ($match && !empty($filters['gender'])) {
+            $fGender = trim(strtolower($filters['gender']));
+            $sGender = trim(strtolower($student['gender'] ?? ''));
+            if ($sGender !== $fGender) {
+                $match = false;
+            }
+        }
+
+        // Religion Filter
+        if ($match && !empty($filters['religion'])) {
+            $fReligion = trim(strtolower($filters['religion']));
+            $sReligion = trim(strtolower($student['religion'] ?? ''));
+            if ($sReligion !== $fReligion) {
+                $match = false;
+            }
+        }
+
+        // Search Filter (Name or GR No)
+        if ($match && !empty($filters['search'])) {
+            $searchTerm = strtolower($filters['search']);
+            $studentName = strtolower($student['student_name'] ?? '');
+            $grNo = strtolower($student['gr_no'] ?? '');
+            
+            if (strpos($studentName, $searchTerm) === false && strpos($grNo, $searchTerm) === false) {
+                $match = false;
+            }
+        }
+
+        if ($match) {
+            $results[] = $student;
+        }
+    }
 
         // Sorting
         $sortBy = isset($filters['sort_by']) ? $filters['sort_by'] : '';
@@ -414,8 +425,8 @@ class Database {
         $attendance = [];
         
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
-            $headers = fgetcsv($handle, 1000, ","); // Skip headers
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $headers = fgetcsv($handle, 0, ","); // Skip headers
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 // Structure: date, class, student_id, status, created_at
                 if (count($row) >= 4) {
                     if ($row[0] == $date && $row[1] == $class) {
@@ -435,8 +446,8 @@ class Database {
 
         // Read existing data
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
-            $fileHeaders = fgetcsv($handle, 1000, ",");
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $fileHeaders = fgetcsv($handle, 0, ",");
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if (count($row) >= 4) {
                     // If not the same date/class, keep it
                     if (!($row[0] == $date && $row[1] == $class)) {
@@ -497,7 +508,7 @@ class Database {
         if ($handle === false) return false;
 
         fgetcsv($handle); // Skip header
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // ID is index 0, CNIC is index 4
             if (count($row) > 4 && $row[4] == $cnic) {
                 if ($excludeId && $row[0] == $excludeId) {
@@ -581,9 +592,9 @@ class Database {
         if (!file_exists($file)) return null;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] == $id) {
                 // Adjust row to match headers length
                 if (count($row) < count($headers)) {
@@ -604,9 +615,9 @@ class Database {
         if (!file_exists($file)) return $teachers;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) > 0) {
                 // Adjust row to match headers length
                 if (count($row) < count($headers)) {
@@ -628,7 +639,7 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return false;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] != $id) {
                 $rows[] = $row;
             }
@@ -655,7 +666,7 @@ class Database {
 
         $ids = array_map('intval', $ids);
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Keep header row (index 0 is 'id') or if ID not in list
             if (!is_numeric($row[0]) || !in_array((int)$row[0], $ids)) {
                 $rows[] = $row;
@@ -681,10 +692,10 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return false;
 
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers; // Keep headers
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] == $id) {
                 // Preserve created_at (last column)
                 $createdAt = end($row);
@@ -761,7 +772,7 @@ class Database {
 
         // 2. Read all records and find max timestamp
         $maxTimestamp = 0;
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) < 4) continue;
             $dateStr = $row[0];
             $timestamp = strtotime($dateStr);
@@ -864,7 +875,7 @@ class Database {
         // 1. Get all attendance records
         $attendanceRecords = [];
         fgetcsv($handle); // Skip header
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) < 4) continue;
             // Normalize date to Y-m-d
             $dateStr = $row[0];
@@ -1120,9 +1131,9 @@ class Database {
         if (!file_exists($file)) return null;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 6 && $row[3] == $username) {
                 $userRole = array_combine($headers, $row);
                 // Decode classes JSON
@@ -1140,9 +1151,9 @@ class Database {
         if (!file_exists($file)) return null;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 6 && $row[1] == $teacherId) {
                 $userRole = array_combine($headers, $row);
                 // Decode classes JSON
@@ -1163,11 +1174,11 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
 
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
         $found = false;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Only update record where teacher_id matches and is > 0
             if ($teacherId > 0 && $row[1] == $teacherId) {
                 // Check if username changed and if new username exists
@@ -1220,11 +1231,11 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
 
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
         $found = false;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] == $id) {
                 // Check if username changed and if new username exists
                 if ($row[3] != $username) {
@@ -1280,10 +1291,10 @@ class Database {
         if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
 
         $found = false;
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Only delete if teacherId matches and is > 0
             if ($teacherId > 0 && $row[1] == $teacherId) {
                 $found = true;
@@ -1316,10 +1327,10 @@ class Database {
         if ($handle === false) return ['success' => false, 'message' => 'Could not open user_roles.csv'];
 
         $found = false;
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] == $id) {
                 $found = true;
             } else {
@@ -1348,9 +1359,9 @@ class Database {
         if (!file_exists($file)) return $userRoles;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) > 0) {
                 $userRole = array_combine($headers, $row);
                 // Decode classes JSON
@@ -1370,7 +1381,7 @@ class Database {
         if ($handle === false) return false;
 
         fgetcsv($handle); // Skip header
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) > 3 && $row[3] == $username) {
                 if ($excludeTeacherId && $row[1] == $excludeTeacherId) {
                     continue;
@@ -1433,9 +1444,9 @@ class Database {
         if (!file_exists($file)) return $messages;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 7) {
                 // Get messages between these two users (both directions)
                 if (($row[1] == $userId1 && $row[3] == $userId2) || 
@@ -1460,10 +1471,10 @@ class Database {
         if (!file_exists($file)) return $conversations;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
         $allMessages = [];
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 7) {
                 $allMessages[] = array_combine($headers, $row);
             }
@@ -1526,10 +1537,10 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return false;
 
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Mark as read if sent to userId from otherUserId
             if ($row[3] == $userId && $row[1] == $otherUserId) {
                 $row[6] = '1'; // is_read = true
@@ -1556,7 +1567,7 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return false;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] != $messageId) {
                 $rows[] = $row;
             }
@@ -1581,10 +1592,10 @@ class Database {
         $handle = @fopen($file, "r");
         if ($handle === false) return false;
 
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Skip messages between these two users
             if (!(($row[1] == $userId1 && $row[3] == $userId2) || 
                   ($row[1] == $userId2 && $row[3] == $userId1))) {
@@ -1612,7 +1623,7 @@ class Database {
         if ($handle === false) return 0;
 
         fgetcsv($handle); // Skip header
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 7 && $row[3] == $userId && $row[6] == '0') {
                 $count++;
             }
@@ -1727,7 +1738,7 @@ class Database {
 
         $rows = [];
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
         // Check if headers match new schema, if not, we might need to recreate file or handle migration manually.
         // For simplicity, we assume headers are correct or we are overwriting.
@@ -1740,7 +1751,7 @@ class Database {
             'total_obtained', 'total_max', 'percentage', 'grade', 'remarks', 'created_at'
         ];
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             // Handle old schema where year might be missing (index 4)
             // Old schema: id, student_id, class, exam_type, english...
             // New schema: id, student_id, class, exam_type, year, english...
@@ -1840,7 +1851,7 @@ class Database {
         if ($handle === false) return false;
 
         $found = false;
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] != $resultId) {
                 $rows[] = $row;
             } else {
@@ -1866,7 +1877,7 @@ class Database {
 
         $rows = [];
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $rows[] = $headers;
         
         $hasYear = in_array('year', $headers);
@@ -1875,7 +1886,7 @@ class Database {
         // Track which students have results in this batch
         $processedStudentIds = [];
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
                 $data = array_combine($headers, $row);
                 $rowYear = $hasYear ? $data['year'] : date('Y');
@@ -1999,12 +2010,12 @@ class Database {
         if (!file_exists($file)) return $results;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
         // Detect if file has old schema
         $hasYear = in_array('year', $headers);
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
                 $data = array_combine($headers, $row);
                 
@@ -2025,10 +2036,10 @@ class Database {
         if (!file_exists($file)) return null;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         $hasYear = in_array('year', $headers);
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
                 $data = array_combine($headers, $row);
                 $rowYear = $hasYear ? $data['year'] : date('Y');
@@ -2130,8 +2141,8 @@ class Database {
 
         // Read existing data
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
-            $fileHeaders = fgetcsv($handle, 1000, ",");
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            $fileHeaders = fgetcsv($handle, 0, ",");
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if (count($row) >= 6) {
                     // Update: if re-saving same exam subject for same date, we might be updating time too.
                     // If not the same exam/class/subject, keep it.
@@ -2168,7 +2179,7 @@ class Database {
         
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
             fgetcsv($handle); // Skip header
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if (count($row) >= 2) {
                     if ($row[1] == $class) {
                         $exams[] = $row[0];
@@ -2186,7 +2197,7 @@ class Database {
         
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
             fgetcsv($handle); // Skip header
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if (count($row) >= 6) {
                     if ($row[0] == $examName && $row[1] == $class) {
                         $subject = $row[2];
@@ -2212,7 +2223,7 @@ class Database {
         
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
             fgetcsv($handle); // Skip header
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if (count($row) >= 6) {
                     // We don't filter by date anymore in this specific call because we want the latest for this exam/subject
                     if ($row[0] == $examName && $row[1] == $class && $row[2] == $subject) {
@@ -2299,9 +2310,9 @@ class Database {
         if (!file_exists($file)) return $categories;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 4) {
                  $categories[] = [
                     'id' => $row[0],
@@ -2392,9 +2403,9 @@ class Database {
         if (!file_exists($file)) return $inventory;
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ","); // id,item_name,category_id,quantity,purchase_date,cost,condition,status,disposal_date,disposal_reason,remarks,created_at
+        $headers = fgetcsv($handle, 0, ","); // id,item_name,category_id,quantity,purchase_date,cost,condition,status,disposal_date,disposal_reason,remarks,created_at
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 12) {
                 // Filter by Status (default: Active)
                 $status = $row[7];
@@ -2597,13 +2608,14 @@ class Database {
         if (file_exists($file)) {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle); // Skip header
-                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                     if (count($row) >= 2) {
                         $classes[] = [
                         'id' => $row[0],
                         'class_name' => $row[1],
                         'sort_order' => isset($row[2]) ? (int)$row[2] : 0,
-                        'is_gr_required' => isset($row[3]) ? (int)$row[3] : 1
+                        'is_gr_required' => isset($row[3]) ? (int)$row[3] : 1,
+                        'has_group' => isset($row[4]) ? (int)$row[4] : 0
                     ];
                     }
                 }
@@ -2623,7 +2635,7 @@ class Database {
         return array_map(function($c) { return $c['class_name']; }, $classes);
     }
 
-    public function addClass($name, $isGrRequired = 1) {
+    public function addClass($name, $isGrRequired = 1, $hasGroup = 0) {
         $file = __DIR__ . '/../data/classes.csv';
         $classes = $this->getClasses();
         $nextId = 1;
@@ -2634,7 +2646,7 @@ class Database {
         }
         
         $fp = fopen($file, 'a');
-        fputcsv($fp, [$nextId, $name, $maxSort + 1, $isGrRequired]);
+        fputcsv($fp, [$nextId, $name, $maxSort + 1, $isGrRequired, $hasGroup]);
         fclose($fp);
         return $nextId;
     }
@@ -2647,9 +2659,9 @@ class Database {
         });
         
         $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required']);
+        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group']);
         foreach ($newClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1]);
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1, isset($c['has_group']) ? $c['has_group'] : 0]);
         }
         fclose($fp);
         return true;
@@ -2658,9 +2670,9 @@ class Database {
     public function updateClasses($updatedClasses) {
         $file = __DIR__ . '/../data/classes.csv';
         $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required']);
+        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group']);
         foreach ($updatedClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1]);
+            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1, isset($c['has_group']) ? $c['has_group'] : 0]);
         }
         fclose($fp);
         return true;
@@ -2679,13 +2691,13 @@ class Database {
         if (!file_exists($file)) return [];
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         if (!$headers) return [];
 
         $all = [];
         $latestYear = 0;
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
              if (count($row) == count($headers)) {
                 $data = array_combine($headers, $row);
                 if (isset($data['year'])) {
@@ -2804,7 +2816,7 @@ class Database {
         // Read existing data but skip rows for the same date
         if (file_exists($file) && ($handle = fopen($file, "r")) !== FALSE) {
             fgetcsv($handle); // skip headers
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if ($row[0] !== $date) {
                     $rows[] = $row;
                 }
@@ -2834,7 +2846,7 @@ class Database {
 
         $handle = fopen($file, "r");
         fgetcsv($handle); // skip headers
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if ($row[0] === $date) {
                 $attendance[$row[1]] = $row[2]; // teacher_id => status
             }
@@ -2850,7 +2862,7 @@ class Database {
 
         $handle = fopen($file, "r");
         fgetcsv($handle); // skip headers
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             $date = $row[0];
             if ($date >= $startDate && $date <= $endDate) {
                 $report[] = [
@@ -2875,7 +2887,7 @@ class Database {
 
         $studentAttendance = []; // student_id => ['P' => 0, 'total' => 0]
         
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 4) {
                 $sid = $row[2];
                 $status = $row[3];
@@ -2934,14 +2946,14 @@ class Database {
         if (!file_exists($file)) return [];
 
         $handle = fopen($file, "r");
-        $headers = fgetcsv($handle, 1000, ",");
+        $headers = fgetcsv($handle, 0, ",");
         if (!$headers) return [];
 
         $classData = []; // class_name => ['sum' => 0, 'count' => 0, 'topper' => ['', 0]]
         $latestYear = 0;
         $all = [];
 
-        while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
                 $data = array_combine($headers, $row);
                 if (isset($data['year'])) {
@@ -3004,7 +3016,7 @@ class Database {
         if (file_exists($file)) {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle);
-                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                     if (count($row) >= 2) {
                         $structure[$row[0]] = [
                             'class_name' => $row[0],
@@ -3067,7 +3079,7 @@ class Database {
         if (file_exists($file)) {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle);
-                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                     $item = array_combine($headers, $row);
                     
                     $match = true;
@@ -3100,12 +3112,21 @@ class Database {
         $stats = [
             'this_month' => 0,
             'today' => 0,
+            'class_breakdown' => [],
             'recent' => array_slice($collections, 0, 5)
         ];
+
+        $students = $this->readData();
+        $stMap = [];
+        foreach ($students as $s) $stMap[$s['gr_no']] = $s['current_class'];
 
         foreach ($collections as $c) {
             if (strpos($c['payment_date'], $thisMonth) === 0) {
                 $stats['this_month'] += (float)$c['amount_paid'];
+                
+                $cls = $stMap[$c['gr_no']] ?? 'Unknown';
+                if (!isset($stats['class_breakdown'][$cls])) $stats['class_breakdown'][$cls] = 0;
+                $stats['class_breakdown'][$cls] += (float)$c['amount_paid'];
             }
             if ($c['payment_date'] === $today) {
                 $stats['today'] += (float)$c['amount_paid'];
