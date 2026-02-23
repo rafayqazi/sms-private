@@ -36,11 +36,17 @@ if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
 function addDirectoryToZip($zip, $dirPath, $zipPath = '') {
     if (!is_dir($dirPath)) return 0;
     
+    // Files to exclude from backup
+    $excludedFiles = ['license.php', 'settings.json'];
+    
     $count = 0;
     $items = scandir($dirPath);
     
     foreach ($items as $item) {
         if ($item == '.' || $item == '..') continue;
+        
+        // Skip excluded files
+        if (in_array($item, $excludedFiles)) continue;
         
         $fullPath = $dirPath . DIRECTORY_SEPARATOR . $item;
         $zipItemPath = $zipPath ? $zipPath . '/' . $item : $item;
