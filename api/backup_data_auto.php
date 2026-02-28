@@ -1,7 +1,11 @@
 <?php
 session_start();
+error_reporting(0);
+ini_set('display_errors', 0);
+ob_start();
 
 if (!isset($_SESSION['user_type']) || ($_SESSION['user_type'] !== 'admin' && $_SESSION['user_role'] !== 'Admin')) {
+    ob_end_clean();
     header('Content-Type: application/json');
     http_response_code(403);
     die(json_encode(['error' => 'Unauthorized']));
@@ -11,13 +15,10 @@ if (!isset($_SESSION['user_type']) || ($_SESSION['user_type'] !== 'admin' && $_S
 // from waiting for this backup to finish, fixing "Network Errors".
 session_write_close();
 
-require_once __DIR__ . '/../includes/db.php';
-$db = new Database();
-
 $settings = $db->getSchoolSettings();
 $schoolName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $settings['school_name'] ?? 'School');
 $zipFilename = $schoolName . '_AutoBackup_' . date('Y-m-d_H-i-s') . '.zip';
-$tempZip = __DIR__ . '/../temp_autobackup_' . uniqid() . '.zip';
+$tempZip = __DIR__ . '/../data/temp_autobackup_' . uniqid() . '.zip';
 
 $zip = new ZipArchive();
 if ($zip->open($tempZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
@@ -79,6 +80,9 @@ if (!file_exists($tempZip) || filesize($tempZip) == 0) {
 }
 
 $fileSize = filesize($tempZip);
+
+// Clear any accidental output
+ob_end_clean();
 
 header('Content-Type: application/octet-stream');
 header('Content-Disposition: attachment; filename="' . $zipFilename . '"');

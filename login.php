@@ -167,6 +167,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 <?php endif; ?>
 
+                <?php if (isset($_GET['update']) && $_GET['update'] === 'success'): ?>
+                    <div class="bg-emerald-50 border border-emerald-100 text-emerald-600 p-4 rounded-2xl mb-8 flex items-center gap-3 text-sm animate-fade">
+                        <i class="fas fa-check-circle text-lg"></i>
+                        <span class="font-black uppercase tracking-tight">Software Updated Successfully! Please login.</span>
+                    </div>
+                <?php endif; ?>
+
                 <form action="" method="POST" class="space-y-6">
                     <?php echo csrfInput(); ?>
                     

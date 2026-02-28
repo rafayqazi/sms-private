@@ -100,25 +100,16 @@ $settings = $db->getSchoolSettings();
 
             <!-- Update Controls -->
             <div id="update-action">
-                <?php if ($_SESSION['user_type'] === 'admin'): ?>
-                    <button id="btnPerformUpdate" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl hover:shadow-indigo-500/30 active:scale-[0.98] transition-all">
-                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div class="relative flex items-center justify-center gap-3">
-                            <span class="uppercase tracking-[0.2em] text-lg">Update & Unlock Now</span>
-                            <i class="fas fa-bolt text-xs animate-pulse"></i>
-                        </div>
-                    </button>
-                    <p class="mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">
-                        Estimated time: 30-60 seconds depending on internet speed
-                    </p>
-                <?php else: ?>
-                    <div class="bg-orange-50 border border-orange-100 p-6 rounded-2xl text-orange-800">
-                        <i class="fas fa-user-shield text-3xl mb-3"></i>
-                        <p class="font-black uppercase tracking-tight text-sm">Action Required by Administrator</p>
-                        <p class="text-xs opacity-80 mt-1">Please ask the system administrator to login and perform the mandatory update.</p>
-                        <a href="../login.php" class="mt-4 inline-block font-black text-orange-600 hover:text-orange-700 underline uppercase tracking-widest text-[10px]">Back to Login Screen</a>
+                <button id="btnPerformUpdate" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl hover:shadow-indigo-500/30 active:scale-[0.98] transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative flex items-center justify-center gap-3">
+                        <span class="uppercase tracking-[0.2em] text-lg">Update & Unlock Now</span>
+                        <i class="fas fa-bolt text-xs animate-pulse"></i>
                     </div>
-                <?php endif; ?>
+                </button>
+                <p class="mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">
+                    Estimated time: 30-60 seconds depending on internet speed
+                </p>
             </div>
 
             <!-- Progress Section (Hidden initially) -->
@@ -221,8 +212,8 @@ $settings = $db->getSchoolSettings();
                             localStorage.removeItem('sys_update_available');
                             localStorage.removeItem('sys_last_update_check');
 
-                            // Force redirect to index.php
-                            window.location.replace("../index.php");
+                            // Force redirect to login page with success flag
+                            window.location.replace("../login.php?update=success");
                         }, 1000);
                     }, 1500);
                 } else {

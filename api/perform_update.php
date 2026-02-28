@@ -11,8 +11,8 @@ $debug = [];
 $output = [];
 
 try {
-    // Only Admin can perform this action
-    if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'admin') {
+    // Any authenticated user can perform this mandatory security patch when locked
+    if (!isset($_SESSION['user'])) {
         throw new Exception('Unauthorized access');
     }
 

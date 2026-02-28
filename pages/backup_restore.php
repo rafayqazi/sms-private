@@ -101,6 +101,9 @@ function renderAuthModal($id, $title, $description, $colorClass, $btnText, $acti
     <div id='$id' class='modal-overlay fixed inset-0 bg-black/60 backdrop-blur-md z-[200] hidden items-center justify-center p-4'>
         <div class='bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 transform scale-95 opacity-0 modal-content'>
             <div class='bg-$colorClass p-10 text-white text-center rounded-b-[2.5rem] relative z-10'>
+                <button onclick=\"closeModal('$id')\" class='absolute top-6 right-6 text-white/50 hover:text-white transition-colors'>
+                    <i class='fas fa-times text-xl'></i>
+                </button>
                 <h3 class='text-2xl font-black'>$title</h3>
                 <p class='text-white/80 text-sm mt-2 font-bold uppercase tracking-tighter'>$description</p>
             </div>
@@ -187,21 +190,34 @@ document.addEventListener('DOMContentLoaded', () => {
 function openModal(id) {
     const modal = document.getElementById(id);
     const content = modal.querySelector('.modal-content');
+    const passInput = document.getElementById(id + '_pass');
+    const errorDiv = document.getElementById(id + '_error');
+    
+    if (passInput) passInput.value = '';
+    if (errorDiv) errorDiv.classList.add('hidden');
+    
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     setTimeout(() => {
         content.classList.remove('scale-95', 'opacity-0');
         content.classList.add('scale-100', 'opacity-100');
+        if (passInput) passInput.focus();
     }, 10);
 }
 
 function closeModal(id) {
     const modal = document.getElementById(id);
     const content = modal.querySelector('.modal-content');
+    const passInput = document.getElementById(id + '_pass');
+    const errorDiv = document.getElementById(id + '_error');
+    
+    content.classList.remove('scale-100', 'opacity-100');
     content.classList.add('scale-95', 'opacity-0');
     setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        if (passInput) passInput.value = '';
+        if (errorDiv) errorDiv.classList.add('hidden');
     }, 300);
 }
 

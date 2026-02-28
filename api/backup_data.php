@@ -1,29 +1,21 @@
 <?php
-session_start();
-
-$username = $_SESSION['username'] ?? '';
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['password']) || !$username) {
-    header('Content-Type: application/json');
-    die(json_encode(['error' => 'Invalid request']));
-}
-
+require_once __DIR__ . '/../includes/auth_session.php';
 require_once __DIR__ . '/../includes/db.php';
 $db = new Database();
-$password = $_POST['password'];
+$password = trim($_POST['password'] ?? '');
+$username = trim($_SESSION['username'] ?? '');
 
 if (!$db->verifyAdmin($username, $password)) {
-    $userRole = $db->getUserRoleByUsername($username);
-    if (!($userRole && $userRole['role'] === 'Admin' && password_verify($password, $userRole['password_hash']))) {
-        header('Content-Type: application/json');
-        die(json_encode(['error' => 'Invalid password']));
-    }
+    ob_end_clean();
+    header('Content-Type: application/json');
+    die(json_encode(['error' => 'Invalid password']));
 }
 
 // Get school name
 $settings = $db->getSchoolSettings();
 $schoolName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $settings['school_name'] ?? 'School');
 $zipFilename = $schoolName . '_Backup_' . date('Y-m-d_H-i-s') . '.zip';
-$tempZip = __DIR__ . '/../temp_backup_' . uniqid() . '.zip';
+$tempZip = __DIR__ . '/../data/temp_backup_' . uniqid() . '.zip';
 
 // Create ZIP
 $zip = new ZipArchive();
@@ -94,6 +86,9 @@ if ($fileSize == 0) {
     header('Content-Type: application/json');
     die(json_encode(['error' => 'ZIP is empty. Files added: data=' . $dataCount . ', uploads=' . $uploadsCount]));
 }
+
+// Clear any accidental output
+ob_end_clean();
 
 // Send the file
 header('Content-Type: application/octet-stream');
