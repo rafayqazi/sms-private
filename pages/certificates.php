@@ -44,7 +44,7 @@ if ($_SESSION['user_role'] === 'Editor' && !in_array('certificates', $allowed_pa
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Transfer Certificate</h3>
             <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-grow">Generate Transfer Certificate for students moving to another branch or school.</p>
-            <a href="#" class="w-full py-2 px-4 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 rounded-lg font-semibold hover:bg-green-600 hover:text-white dark:hover:bg-green-600 transition-colors">
+            <a href="certificate_transfer.php" class="w-full py-2 px-4 bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 rounded-lg font-semibold hover:bg-green-600 hover:text-white dark:hover:bg-green-600 transition-colors">
                 Generate <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
