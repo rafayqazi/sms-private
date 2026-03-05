@@ -34,6 +34,10 @@ foreach ($allSubjects as $sub) {
         $attendanceMap[$stuId][$sub] = $status;
     }
 }
+
+$logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+    ? '../' . $settings['school_logo'] 
+    : '../assets/branding/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -82,13 +86,13 @@ foreach ($allSubjects as $sub) {
     <div class="sheet-container mx-auto shadow-xl print:shadow-none bg-white p-4 print:p-2 relative z-10">
         <!-- Watermark -->
         <div class="absolute inset-0 flex items-center justify-center z-0 pointer-events-none overflow-hidden">
-            <img src="../GBPS_LOGO.png" alt="Watermark" class="w-[500px] h-[500px] opacity-[0.1] object-contain">
+            <img src="<?= $logoPath ?>" alt="Watermark" class="w-[500px] h-[500px] opacity-[0.1] object-contain">
         </div>
 
         <!-- Header -->
         <div class="text-center border-b-2 border-gray-800 pb-2 mb-2 relative z-20">
             <div class="flex items-center justify-between px-8">
-                <img src="../GBPS_LOGO.png?v=<?php echo time(); ?>_2" alt="Logo" class="h-32 w-32 object-contain">
+                <img src="<?= $logoPath ?>?v=<?php echo time(); ?>_2" alt="Logo" class="h-32 w-32 object-contain">
                 <div class="flex-1">
                     <h1 class="text-2xl font-bold uppercase"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
                     <p class="text-sm font-mono">SEMIS CODE: <?php echo htmlspecialchars($settings['semis_code']); ?> | <?php echo htmlspecialchars($settings['address_tagline']); ?></p>

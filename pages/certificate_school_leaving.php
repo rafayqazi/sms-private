@@ -23,6 +23,9 @@ if ($search) {
         return (stripos($student['student_name'] ?? '', $term) !== false) || 
                (stripos($student['gr_no'] ?? '', $term) !== false);
     });
+} else {
+    // Default: Show all alumni (limited to 50 for performance)
+    $initialData = array_slice($alumni, 0, 50);
 }
 ?>
 
@@ -79,11 +82,11 @@ if ($search) {
         </div>
 
         <!-- Results Table Container -->
-        <div id="results-container" class="<?php echo $search ? '' : 'hidden'; ?>">
+        <div id="results-container">
             <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-gray-700">
                 <div class="p-6 border-b border-slate-50 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-900/50 flex justify-between items-center">
                     <h3 id="results-title" class="text-sm font-black text-slate-700 dark:text-gray-200 uppercase tracking-widest">
-                        Search Results <?php echo $search ? '('.count($initialData).')' : ''; ?>
+                        <?php echo $search ? 'Search Results ('.count($initialData).')' : 'Alumni Students ('.count($initialData).')'; ?>
                     </h3>
                 </div>
 
@@ -102,12 +105,13 @@ if ($search) {
                                 <th class="p-6 text-left">GR Number</th>
                                 <th class="p-6 text-left">Student Information</th>
                                 <th class="p-6 text-left">Father Name</th>
+                                <th class="p-6 text-left">Leaving Class</th>
                                 <th class="p-6 text-left">Graduation</th>
                                 <th class="p-6 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="searchResultsBody" class="divide-y divide-slate-50 dark:divide-gray-700">
-                            <?php if ($search && !empty($initialData)): ?>
+                            <?php if (!empty($initialData)): ?>
                                 <?php foreach ($initialData as $student): ?>
                                 <tr class="hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors">
                                     <td class="p-6">
@@ -121,8 +125,13 @@ if ($search) {
                                         <?php echo htmlspecialchars($student['father_name'] ?? 'N/A'); ?>
                                     </td>
                                     <td class="p-6">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 uppercase tracking-tighter">
+                                            <?php echo htmlspecialchars($student['last_class'] ?? 'N/A'); ?>
+                                        </span>
+                                    </td>
+                                    <td class="p-6">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 uppercase tracking-tighter">
-                                            Class <?php echo htmlspecialchars($student['graduation_year'] ?? 'N/A'); ?>
+                                            <?php echo htmlspecialchars($student['graduation_year'] ?? 'N/A'); ?>
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
@@ -184,12 +193,18 @@ if ($search) {
         const tableContainer = document.getElementById('table-container');
         let debounceTimer;
 
+        const initialResultsHTML = searchResultsBody.innerHTML;
+        const initialResultsTitle = resultsTitle.textContent;
+
         searchInput.addEventListener('input', function() {
             const query = this.value.trim();
             clearTimeout(debounceTimer);
 
             if (query.length < 1) {
-                resultsContainer.classList.add('hidden');
+                searchResultsBody.innerHTML = initialResultsHTML;
+                resultsTitle.textContent = initialResultsTitle;
+                noResults.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
                 return;
             }
 
@@ -222,8 +237,13 @@ if ($search) {
                                         ${item.father_name}
                                     </td>
                                     <td class="p-6">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 uppercase tracking-tighter">
+                                            ${item.last_class}
+                                        </span>
+                                    </td>
+                                    <td class="p-6">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 uppercase tracking-tighter">
-                                            Class ${item.graduation_year}
+                                            ${item.graduation_year}
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">

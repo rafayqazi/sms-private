@@ -47,7 +47,7 @@ $schoolSettings = $db->getSchoolSettings();
             <p class="text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
                 Securely export all your system data into a compressed ZIP file for safekeeping.
             </p>
-            <button onclick="openModal('backupModal')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-black shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-3">
+            <button id="backupBtn" onclick="runBackup()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-2xl font-black shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-3">
                 <i class="fas fa-download"></i> Download Backup
             </button>
         </div>
@@ -126,7 +126,7 @@ function renderAuthModal($id, $title, $description, $colorClass, $btnText, $acti
 ?>
 
 <?php 
-renderAuthModal('backupModal', 'Database Backup', 'System will prepare ZIP file', 'emerald-600', 'Start Backup', 'runBackup()');
+// renderAuthModal('backupModal', 'Database Backup', 'System will prepare ZIP file', 'emerald-600', 'Start Backup', 'runBackup()');
 renderAuthModal('restoreModal', 'Restore System', 'Overwriting with backup data', 'orange-600', 'Confirm Restore', 'runRestore()');
 renderAuthModal('resetModal', 'Factory Reset', 'Deleting every file on system', 'red-600', 'Yes, Format Everything', 'runReset()');
 ?>
@@ -257,76 +257,60 @@ async function verifyPass(pass, btnId, errorId) {
 }
 
 async function runBackup() {
-    const pass = document.getElementById('backupModal_pass').value;
-    const btn = document.getElementById('backupModal_btn');
-    const errDiv = document.getElementById('backupModal_error');
-    const errMsg = document.getElementById('backupModal_error_msg');
+    const btn = document.getElementById('backupBtn');
+    const originalContent = btn.innerHTML;
     
-    if (await verifyPass(pass, 'backupModal_btn', 'backupModal_error')) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating ZIP...';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating ZIP...';
+    
+    try {
+        const response = await fetch('../api/backup_data.php', {
+            method: 'POST'
+        });
         
-        try {
-            const formData = new FormData();
-            formData.append('password', pass);
-            
-            const response = await fetch('../api/backup_data.php', {
-                method: 'POST',
-                body: formData
-            });
-            
-            // Check content type - if it's JSON, it's an error message
-            const contentType = response.headers.get('Content-Type');
-            if (contentType && contentType.includes('application/json')) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Unknown server error');
-            }
-            
-            if (!response.ok) {
-                // Try to get error text
-                const errorText = await response.text();
-                throw new Error('Server Error: ' + errorText);
-            }
-            
-            // Get the blob from response
-            const blob = await response.blob();
-            
-            // Check if blob has content
-            if (blob.size === 0) {
-                throw new Error('Downloaded file is empty (0 bytes)');
-            }
-            
-            // Get filename from Content-Disposition header if available
-            const disposition = response.headers.get('Content-Disposition');
-            let filename = 'school_backup.zip';
-            if (disposition && disposition.includes('filename=')) {
-                filename = disposition.split('filename=')[1].replace(/"/g, '');
-            }
-            
-            // Create download link and trigger it
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
-            setTimeout(() => {
-                closeModal('backupModal');
-                btn.disabled = false;
-                btn.innerHTML = 'Start Backup';
-            }, 1500);
-            
-        } catch (error) {
-            errMsg.innerText = error.message;
-            errDiv.classList.remove('hidden');
-            btn.disabled = false;
-            btn.innerHTML = 'Start Backup';
+        // Check content type - if it's JSON, it's an error message
+        const contentType = response.headers.get('Content-Type');
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Unknown server error');
         }
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error('Server Error: ' + errorText);
+        }
+        
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error('Downloaded file is empty (0 bytes)');
+        }
+        
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = 'school_backup.zip';
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/"/g, '');
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        btn.innerHTML = '<i class="fas fa-check"></i> Downloaded!';
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }, 2000);
+        
+    } catch (error) {
+        alert('Backup Failed: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     }
 }
 

@@ -285,199 +285,213 @@ if (count($studentsToPrint) > 1) {
             const certificates = document.querySelectorAll('.cert-page');
             const totalCerts = certificates.length;
             
+            let filename = '';
             if (totalCerts === 1) {
-                // Single certificate
-                const element = certificates[0];
-                const studentName = element.getAttribute('data-student-name') || 'Student';
-                const grNo = element.getAttribute('data-gr-no') || '000';
-                const passingYear = element.getAttribute('data-passing-year') || '';
-                
-                // Format: 'Name: XYZ , GR: XYZ , Year: XYZ , SLC'
-                const filename = `Name: ${studentName} , GR: ${grNo} , Year: ${passingYear} , SLC.pdf`;
-                
-                const opt = {
-                    margin: 0,
-                    filename: filename,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        letterRendering: true,
-                        scrollX: 0,
-                        scrollY: 0
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                };
-                
-                html2pdf().set(opt).from(element).save().then(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-                });
+                const firstCert = certificates[0];
+                const studentName = firstCert.getAttribute('data-student-name') || 'Student';
+                const grNo = firstCert.getAttribute('data-gr-no') || '000';
+                const passingYear = firstCert.getAttribute('data-passing-year') || '';
+                filename = `Name: ${studentName} , GR: ${grNo} , Year: ${passingYear} , SLC.pdf`;
             } else {
-                // Multiple certificates
                 const year = new URLSearchParams(window.location.search).get('year') || 'Bulk';
-                const filename = `School_Leaving_Certificates_${year}.pdf`;
-                
-                const opt = {
-                    margin: 0,
-                    filename: filename,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-                };
-                
-                const container = document.createElement('div');
+                filename = `School_Leaving_Certificates_${year}.pdf`;
+            }
+
+            const opt = {
+                margin: 0,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // For bulk downloads, we process each page individually to avoid canvas size limits
+            // Temporarily remove margins and page-breaks for clean capture
+            if (totalCerts > 1) {
                 certificates.forEach(cert => {
-                    container.appendChild(cert.cloneNode(true));
-                });
-                
-                html2pdf().set(opt).from(container).save().then(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+                    cert.style.margin = '0';
+                    cert.style.marginBottom = '0';
+                    cert.classList.remove('page-break'); // Prevent CSS from triggering extra breaks during individual capture
                 });
             }
+
+            let worker = html2pdf().set(opt).from(certificates[0]).toPdf();
+            
+            for (let i = 1; i < totalCerts; i++) {
+                (function(index) {
+                    worker = worker.from(certificates[index]).toContainer().toCanvas().toPdf();
+                })(i);
+            }
+            
+            worker.save().then(() => {
+                // Restore styles for the web view
+                if (totalCerts > 1) {
+                    certificates.forEach((cert, idx) => {
+                        cert.style.margin = '0 auto 20px';
+                        if (idx < totalCerts - 1) {
+                            cert.classList.add('page-break');
+                        }
+                    });
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+            }).catch(err => {
+                console.error('PDF Generation Error:', err);
+                alert('Failed to generate bulk PDF. Try printing smaller batches.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+            });
         });
     </script>
 
-    <?php foreach ($studentsToPrint as $index => $student): 
-        $gradYear = $student['graduation_year'] ?? (isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : '');
-    ?>
-    <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>" 
-         data-student-name="<?php echo htmlspecialchars($student['student_name']); ?>"
-         data-gr-no="<?php echo htmlspecialchars($student['gr_no']); ?>"
-         data-passing-year="<?php echo htmlspecialchars($gradYear); ?>">
-        <div class="border-outer">
-            <div class="border-inner">
-                <img src="../assets/branding/logo.png" class="watermark" alt="">
-                
-                <div class="content">
-                    <div class="header">
-                        <img src="../assets/branding/logo.png" class="logo" alt="Logo">
-                        <div class="school-info">
-                            <?php 
-                                $schoolName = strtoupper(htmlspecialchars($settings['school_name'] ?? 'AQSA PUBLIC HIGHER SECONDARY SCHOOL'));
-                                $nameParts = explode(' ', $schoolName, 2);
-                                $firstWord = $nameParts[0];
-                                $restOfName = isset($nameParts[1]) ? $nameParts[1] : '';
-                            ?>
-                            <div class="school-name-wrapper">
-                                <div class="school-name-large"><?php echo $firstWord; ?></div>
-                                <?php if ($restOfName): ?>
-                                    <div class="school-name-small"><?php echo $restOfName; ?></div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="school-location"><?php echo strtoupper(htmlspecialchars($settings['address'] ?? 'TANDO ALLAHYAR')); ?></div>
-                        </div>
-                    </div>
+    <div id="certificates-wrapper">
+        <?php foreach ($studentsToPrint as $index => $student): 
+            $gradYear = $student['graduation_year'] ?? (isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : '');
+            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                ? '../' . $settings['school_logo'] 
+                : '../assets/branding/logo.png';
+        ?>
+        <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>" 
+             data-student-name="<?php echo htmlspecialchars($student['student_name']); ?>"
+             data-gr-no="<?php echo htmlspecialchars(preg_replace('/[^0-9]/', '', $student['gr_no'])); ?>"
+             data-passing-year="<?php echo htmlspecialchars($gradYear); ?>">
+            <div class="border-outer">
+                <div class="border-inner">
+                    <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark" alt="">
                     
-                    <div class="cert-title">SCHOOL LEAVING CERTIFICATE</div>
-                    
-                    <div class="fields">
-                        <div class="field-row">
-                            <span class="field-label">G.R.No.</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['gr_no']); ?></div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Name of Pupil</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['student_name']); ?></div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Father's Name</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['father_name']); ?></div>
-                        </div>
-                        
-                        <div class="field-split">
-                            <div class="field-row">
-                                <span class="field-label">Religion</span>
-                                <div class="field-value"><?php echo htmlspecialchars($student['religion'] ?? 'Islam'); ?></div>
-                            </div>
-                            <div class="field-row">
-                                <span class="field-label">Race & Caste</span>
-                                <div class="field-value"><?php echo htmlspecialchars($student['caste'] ?? ''); ?></div>
+                    <div class="content">
+                        <div class="header">
+                            <img src="<?= $logoPath ?>?v=<?= time() ?>" class="logo" alt="Logo">
+                            <div class="school-info">
+                                <?php 
+                                    $schoolName = strtoupper(htmlspecialchars($settings['school_name'] ?? 'AQSA PUBLIC HIGHER SECONDARY SCHOOL'));
+                                    $nameParts = explode(' ', $schoolName, 2);
+                                    $firstWord = $nameParts[0];
+                                    $restOfName = isset($nameParts[1]) ? $nameParts[1] : '';
+                                ?>
+                                <div class="school-name-wrapper">
+                                    <div class="school-name-large"><?php echo $firstWord; ?></div>
+                                    <?php if ($restOfName): ?>
+                                        <div class="school-name-small"><?php echo $restOfName; ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="school-location"><?php echo strtoupper(htmlspecialchars($settings['address'] ?? 'TANDO ALLAHYAR')); ?></div>
                             </div>
                         </div>
                         
-                        <div class="field-row">
-                            <span class="field-label">Date of Birth</span>
-                            <div class="field-value"><?php echo !empty($student['date_of_birth']) ? date('d-m-Y', strtotime($student['date_of_birth'])) : ''; ?></div>
-                        </div>
+                        <div class="cert-title">SCHOOL LEAVING CERTIFICATE</div>
                         
-                        <div class="field-row">
-                            <span class="field-label">Place of Birth</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['place_of_birth'] ?? 'Tando Allahyar'); ?></div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Last School Attended</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['previous_school'] ?? 'N/A'); ?></div>
-                        </div>
-                        
-                        <div class="field-split">
+                        <div class="fields">
                             <div class="field-row">
-                                <span class="field-label">Date of Admission</span>
-                                <div class="field-value"><?php echo !empty($student['admission_date']) ? date('d-m-Y', strtotime($student['admission_date'])) : ''; ?></div>
+                                <span class="field-label">G.R.No.</span>
+                                <div class="field-value"><?php echo htmlspecialchars(preg_replace('/[^0-9]/', '', $student['gr_no'])); ?></div>
                             </div>
+                            
                             <div class="field-row">
-                                <span class="field-label">Class at Admission</span>
-                                <div class="field-value"><?php echo htmlspecialchars($student['admission_class'] ?? 'KG'); ?></div>
+                                <span class="field-label">Name of Pupil</span>
+                                <div class="field-value"><?php echo htmlspecialchars($student['student_name']); ?></div>
                             </div>
-                        </div>
-                        
-                        <div class="field-split">
+                            
                             <div class="field-row">
-                                <span class="field-label">Progress</span>
-                                <div class="field-value">Satisfactory</div>
+                                <span class="field-label">Father's Name</span>
+                                <div class="field-value"><?php echo htmlspecialchars($student['father_name']); ?></div>
                             </div>
+                            
+                            <div class="field-split">
+                                <div class="field-row">
+                                    <span class="field-label">Religion</span>
+                                    <div class="field-value"><?php echo htmlspecialchars($student['religion'] ?? 'Islam'); ?></div>
+                                </div>
+                                <div class="field-row">
+                                    <span class="field-label">Race & Caste</span>
+                                    <div class="field-value"><?php echo htmlspecialchars($student['caste'] ?? ''); ?></div>
+                                </div>
+                            </div>
+                            
                             <div class="field-row">
-                                <span class="field-label">Conduct</span>
-                                <div class="field-value">Good</div>
+                                <span class="field-label">Date of Birth</span>
+                                <div class="field-value"><?php echo !empty($student['date_of_birth']) ? date('d-m-Y', strtotime($student['date_of_birth'])) : ''; ?></div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Place of Birth</span>
+                                <div class="field-value"><?php echo htmlspecialchars($student['place_of_birth'] ?? 'Tando Allahyar'); ?></div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Last School Attended</span>
+                                <div class="field-value"><?php echo htmlspecialchars($student['previous_school'] ?? 'N/A'); ?></div>
+                            </div>
+                            
+                            <div class="field-split">
+                                <div class="field-row">
+                                    <span class="field-label">Date of Admission</span>
+                                    <div class="field-value"><?php echo !empty($student['admission_date']) ? date('d-m-Y', strtotime($student['admission_date'])) : ''; ?></div>
+                                </div>
+                                <div class="field-row">
+                                    <span class="field-label">Class at Admission</span>
+                                    <div class="field-value"><?php echo htmlspecialchars($student['admission_class'] ?? 'KG'); ?></div>
+                                </div>
+                            </div>
+                            
+                            <div class="field-split">
+                                <div class="field-row">
+                                    <span class="field-label">Progress</span>
+                                    <div class="field-value">Satisfactory</div>
+                                </div>
+                                <div class="field-row">
+                                    <span class="field-label">Conduct</span>
+                                    <div class="field-value">Good</div>
+                                </div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Date of Leaving the School</span>
+                                <div class="field-value"><?php echo !empty($student['updated_at']) ? date('d-m-Y', strtotime($student['updated_at'])) : date('d-m-Y'); ?></div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Class at the time of Leaving</span>
+                                <div class="field-value"><?php echo htmlspecialchars($student['last_class'] ?? $student['current_class']); ?></div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Reason</span>
+                                <div class="field-value">Passed / Parents Request</div>
+                            </div>
+                            
+                            <div class="field-row">
+                                <span class="field-label">Remarks</span>
+                                <div class="field-value">He/She has paid all school dues.</div>
+                            </div>
+                            
+                            <div class="footer-text">
+                                Certified that the above information is in accordance with the school General Register.
                             </div>
                         </div>
                         
-                        <div class="field-row">
-                            <span class="field-label">Date of Leaving the School</span>
-                            <div class="field-value"><?php echo !empty($student['updated_at']) ? date('d-m-Y', strtotime($student['updated_at'])) : date('d-m-Y'); ?></div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Class at the time of Leaving</span>
-                            <div class="field-value"><?php echo htmlspecialchars($student['last_class'] ?? $student['current_class']); ?></div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Reason</span>
-                            <div class="field-value">Passed / Parents Request</div>
-                        </div>
-                        
-                        <div class="field-row">
-                            <span class="field-label">Remarks</span>
-                            <div class="field-value">He/She has paid all school dues.</div>
-                        </div>
-                        
-                        <div class="footer-text">
-                            Certified that the above information is in accordance with the school General Register.
-                        </div>
-                    </div>
-                    
-                    <div class="signatures">
-                        <div class="signature-box">
-                            <div class="signature-line"></div>
-                            <div class="signature-label">G.R Incharge</div>
-                        </div>
-                        <div class="signature-box">
-                            <div class="signature-line"></div>
-                            <div class="signature-label">PRINCIPAL</div>
+                        <div class="signatures">
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">G.R Incharge</div>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div class="signature-label">PRINCIPAL</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
 
 </body>
 </html>

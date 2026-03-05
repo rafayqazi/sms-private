@@ -98,6 +98,36 @@ $classes = $db->getClassNames();
     </div>
 </div>
 
+<!-- Alumni Year Modal -->
+<div id="alumniYearModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="alumniYearModalContent">
+        <div class="bg-gradient-to-r from-emerald-600 to-green-700 p-8 text-white text-center pb-12">
+            <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-inner">
+                <i class="fas fa-user-graduate text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-black tracking-tight">Mark as Alumni</h3>
+            <p class="text-green-100 text-sm font-medium opacity-90 mt-2">Enter the graduation year for these students</p>
+        </div>
+        
+        <div class="p-8 -mt-8">
+            <div class="bg-white rounded-2xl p-2 shadow-xl border border-gray-100 mb-6">
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 pl-4 pt-2">Graduation Year</label>
+                <input type="number" id="graduationYearInput" value="<?php echo date('Y'); ?>" class="w-full px-4 py-3 bg-transparent text-gray-800 font-bold text-xl outline-none" placeholder="YYYY">
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <button id="confirmAlumniBtn" class="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 active:scale-95 flex items-center justify-center gap-3">
+                    <span class="uppercase tracking-widest">Mark Graduated</span>
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button onclick="closeAlumniYearModal()" class="w-full py-4 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-xs">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Charts Section -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
@@ -333,6 +363,11 @@ $classes = $db->getClassNames();
                 }
 
                 if (action === 'delete' || action === 'mark_alumni' || action === 'mark_active' || action === 'mark_repeater' || action === 'unmark_repeater') {
+                    if (action === 'mark_alumni') {
+                        openAlumniYearModal(selectedIds);
+                        return;
+                    }
+
                     let confirmTitle = 'Confirm Action';
                     let confirmMsg = `Are you sure you want to apply this action to ${selectedIds.length} student(s)?`;
                     
@@ -345,30 +380,7 @@ $classes = $db->getClassNames();
                         confirmTitle,
                         confirmMsg,
                         function() {
-                            fetch('../api/bulk_action.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    type: 'student',
-                                    action: action,
-                                    ids: selectedIds
-                                })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.status === 'success') {
-                                    showModal('success', 'Success', data.message);
-                                    setTimeout(() => location.reload(), 1500);
-                                } else {
-                                    showModal('error', 'Error', data.message);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                showModal('error', 'Error', 'An error occurred while processing your request.');
-                            });
+                            executeBulkAction(action, selectedIds);
                         }
                     );
                 } else if (action === 'generate_ids') {
@@ -385,6 +397,90 @@ $classes = $db->getClassNames();
                 }
             });
         }
+
+        // Helper function for bulk action
+        function executeBulkAction(action, ids, extraData = {}) {
+            const payload = {
+                type: 'student',
+                action: action,
+                ids: ids,
+                ...extraData
+            };
+
+            fetch('../api/bulk_action.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showModal('success', 'Success', data.message);
+                    setTimeout(() => {
+                        if (action === 'mark_alumni') {
+                            window.location.href = 'alumni.php';
+                        } else {
+                            location.reload();
+                        }
+                    }, 1500);
+                } else {
+                    showModal('error', 'Error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showModal('error', 'Error', 'An error occurred while processing your request.');
+            });
+        }
+
+        // Alumni Year Modal Functions
+        window.openAlumniYearModal = function(ids) {
+            const modal = document.getElementById('alumniYearModal');
+            const content = document.getElementById('alumniYearModalContent');
+            const confirmBtn = document.getElementById('confirmAlumniBtn');
+            const yearInput = document.getElementById('graduationYearInput');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Handle confirmation
+            confirmBtn.onclick = function() {
+                const year = yearInput.value;
+                if (!year) {
+                    alert('Please enter a graduation year');
+                    return;
+                }
+                
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
+                
+                executeBulkAction('mark_alumni', ids, { graduation_year: year });
+            };
+        };
+
+        window.closeAlumniYearModal = function() {
+            const modal = document.getElementById('alumniYearModal');
+            const content = document.getElementById('alumniYearModalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Reset button if needed (though reload happens on success)
+                const confirmBtn = document.getElementById('confirmAlumniBtn');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<span class="uppercase tracking-widest">Mark Graduated</span><i class="fas fa-check-circle"></i>';
+            }, 300);
+        };
 
         // Bulk Edit Modal Functions
         window.openBulkEditModal = function() {

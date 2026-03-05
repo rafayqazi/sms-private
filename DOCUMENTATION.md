@@ -123,6 +123,7 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
   - Comprehensive form with image preview.
   - Parents auto-fill based on Father's CNIC.
   - Drag-and-drop style image uploads.
+- **Bulk Admission (`pages/bulk_admission.php`)**: Import multiple student records via CSV.
 - **ID Cards (`pages/print_id_card.php`)**:
   - Enter GR Number to generate a standard credit-card sized ID.
   - Includes Photo, Details, and SEMIS Code.
@@ -131,6 +132,9 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
   - Bulk promote students to the next class.
   - Logic to handle "Pass", "Fail" (Repeater), and "Double Promotion".
   - Auto-moves Class 5 students to **Alumni**.
+- **Alumni Network (`pages/alumni.php`)**:
+  - Track graduated students.
+  - **Bulk Restore**: Move alumni back to active student status if needed.
 
 ### 3. Examination System
 - **Exam Slips (`pages/exam_slips.php`)**:
@@ -144,68 +148,81 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
   - Bulk print result cards for an entire class.
   - formatted A4 layout (2 per page or 1 per page).
 
-### 4. Data Security & Backup
-- **Backup (`api/backup_data.php`)**:
-  - Downloads the entire `data/` directory and `uploads/` as a ZIP file.
-  - **Security**: Requires Admin Password validation before download.
-- **Restore**: Manual restoration via replacing the `data` folder (currently manual).
+### 4. Fee Management (`pages/fees.php`)
+- **Fee Structure**: Set Admission, Monthly, and Exam fees per class.
+- **Collection**: Record payments with auto-generated receipts (`pages/print_receipt.php`).
+- **Defaulters Tracker**: Real-time list of students with pending dues for the current month.
+- **History**: Detailed collection logs with filtering by month and student.
 
-### 5. Attendance
-- **Daily Student Marking (`pages/attendance.php`)**: Mark P/A/L for whole class.
-- **Teacher Attendance (`pages/teacher_attendance.php`)**: Dedicated interface for staff attendance with "Mark All" capabilities.
-- **Reporting (`pages/teacher_attendance_view.php`)**: 
-  - Staff-wise performance summaries.
-  - Percentage-based analysis.
-  - Individual history drill-downs for specific staff members.
+### 5. Book Bank (`pages/book_bank.php`)
+- **Textbook Inventory**: Track government-supplied free textbooks.
+- **Issuance & Returns**: Manage book distribution to students and teachers.
+- **Bulk Issue**: One-click issuance for an entire class.
+- **Damaged Stock**: Register for books that are no longer usable.
+
+### 6. Inventory & Assets (`pages/inventory.php`)
+- **Stock Tracking**: Categorized list of school assets (Furniture, Electronics, etc.).
+- **Dead Stock Register**: Dedicated module for disposing of broken or obsolete items with reasons and remarks.
+- **Categories Management**: Organize items for better auditing.
+
+### 7. User Roles & RBAC (`pages/assign_roles.php`)
+- **Multi-Role Access**:
+  - **Admin**: Full system access including backups and resets.
+  - **Editor (Teacher)**: Access limited to assigned classes for attendance and results.
+- **Credential Management**: Assign usernames and passwords to staff members.
+
+### 8. Communication & Support
+- **Messaging (`pages/messages.php`)**: Internal chat system between Teachers (Editors) and the Admin.
+- **Licensing (`pages/license.php`)**: Legal ownership and developer information.
+- **Update System**: Automated check for software updates and one-click installation.
 
 ---
 
 ## API Documentation
 
-### 1. Get Parent Info
-- **Endpoint**: `GET /api/get_parent.php?cnic=XXXXX`
-- **Use**: Autofills father's name and contact if the parent already exists in the system.
+### 1. Student & Parent Data
+- `GET /api/get_parent.php?cnic=XXXXX`: Autofills parent info.
+- `GET /api/get_students.php`: Search and retrieve student records.
 
-### 2. Promote Student
-- **Endpoint**: `POST /api/promote_student.php`
-- **Payload**: `{ student_ids: [], action: 'promote' }`
-- **Logic**: Updates `current_class` and `is_repeater` flags.
+### 2. Fees & Collections
+- `POST /api/collect_fee.php`: Process fee payment.
+- `GET /api/get_fee_status.php?gr_no=XXX`: Check individual dues.
+- `GET /api/get_defaulters.php?month=YYYY-MM`: Listing pending payments.
 
-### 3. Backup Data
-- **Endpoint**: `POST /api/backup_data.php`
-- **Payload**: `{ password: 'admin_password' }`
-- **Response**: ZIP file download or 403 Forbidden.
+### 3. System & Admin
+- `POST /api/backup_data.php`: Manual backup generation.
+- `GET /api/backup_data_auto.php`: Cron-ready automated backup script.
+- `POST /api/verify_admin_password.php`: Secure gate for critical actions.
+- `POST /api/assign_role.php`: Update user permissions.
 
 ---
 
 ## Installation Guide
 
-1. **Setup Server**: Install XAMPP or any PHP environment.
+1. **Setup Server**: Install XAMPP or any PHP environment (PHP 7.4+ recommended).
 2. **Clone Project**: Place files in `htdocs` or `www`.
 3. **Permissions**: Ensure `data/` and `uploads/` folders are writable (777 or Read/Write).
-4. **Access**: Navigate to `http://localhost/school-management-system`.
+4. **Access**: Navigate to `http://localhost/sms-aqsa`.
 
 ---
 
 ## Developer Guide
 
-### Adding a New Subject
-To add a new subject to the Result system:
-1. Update `pages/results.php` HTML form.
-2. Update `includes/db.php` -> `addResult()` method to handle the new field.
-3. Update `pages/print_result.php` to display the new column.
+### Role-Based Access Implementation
+Use `canAccessPage($filename)` defined in `includes/auth_session.php` to protect pages.
+Editors' access is governed by the `assigned_classes` array in their session.
 
-### Customizing ID Card
-Edit `pages/generate_id_card.php`:
-- **CSS `@page`**: Controls the PDF page size (currently ID-1).
-- **Layout**: Tailwind classes control the design. Update HTML structure here.
+### Adding a New Module
+1. Create the UI in `pages/`.
+2. Implement backend logic in `api/` or `includes/db.php`.
+3. Register the page in `pages/assign_roles.php` if it needs specific permission gating.
 
 ---
 
 ## Security & Privacy
 - **Authentication**: Session-based login for Admin and Teachers.
-- **Passwords**: Hashed storage (if implemented) or hardcoded for specific admin access.
-- **Access Control**: Critical features (Backup, Reset) are protected by secondary password verification.
+- **Data Protection**: Critical features (Backup, Reset) are protected by secondary password verification.
+- **CSRF Protection**: All POST forms include CSRF tokens for security.
 
 ---
-*Last Updated: January 08, 2026*
+*Last Updated: February 27, 2026*

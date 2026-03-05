@@ -119,7 +119,7 @@ rsort($years);
                     <th class="p-4 w-16 text-center">S#</th>
                     <th class="p-4">GR No</th>
                     <th class="p-4">Student Information</th>
-                    <th class="p-4 text-center">Last Class</th>
+                    <th class="p-4 text-center">Leaving Class</th>
                     <th class="p-4 text-center">Graduated</th>
                     <th class="p-4">Admission Date</th>
                     <th class="p-4 text-center">Actions</th>
@@ -166,7 +166,7 @@ rsort($years);
                     </td>
                     <td class="p-4 text-center">
                         <span class="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">
-                           Class: <?php echo htmlspecialchars($lastClass); ?>
+                           <?php echo htmlspecialchars($lastClass); ?>
                         </span>
                     </td>
                     <td class="p-4 text-center">

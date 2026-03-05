@@ -135,15 +135,19 @@ usort($students, function($a, $b) {
 
     <!-- Slips Wrapper -->
     <div id="pdf-content">
-        <?php foreach ($students as $student): ?>
+        <?php foreach ($students as $student): 
+            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                ? '../' . $settings['school_logo'] 
+                : '../assets/branding/logo.png';
+        ?>
         <div class="page-container">
             <div class="slip-border">
                 <!-- Watermark -->
-                <img src="../assets/branding/logo.png" class="watermark">
+                <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark">
 
                 <!-- Header -->
                 <div class="flex items-center gap-6 mb-4 border-b-4 school-color-border pb-4 relative z-10">
-                    <img src="../assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-20 h-20 object-contain">
+                    <img src="<?= $logoPath ?>?v=<?= time() ?>" alt="Logo" class="w-20 h-20 object-contain">
                     <div class="flex-1 text-center">
                         <h1 class="text-3xl font-black uppercase tracking-tighter school-color-text leading-none">
                             <?php echo htmlspecialchars($settings['school_name']); ?>

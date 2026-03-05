@@ -286,6 +286,27 @@ class Database {
         return false;
     }
 
+    public function bulkMarkAlumni($ids, $graduationYear) {
+        $students = $this->readData();
+        $count = 0;
+        $ids = array_map('intval', $ids);
+        foreach ($students as &$student) {
+            if (in_array((int)$student['id'], $ids)) {
+                $student['student_status'] = 'Alumni';
+                $student['graduation_year'] = $graduationYear;
+                $student['last_class'] = $student['current_class'] ?? 'N/A';
+                $student['current_class'] = 'Alumni'; 
+                $student['updated_at'] = date('Y-m-d H:i:s');
+                $count++;
+            }
+        }
+        
+        if ($count > 0) {
+            return $this->writeData($students);
+        }
+        return false;
+    }
+
     public function getStudentByGrNo($grNo) {
         $data = $this->readData();
         foreach ($data as $student) {

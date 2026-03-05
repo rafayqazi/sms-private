@@ -15,6 +15,9 @@ This document defines the core engineering and design standards for the School M
 - **No Native Dialogs**: NEVER use browser-native `alert()`, `confirm()`, or `prompt()`. These "Localhost says..." boxes look unprofessional. Always use the project's custom modal components (`showModal` or `showConfirmationModal` from `footer.php`) for notifications and user confirmation.
 - **In-Modal Error Handling**: Validation errors (e.g., "Incorrect Password") must be displayed directly within the active modal or form. Never redirect the user to a plain error page.
 - **Silent Processing**: Destructive actions like "System Reset" or "Data Restore" should show progress indicators (e.g., spinning icons) within the modal.
+- **Button Loading States**: For any action that triggers an AJAX request or a background process (e.g., "Authorize Access" in `login.php`), the button MUST transition to a loading state. 
+    - **Visual Feedback**: The original button text should be hidden, and a "Processing..." or "Authorizing..." message should be shown along with a spinning icon (e.g., `fas fa-circle-notch fa-spin`).
+    - **Physical Lock**: The button MUST be disabled (`disabled="true"`) to prevent accidental duplicate submissions while the process is active.
 - **Background Downloads**: For file exports (like CSV or ZIP backups), use a hidden `<iframe>` as a target to prevent the page from flickering, refreshing, or opening empty tabs.
 
 ## 2. UI & Theme Consistency

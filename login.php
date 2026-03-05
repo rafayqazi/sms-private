@@ -174,7 +174,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 <?php endif; ?>
 
-                <form action="" method="POST" class="space-y-6">
+                <form id="loginForm" action="" method="POST" class="space-y-6">
                     <?php echo csrfInput(); ?>
                     
                     <div class="group">
@@ -200,11 +200,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
 
 
-                    <button type="submit" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-4">
+                    <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-4">
                         <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <div class="relative flex items-center justify-center gap-3">
+                        <div id="btnContent" class="relative flex items-center justify-center gap-3">
                             <span class="uppercase tracking-[0.2em]">Authorize Access</span>
                             <i class="fas fa-shield-alt text-xs animate-pulse"></i>
+                        </div>
+                        <div id="btnLoading" class="relative hidden items-center justify-center gap-3">
+                            <span class="uppercase tracking-[0.2em]">Authorizing...</span>
+                            <i class="fas fa-circle-notch fa-spin text-sm"></i>
                         </div>
                     </button>
                 </form>
@@ -389,6 +393,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             passwordInput.setAttribute('type', type);
             this.querySelector('i').classList.toggle('fa-eye');
             this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+
+        // Form Submission Loading State
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const btn = document.getElementById('loginBtn');
+            const content = document.getElementById('btnContent');
+            const loading = document.getElementById('btnLoading');
+            
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            content.classList.add('hidden');
+            loading.classList.remove('hidden');
+            loading.classList.add('flex');
         });
     </script>
     

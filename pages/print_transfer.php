@@ -235,10 +235,10 @@ if (count($studentsToPrint) > 1) {
             border-bottom: 1px solid #000;
             display: inline-block;
             font-weight: bold;
-            padding: 0 5mm;
-            min-width: 110mm;
+            padding: 0 2mm;
+            min-width: 80mm;
             text-align: center;
-            font-size: 13pt;
+            font-size: 12pt;
         }
 
         .sections {
@@ -277,7 +277,6 @@ if (count($studentsToPrint) > 1) {
         }
 
         .sub-sections {
-            padding-left: 12mm;
             display: flex;
             flex-direction: column;
             gap: 4mm;
@@ -293,16 +292,15 @@ if (count($studentsToPrint) > 1) {
 
         .principal-box {
             text-align: center;
-            min-width: 50mm;
-            border-top: 2px solid #0c4a96;
+            min-width: 60mm;
+            border-top: 2px solid #000;
             padding-top: 2mm;
         }
 
         .principal-label {
             font-size: 14pt;
             font-weight: bold;
-            color: #0c4a96;
-            text-transform: uppercase;
+            color: #000;
         }
 
         .watermark {
@@ -427,7 +425,31 @@ if (count($studentsToPrint) > 1) {
             $fatherName = strtoupper($student['father_name']);
             $grNo = preg_replace('/[^0-9]/', '', $student['gr_no']);
             $gradYear = $student['graduation_year'] ?? '';
-            $gender = (stripos($studentName, 'MISS') !== false || stripos($studentName, 'KUMARI') !== false) ? 'Mr./Miss' : 'Mr./Miss';
+            
+            // Gender detection
+            $isFemale = (isset($student['gender']) && stripos($student['gender'], 'f') === 0) || 
+                        stripos($studentName, 'MISS') !== false || 
+                        stripos($studentName, 'KUMARI') !== false;
+            
+            $prefix = $isFemale ? 'Miss' : 'Mr.';
+            $parentagePrefix = $isFemale ? 'D/O' : 'S/O';
+            $pronoun = $isFemale ? 'She' : 'He';
+            $possessivePronoun = $isFemale ? 'Her' : 'His';
+            $objectivePronoun = $isFemale ? 'her' : 'him';
+
+            // Subject detection based on GR suffix
+            $subjectText = "PHYSICS, CHEMISTRY AND BIOLOGY / MATHS"; 
+            if (!empty($student['gr_no'])) {
+                if (stripos($student['gr_no'], 'P.M') !== false) {
+                    $subjectText = "PHYSICS, CHEMISTRY AND BIOLOGY";
+                } elseif (stripos($student['gr_no'], 'P.E') !== false) {
+                    $subjectText = "PHYSICS, CHEMISTRY AND MATHS";
+                }
+            }
+            
+            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                ? '../' . $settings['school_logo'] 
+                : '../assets/branding/logo.png';
         ?>
         <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>" 
              data-student-name="<?php echo htmlspecialchars($student['student_name']); ?>"
@@ -437,20 +459,20 @@ if (count($studentsToPrint) > 1) {
             <div class="inner-border"></div>
 
             <div class="corner-logo">
-                <img src="../assets/branding/logo.png" class="logo-img" alt="Logo">
+                <img src="<?= $logoPath ?>?v=<?= time() ?>" class="logo-img" alt="Logo">
             </div>
 
             <div class="left-stripe">
-                <div class="vertical-text">AQSA PUBLIC HIGHER SECONDARY SCHOOL</div>
+                <div class="vertical-text"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
             </div>
-            <img src="../assets/branding/logo.png" class="watermark" alt="">
+            <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark" alt="">
 
             <div class="cert-container">
                 <div class="header-bar">
-                    <div class="school-name">AQSA PUBLIC HIGHER SECONDARY SCHOOL</div>
+                    <div class="school-name"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
                 </div>
 
-                <div class="city-name">TANDO ALLAHYAR</div>
+                <div class="city-name"><?php echo strtoupper(htmlspecialchars($settings['address_tagline'])); ?></div>
 
                 <div class="cert-title">TRANSFER CERTIFICATE</div>
 
@@ -459,8 +481,8 @@ if (count($studentsToPrint) > 1) {
                 </div>
 
                 <div class="intro-text">
-                    This is to Certify that Mr./Miss <span class="underline-input"><?php echo $studentName; ?> <?php echo $fatherName; ?></span><br>
-                    He been a student of this school.
+                    This is to Certify that <?= $prefix ?> <span class="underline-input"><?php echo $studentName; ?> <?= $parentagePrefix ?> <?php echo $fatherName; ?></span><br>
+                    <?= $pronoun ?> been a student of this school.
                 </div>
 
                 <div class="sections">
@@ -477,54 +499,51 @@ if (count($studentsToPrint) > 1) {
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">B) His / Her work the school Examination was as following:</span>
-                        <div class="dotted-line">SATISFACTORY</div>
+                        <span class="section-label">B) <?= $possessivePronoun ?> work the school Examination was as following:</span>
+                    </div>
+
+                    <div class="section-row" style="white-space: nowrap;">
+                        <span class="section-label">C) Passing the H.S.C II Examination in the Year Annual __________</span>
+                        <span class="section-label">under Seat No :________</span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">C) Passing the H.S.C II Examination in the Year Annual 20</span>
-                        <span class="date-input"><?php echo substr($gradYear, -2); ?></span>
-                        <span class="section-label">under Seat No</span>
-                        <div class="dotted-line"></div>
+                        <span class="section-label">D) <?= $pronoun ?> has no books belonging to this school in <?= $possessivePronoun ?> possessn.</span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">D) He/She has no books belonging to this school in his / her possessn.</span>
+                        <span class="section-label">E) Nothing is owed by <?= $objectivePronoun ?> on account of school.</span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">E) Nothing is owed by him / her on account of school.</span>
+                        <span class="section-label">F) <?= $possessivePronoun ?> conduct and character are good.</span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">F) His / Her conduct and character are good.</span>
+                        <span class="section-label">G) <?= $pronoun ?> has attended course of instruction in the optional subject of</span>
+                    </div>
+                    <div class="section-row" style="padding-left: 10mm; display: block; text-align: left;">
+                        <span style="border-bottom: 2px solid #000; font-weight: bold; padding: 0 4mm 0 0; display: inline-block;"><?php echo $subjectText; ?></span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">G) He/She has attended course of instruction in the optional subject of</span>
-                    </div>
-                    <div class="section-row" style="padding-left: 10mm;">
-                        <div class="dotted-line">PHYSICS, CHEMISTRY AND BIOLOGY / MATHS</div>
-                    </div>
-
-                    <div class="section-row">
-                        <span class="section-label">H) His / Her Principal subjects were English, Sindhi, Urdu Salees / Urdu Comp:</span>
+                        <span class="section-label">H) <?= $possessivePronoun ?> Principal subjects were English, Sindhi, Urdu Salees / Urdu Comp:</span>
                     </div>
                     <div class="section-row" style="padding-left: 10mm;">
                         <span class="section-label">P.S, Isl. Education.</span>
                     </div>
 
                     <div class="section-row">
-                        <span class="section-label">I) He / She has satisfactorily carried out the Practical works in science subjects by</span>
+                        <span class="section-label">I) <?= $pronoun ?> has satisfactorily carried out the Practical works in science subjects by</span>
                     </div>
                     <div class="section-row" style="padding-left: 10mm;">
                         <span class="section-label">Performing the necessary experiments.</span>
                     </div>
                 </div>
 
-                <div class="footer">
-                    <div class="principal-box">
-                        <div class="principal-label">Principal</div>
+                <div class="footer" style="margin-top: auto; display: flex; justify-content: flex-end; padding: 10mm 10mm 5mm; position: relative; z-index: 100;">
+                    <div class="principal-box" style="text-align: center; min-width: 60mm; border-top: 2px solid #000; padding-top: 2mm;">
+                        <span style="font-size: 14pt; font-weight: bold; color: #000; display: block; text-transform: none;">Principal</span>
                     </div>
                 </div>
             </div>

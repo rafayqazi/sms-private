@@ -2,13 +2,10 @@
 require_once __DIR__ . '/../includes/auth_session.php';
 require_once __DIR__ . '/../includes/db.php';
 $db = new Database();
-$password = trim($_POST['password'] ?? '');
-$username = trim($_SESSION['username'] ?? '');
-
-if (!$db->verifyAdmin($username, $password)) {
+if (!isAdmin() && !isSuperAdmin()) {
     ob_end_clean();
     header('Content-Type: application/json');
-    die(json_encode(['error' => 'Invalid password']));
+    die(json_encode(['error' => 'Unauthorized access']));
 }
 
 // Get school name

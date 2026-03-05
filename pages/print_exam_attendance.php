@@ -39,6 +39,10 @@ foreach ($allStudents as $student) {
 usort($students, function($a, $b) {
     return $a['gr_no'] - $b['gr_no'];
 });
+
+$logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+    ? '../' . $settings['school_logo'] 
+    : '../assets/branding/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -127,7 +131,7 @@ usort($students, function($a, $b) {
         <div class="border-sheet relative overflow-hidden">
             <!-- Header -->
             <div class="flex items-center gap-8 mb-6 border-b-2 school-color-border pb-6 relative z-10">
-                <img src="../assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-20 h-20 object-contain">
+                <img src="<?= $logoPath ?>?v=<?php echo time(); ?>" alt="Logo" class="w-20 h-20 object-contain">
                 <div class="flex-1 text-center">
                     <h1 class="text-4xl font-black uppercase tracking-tight school-color-text mb-1"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
                     <p class="text-xs font-bold uppercase tracking-[0.4em] text-slate-500"><?php echo htmlspecialchars($settings['address_tagline'] ?? 'Education is Life'); ?></p>

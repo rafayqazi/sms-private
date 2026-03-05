@@ -43,7 +43,8 @@ foreach ($allStudents as $student) {
             'gr_no' => $student['gr_no'],
             'father_name' => $student['father_name'] ?? 'N/A',
             'label' => $student['student_name'] . ' (GR: ' . $student['gr_no'] . ')',
-            'graduation_year' => $student['graduation_year'] ?? 'N/A'
+            'graduation_year' => $student['graduation_year'] ?? 'N/A',
+            'last_class' => $student['last_class'] ?? 'N/A'
         ];
         $count++;
     }

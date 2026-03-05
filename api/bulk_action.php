@@ -52,7 +52,8 @@ try {
         }
     } elseif ($action === 'mark_alumni') {
         if ($type === 'student') {
-            $success = $db->updateStudentsField($ids, 'student_status', 'Alumni');
+            $graduationYear = isset($input['graduation_year']) ? $input['graduation_year'] : date('Y');
+            $success = $db->bulkMarkAlumni($ids, $graduationYear);
             $message = $success ? 'Students marked as Alumni' : 'Failed to update students';
         }
     } elseif ($action === 'mark_active') {
