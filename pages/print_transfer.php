@@ -103,68 +103,74 @@ if (count($studentsToPrint) > 1) {
             height: 25mm;
             background: white;
             border-radius: 50%;
-            border: 3px solid #0c4a96;
+            border: 3px solid #0c0784;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 2mm;
-            z-index: 10;
+            z-index: 100; /* Always on top */
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
         .logo-img { width: 100%; height: 100%; object-fit: contain; }
 
         /* Left vertical blue stripe */
-        .left-stripe {
+        /* Left vertical blue stripe segment */
+        .left-stripe-bottom {
             position: absolute;
             left: 10mm;
-            top: 35mm; /* Starts after logo (10mm + 25mm) */
-            bottom: 15mm;
+            top: 35mm;
+            bottom: 6.5mm;
             width: 14mm;
-            background: #0c4a96;
-            z-index: 1;
+            background: #0c0784;
+            z-index: 4;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
         }
 
         .vertical-text {
             color: white;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            font-size: 13pt; /* Reduced to fit long name */
+            font-size: 17pt;
             font-weight: bold;
-            letter-spacing: 8px; /* Reduced to fit long name */
+            letter-spacing: 4px;
             white-space: nowrap;
             text-transform: uppercase;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: 'Times New Roman', serif;
+            
+            /* PDF Compatible Rotation */
+            position: absolute;
+            width: 250mm;
+            text-align: center;
+            top: calc(50% + 5mm); /* Shifted down slightly because top segment is missing text */
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
         .cert-container {
             position: relative;
             z-index: 2;
-            padding: 10mm 20mm 15mm 32mm;
+            padding: 38mm 20mm 15mm 32mm; /* Increased padding-top to clear header-bar */
             flex: 1;
             display: flex;
             flex-direction: column;
         }
 
         .header-bar {
-            background: #0c4a96;
+            position: absolute;
+            left: 35mm;
+            right: 6.5mm;
+            top: 10mm;
+            background: #0c0784;
             color: white;
-            padding: 4mm 10mm;
+            padding: 4mm 5px; /* Fixed 5px inner margin */
             display: flex;
             align-items: center;
-            margin-bottom: 4mm;
-            margin-left: 5mm; /* Shift right to start after logo area */
-            height: 25mm; /* Match logo height */
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-            border-radius: 0 4px 4px 0;
+            justify-content: center;
+            height: 25mm;
+            z-index: 4;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .logo-box {
@@ -181,13 +187,13 @@ if (count($studentsToPrint) > 1) {
         .logo-img { width: 100%; height: 100%; object-fit: contain; }
         
         .school-name {
-            font-size: 17pt; /* Reduced to fit on one line */
+            font-size: 18pt;
             font-weight: bold;
-            letter-spacing: 0.2px; /* Reduced to fit */
-            flex: 1;
-            text-align: center;
+            letter-spacing: 6px;
+            margin-right: -6px; /* Negate the letter-spacing on the last character for true centering */
             white-space: nowrap;
-            overflow: visible;
+            text-transform: uppercase;
+            font-family: 'Times New Roman', serif;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
@@ -195,8 +201,8 @@ if (count($studentsToPrint) > 1) {
             text-align: center;
             font-size: 18pt;
             font-weight: bold;
-            color: #0c4a96;
-            margin-bottom: 8mm;
+            color: #000;
+            margin-bottom: 4mm;
             letter-spacing: 3px;
             text-transform: uppercase;
         }
@@ -205,38 +211,36 @@ if (count($studentsToPrint) > 1) {
             text-align: center;
             font-size: 24pt;
             font-weight: bold;
-            color: #0c4a96;
+            color: #000;
             text-decoration: underline;
-            margin-bottom: 12mm;
+            margin-bottom: 8mm;
             letter-spacing: 2px;
         }
         
         .enrolment {
             font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 8mm;
+            margin-bottom: 4mm;
         }
 
         .enrolment-val {
-            border-bottom: 2px solid #000;
+            border-bottom: 2px solid #0c0784;
             display: inline-block;
-            min-width: 50mm;
-            padding-left: 4mm;
+            padding: 0 4mm;
             font-size: 13pt;
         }
 
         .intro-text {
             font-size: 12pt;
             line-height: 2;
-            margin-bottom: 12mm;
+            margin-bottom: 8mm;
         }
 
         .underline-input {
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid #0c0784;
             display: inline-block;
             font-weight: bold;
-            padding: 0 2mm;
-            min-width: 80mm;
+            padding: 0 4mm;
             text-align: center;
             font-size: 12pt;
         }
@@ -244,7 +248,7 @@ if (count($studentsToPrint) > 1) {
         .sections {
             display: flex;
             flex-direction: column;
-            gap: 6mm;
+            gap: 4mm;
             font-size: 11pt;
         }
 
@@ -261,7 +265,7 @@ if (count($studentsToPrint) > 1) {
 
         .dotted-line {
             flex: 1;
-            border-bottom: 1px dotted #000;
+            border-bottom: 1px dotted #0c0784;
             min-height: 6mm;
             padding: 0 4mm;
             font-weight: bold;
@@ -269,11 +273,12 @@ if (count($studentsToPrint) > 1) {
         }
 
         .date-input {
-            width: 30mm;
-            border-bottom: 1px solid #000;
+            min-width: 10mm;
+            border-bottom: 1px solid #0c0784;
             text-align: center;
             display: inline-block;
             font-weight: bold;
+            padding: 0 2mm;
         }
 
         .sub-sections {
@@ -287,20 +292,20 @@ if (count($studentsToPrint) > 1) {
             margin-top: auto;
             display: flex;
             justify-content: flex-end;
-            padding: 20mm 10mm 10mm;
+            padding: 5mm 10mm 10mm;
         }
 
         .principal-box {
             text-align: center;
             min-width: 60mm;
-            border-top: 2px solid #000;
+            border-top: 2px solid #0c0784;
             padding-top: 2mm;
         }
 
         .principal-label {
             font-size: 14pt;
             font-weight: bold;
-            color: #000;
+            color: #0c0784;
         }
 
         .watermark {
@@ -321,7 +326,7 @@ if (count($studentsToPrint) > 1) {
             left: 5mm;
             right: 5mm;
             bottom: 5mm;
-            border: 1px solid #0c4a96;
+            border: 1px solid #0c0784;
             pointer-events: none;
             z-index: 5;
         }
@@ -332,7 +337,7 @@ if (count($studentsToPrint) > 1) {
             left: 6.5mm;
             right: 6.5mm;
             bottom: 6.5mm;
-            border: 2px solid #0c4a96;
+            border: 2px solid #0c0784;
             pointer-events: none;
             z-index: 5;
         }
@@ -462,11 +467,10 @@ if (count($studentsToPrint) > 1) {
                 <img src="<?= $logoPath ?>?v=<?= time() ?>" class="logo-img" alt="Logo">
             </div>
 
-            <div class="left-stripe">
+            <div class="left-stripe-bottom">
                 <div class="vertical-text"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
             </div>
-            <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark" alt="">
-
+            
             <div class="cert-container">
                 <div class="header-bar">
                     <div class="school-name"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
@@ -482,7 +486,7 @@ if (count($studentsToPrint) > 1) {
 
                 <div class="intro-text">
                     This is to Certify that <?= $prefix ?> <span class="underline-input"><?php echo $studentName; ?> <?= $parentagePrefix ?> <?php echo $fatherName; ?></span><br>
-                    <?= $pronoun ?> been a student of this school.
+                    <?= $pronoun ?> has been a student of this school.
                 </div>
 
                 <div class="sections">
@@ -490,11 +494,11 @@ if (count($studentsToPrint) > 1) {
                         <span class="section-label">A) Since passing the S.S.C II Examination, He/She kept term in this school as under</span>
                     </div>
                     <div class="sub-sections">
-                        <div class="section-row">
-                            August 20<span class="date-input"></span> to December 20<span class="date-input"></span>
+                        <div class="section-row" style="margin-bottom: 2mm;">
+                            <span>August 20</span><span class="date-input" style="margin-right: 4mm;"><?php echo htmlspecialchars($_GET['ssc_aug'] ?? ''); ?></span> <span>to December 20</span><span class="date-input"><?php echo htmlspecialchars($_GET['ssc_dec'] ?? ''); ?></span>
                         </div>
                         <div class="section-row">
-                            January 20<span class="date-input"></span> to May 20<span class="date-input"></span>
+                            <span>January 20</span><span class="date-input" style="margin-right: 4mm;"><?php echo htmlspecialchars($_GET['ssc_jan'] ?? ''); ?></span> <span>to May 20</span><span class="date-input"><?php echo htmlspecialchars($_GET['ssc_may'] ?? ''); ?></span>
                         </div>
                     </div>
 
@@ -502,9 +506,9 @@ if (count($studentsToPrint) > 1) {
                         <span class="section-label">B) <?= $possessivePronoun ?> work the school Examination was as following:</span>
                     </div>
 
-                    <div class="section-row" style="white-space: nowrap;">
-                        <span class="section-label">C) Passing the H.S.C II Examination in the Year Annual __________</span>
-                        <span class="section-label">under Seat No :________</span>
+                    <div class="section-row" style="display: flex; gap: 4mm;">
+                        <span class="section-label" style="white-space: nowrap;">C) Passing the H.S.C II Examination in the Year Annual <span style="border-bottom: 1px solid #0c0784; padding: 0 4mm; display: inline-block; text-align: center;"><?php echo htmlspecialchars($_GET['hsc_year'] ?? '_______'); ?></span></span>
+                        <span class="section-label" style="white-space: nowrap;">under Seat No : <span style="border-bottom: 1px solid #0c0784; padding: 0 4mm; display: inline-block; text-align: center;"><?php echo htmlspecialchars($_GET['hsc_seat'] ?? '_______'); ?></span></span>
                     </div>
 
                     <div class="section-row">
@@ -523,7 +527,7 @@ if (count($studentsToPrint) > 1) {
                         <span class="section-label">G) <?= $pronoun ?> has attended course of instruction in the optional subject of</span>
                     </div>
                     <div class="section-row" style="padding-left: 10mm; display: block; text-align: left;">
-                        <span style="border-bottom: 2px solid #000; font-weight: bold; padding: 0 4mm 0 0; display: inline-block;"><?php echo $subjectText; ?></span>
+                        <span style="border-bottom: 2px solid #0c0784; font-weight: bold; padding: 0 4mm 0 0; display: inline-block;"><?php echo $subjectText; ?></span>
                     </div>
 
                     <div class="section-row">
@@ -541,9 +545,9 @@ if (count($studentsToPrint) > 1) {
                     </div>
                 </div>
 
-                <div class="footer" style="margin-top: auto; display: flex; justify-content: flex-end; padding: 10mm 10mm 5mm; position: relative; z-index: 100;">
-                    <div class="principal-box" style="text-align: center; min-width: 60mm; border-top: 2px solid #000; padding-top: 2mm;">
-                        <span style="font-size: 14pt; font-weight: bold; color: #000; display: block; text-transform: none;">Principal</span>
+                <div class="footer" style="margin-top: auto; display: flex; justify-content: flex-end; padding: 5mm 10mm 5mm; position: relative; z-index: 100;">
+                    <div class="principal-box" style="text-align: center; min-width: 50mm; border-top: 2px solid #0c0784; padding-top: 2mm;">
+                        <span style="font-size: 14pt; font-weight: bold; color: #0c0784; display: block; text-transform: none;">Principal</span>
                     </div>
                 </div>
             </div>

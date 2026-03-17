@@ -56,7 +56,7 @@ if ($_SESSION['user_role'] === 'Editor' && !in_array('certificates', $allowed_pa
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Character Certificate</h3>
             <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-grow">Generate Character Certificate validating student conduct and behavior.</p>
-            <a href="#" class="w-full py-2 px-4 bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 rounded-lg font-semibold hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 transition-colors">
+            <a href="certificate_character.php" class="w-full py-2 px-4 bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 rounded-lg font-semibold hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 transition-colors">
                 Generate <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
@@ -68,7 +68,7 @@ if ($_SESSION['user_role'] === 'Editor' && !in_array('certificates', $allowed_pa
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Testimonial</h3>
             <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 flex-grow">Generate Testimonial Certificate for academic achievements and participation.</p>
-            <a href="#" class="w-full py-2 px-4 bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 rounded-lg font-semibold hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition-colors">
+            <a href="certificate_testimonial.php" class="w-full py-2 px-4 bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 rounded-lg font-semibold hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition-colors">
                 Generate <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>

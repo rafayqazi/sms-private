@@ -135,10 +135,10 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <a href="print_transfer.php?student_id=<?php echo $student['id']; ?>" target="_blank" 
+                                        <button onclick="openTCModal(<?php echo $student['id']; ?>, 'single')" 
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-green-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print TC
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -159,11 +159,11 @@ if ($search) {
             <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-4">Bulk Issue TC</h3>
             <p class="text-slate-500 dark:text-gray-400 mb-10 font-medium">Generate Transfer Certificates for an entire batch. Select the graduation year below to proceed.</p>
 
-            <form action="print_transfer.php" method="GET" target="_blank" class="max-w-md mx-auto space-y-6">
+            <div class="max-w-md mx-auto space-y-6">
                 <div class="text-left">
                     <label class="block text-xs font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 pl-1">Select Graduation Year</label>
                     <div class="relative">
-                        <select name="year" required class="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border-2 border-transparent focus:border-green-500 focus:bg-white dark:focus:bg-gray-950 rounded-2xl text-slate-800 dark:text-white font-bold transition-all outline-none appearance-none cursor-pointer">
+                        <select id="bulkYearSelect" required class="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border-2 border-transparent focus:border-green-500 focus:bg-white dark:focus:bg-gray-950 rounded-2xl text-slate-800 dark:text-white font-bold transition-all outline-none appearance-none cursor-pointer">
                             <option value="">Select Year...</option>
                             <?php foreach ($years as $y): ?>
                                 <option value="<?php echo htmlspecialchars($y); ?>"><?php echo htmlspecialchars($y); ?></option>
@@ -172,11 +172,11 @@ if ($search) {
                         <i class="fas fa-chevron-down absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none"></i>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
+                <button type="button" onclick="openTCModal(document.getElementById('bulkYearSelect').value, 'bulk')" class="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
                     <i class="fas fa-print"></i> 
                     <span class="uppercase tracking-[0.2em]">Generate Batch</span>
                 </button>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -247,10 +247,10 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <a href="print_transfer.php?student_id=${item.id}" target="_blank" 
+                                        <button onclick="openTCModal(${item.id}, 'single')" 
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-green-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print TC
-                                        </a>
+                                        </button>
                                     </td>
                                 `;
                                 searchResultsBody.appendChild(tr);
@@ -276,26 +276,110 @@ if ($search) {
         });
     });
 
-    function switchTab(tab) {
-        const singleView = document.getElementById('view-single');
-        const bulkView = document.getElementById('view-bulk');
-        const tabSingle = document.getElementById('tab-single');
-        const tabBulk = document.getElementById('tab-bulk');
+    let currentPrintTarget = null;
+    let currentPrintType = null;
 
-        if (tab === 'single') {
-            singleView.classList.remove('hidden');
-            bulkView.classList.add('hidden');
-            
-            tabSingle.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 bg-white dark:bg-gray-800 text-green-600 shadow-sm";
-            tabBulk.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200";
-        } else {
-            singleView.classList.add('hidden');
-            bulkView.classList.remove('hidden');
-            
-            tabBulk.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 bg-white dark:bg-gray-800 text-green-600 shadow-sm";
-            tabSingle.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200";
+    function openTCModal(target, type) {
+        if (!target && type === 'bulk') {
+            showModal('warning', 'Selection Required', 'Please select a graduation year first.');
+            return;
         }
+        currentPrintTarget = target;
+        currentPrintType = type;
+        
+        const modal = document.getElementById('tcParamsModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeTCModal() {
+        const modal = document.getElementById('tcParamsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    function proceedToPrint() {
+        const ssc_aug = document.getElementById('ssc_aug').value;
+        const ssc_dec = document.getElementById('ssc_dec').value;
+        const ssc_jan = document.getElementById('ssc_jan').value;
+        const ssc_may = document.getElementById('ssc_may').value;
+        const hsc_year = document.getElementById('hsc_year').value;
+        const hsc_seat = document.getElementById('hsc_seat').value;
+
+        let url = `print_transfer.php?`;
+        if (currentPrintType === 'single') {
+            url += `student_id=${currentPrintTarget}`;
+        } else {
+            url += `year=${currentPrintTarget}`;
+        }
+
+        url += `&ssc_aug=${encodeURIComponent(ssc_aug)}`;
+        url += `&ssc_dec=${encodeURIComponent(ssc_dec)}`;
+        url += `&ssc_jan=${encodeURIComponent(ssc_jan)}`;
+        url += `&ssc_may=${encodeURIComponent(ssc_may)}`;
+        url += `&hsc_year=${encodeURIComponent(hsc_year)}`;
+        url += `&hsc_seat=${encodeURIComponent(hsc_seat)}`;
+
+        window.open(url, '_blank');
+        closeTCModal();
     }
 </script>
+
+<!-- TC Parameters Modal -->
+<div id="tcParamsModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 text-left">
+    <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-[scaleIn_0.3s_ease-out]">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <i class="fas fa-file-invoice text-green-600"></i> Certificate Details
+            </h3>
+            <button onclick="closeTCModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-8 space-y-6">
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">A) S.S.C II Examination Terms (Years)</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">August 20--</label>
+                        <input type="text" id="ssc_aug" placeholder="e.g. 23" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">to Dec 20--</label>
+                        <input type="text" id="ssc_dec" placeholder="e.g. 23" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">Jan 20--</label>
+                        <input type="text" id="ssc_jan" placeholder="e.g. 24" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">to May 20--</label>
+                        <input type="text" id="ssc_may" placeholder="e.g. 24" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-50 dark:border-gray-800">
+                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">C) H.S.C II Passing Details</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">Annual Year</label>
+                        <input type="text" id="hsc_year" placeholder="e.g. 2025" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1 pl-1">Seat Number</label>
+                        <input type="text" id="hsc_seat" placeholder="e.g. 54321" class="w-full px-4 py-3 bg-slate-50 dark:bg-gray-800 border-2 border-transparent focus:border-green-500 rounded-xl font-bold text-sm outline-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 bg-slate-50 dark:bg-gray-800/50 flex gap-3">
+            <button onclick="closeTCModal()" class="flex-1 py-4 text-slate-500 font-bold hover:text-slate-700 transition-colors">Cancel</button>
+            <button onclick="proceedToPrint()" class="flex-[2] py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl shadow-lg shadow-green-200 dark:shadow-none transition-all active:scale-95">PROCEED TO PRINT</button>
+        </div>
+    </div>
+</div>
 
 <?php include '../includes/footer.php'; ?>
