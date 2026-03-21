@@ -215,9 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
-    </div>
-</div>
-
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <a href="pages/students.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
