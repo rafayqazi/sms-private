@@ -41,6 +41,10 @@ function isSuperAdmin() {
     return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin';
 }
 
+function isParent() {
+    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'parent';
+}
+
 function canAccessPage($page) {
     // Super admin can access everything
     if (isSuperAdmin()) {

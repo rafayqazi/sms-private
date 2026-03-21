@@ -45,9 +45,24 @@ foreach ($students as $student) {
         'name' => $student['student_name'],
         'class' => $student['current_class'],
         'gr_no' => $student['gr_no'],
+        'dob' => $student['date_of_birth'],
         'image' => isset($student['profile_image']) ? $student['profile_image'] : ''
     ];
 }
+
+// Post-process to find the "First Child" for password
+foreach ($parents as &$p) {
+    if (!empty($p['children'])) {
+        // Sort children by ID to find the first enrolled
+        usort($p['children'], function($a, $b) {
+            return $a['id'] - $b['id'];
+        });
+        $p['first_child_dob'] = $p['children'][0]['dob'];
+    } else {
+        $p['first_child_dob'] = 'N/A';
+    }
+}
+unset($p);
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -57,8 +72,11 @@ foreach ($students as $student) {
         <h1 class="text-3xl font-bold">Parents Directory</h1>
         <p class="text-green-100 mt-1">View parent details and enrolled children</p>
     </div>
-    <div class="w-full md:w-auto">
-        <div class="relative text-gray-600 focus-within:text-gray-400">
+    <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+        <button onclick="openNoticeModal('ALL')" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md font-bold text-sm transition-all flex items-center gap-2 border border-white/30 shadow-sm">
+            <i class="fas fa-bullhorn"></i> New School Announcement
+        </button>
+        <div class="relative text-gray-600 focus-within:text-gray-400 w-full md:w-auto">
             <span class="absolute inset-y-0 left-0 flex items-center pl-2">
                 <button type="submit" class="p-1 focus:outline-none focus:shadow-outline">
                     <i class="fas fa-search"></i>
@@ -81,6 +99,7 @@ foreach ($students as $student) {
                     <th class="p-4 text-center">CNIC (Front)</th>
                     <th class="p-4 text-center">CNIC (Back)</th>
                     <th class="p-4 text-center">Children</th>
+                    <th class="p-4 text-center text-indigo-600">Portal Login</th>
                     <th class="p-4 text-center">Actions</th>
                 </tr>
             </thead>
@@ -124,9 +143,32 @@ foreach ($students as $student) {
                             </span>
                         </td>
                         <td class="p-4 text-center">
-                            <button onclick='openParentModal(<?php echo json_encode($parent); ?>)' class="text-indigo-600 hover:text-indigo-900 transform hover:scale-110 transition duration-200" title="View Details">
-                                <i class="fas fa-eye text-lg"></i>
-                            </button>
+                            <?php if (!empty($parent['father_cnic'])): ?>
+                                <div class="inline-flex flex-col items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2 group/login hover:bg-indigo-100 transition-colors">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">User:</span>
+                                        <span class="text-xs font-bold text-indigo-700"><?php echo htmlspecialchars(str_replace('-', '', $parent['father_cnic'])); ?></span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Pass:</span>
+                                        <span class="text-xs font-bold text-indigo-700"><?php echo htmlspecialchars($parent['first_child_dob']); ?></span>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <span class="text-gray-400 text-[10px] font-bold uppercase italic">N/A - No CNIC</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-3">
+                                <button onclick='openParentModal(<?php echo json_encode($parent); ?>)' class="text-indigo-600 hover:text-indigo-900 transform hover:scale-110 transition duration-200" title="View Details">
+                                    <i class="fas fa-eye text-lg"></i>
+                                </button>
+                                <?php if (!empty($parent['father_cnic'])): ?>
+                                <button onclick='openNoticeModal(<?php echo json_encode($parent['father_cnic']); ?>, <?php echo json_encode($parent['father_name']); ?>)' class="text-emerald-600 hover:text-emerald-900 transform hover:scale-110 transition duration-200" title="Send Notice">
+                                    <i class="fas fa-paper-plane text-lg"></i>
+                                </button>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -183,6 +225,21 @@ foreach ($students as $student) {
                                             <p class="font-medium text-gray-800" id="modalCNIC"></p>
                                         </div>
                                     </div>
+                                    <div id="modalPortalCredentials" class="mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-xl hidden">
+                                        <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <i class="fas fa-key animate-pulse"></i> Portal Access Credentials
+                                        </h5>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Username (CNIC)</span>
+                                                <span id="modalPortalUser" class="text-sm font-black text-indigo-700"></span>
+                                            </div>
+                                            <div class="flex items-center justify-between border-t border-indigo-100 pt-2">
+                                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Password (Child DOB)</span>
+                                                <span id="modalPortalPass" class="text-sm font-black text-indigo-700"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -224,12 +281,80 @@ foreach ($students as $student) {
     </div>
 </div>
 
+<!-- Notice Modal -->
+<div id="noticeModal" class="fixed inset-0 z-[60] hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeNoticeModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="noticeForm" onsubmit="saveNotice(event)">
+                <input type="hidden" id="noticeTargetCnic" name="target_cnic">
+                <div class="bg-white p-6 sm:p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800" id="noticeModalTitle">New Announcement</h3>
+                            <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1" id="noticeModalTarget">Target: All Parents</p>
+                        </div>
+                        <button type="button" onclick="closeNoticeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Notice Title</label>
+                            <input type="text" name="title" required class="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:outline-none font-bold text-slate-700" placeholder="e.g. Exam Schedule Update">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Message Content</label>
+                            <textarea name="message" required rows="4" class="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:outline-none font-medium text-slate-600" placeholder="Type your announcement or note here..."></textarea>
+                        </div>
+                        <div id="noticeTypeField">
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Category</label>
+                            <select name="type" class="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:outline-none font-bold text-slate-700 appearance-none bg-no-repeat bg-[right_1rem_center]">
+                                <option value="Announcement">Announcement</option>
+                                <option value="Private Note">Private Note</option>
+                                <option value="Exam Slip">Exam Slip</option>
+                                <option value="Important">Important</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Expires On (Optional)</label>
+                            <input type="date" name="expiry_date" class="w-full px-4 py-3 rounded-xl border-2 border-slate-100 focus:border-emerald-500 focus:outline-none font-bold text-slate-700">
+                            <p class="text-[10px] text-slate-400 mt-1 italic italic">Leave blank if notice should never expire.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-8 py-4 flex gap-3 flex-row-reverse">
+                    <button type="submit" id="noticeSubmitBtn" class="flex-1 rounded-xl bg-emerald-600 text-white px-4 py-3 text-sm font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100">
+                        <i class="fas fa-paper-plane mr-2"></i> Send to Portal
+                    </button>
+                    <button type="button" onclick="closeNoticeModal()" class="px-6 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function openParentModal(parent) {
     // Populate Parent Details
     document.getElementById('modalFatherName').textContent = parent.father_name || 'N/A';
     document.getElementById('modalContact').textContent = parent.father_contact || 'N/A';
     document.getElementById('modalCNIC').textContent = parent.father_cnic || 'N/A';
+
+    // Populate Portal Credentials
+    const portalDiv = document.getElementById('modalPortalCredentials');
+    if (parent.father_cnic && parent.father_cnic.trim() !== '') {
+        portalDiv.classList.remove('hidden');
+        // Raw CNIC
+        document.getElementById('modalPortalUser').textContent = (parent.father_cnic).replace(/[^0-9]/g, '');
+        document.getElementById('modalPortalPass').textContent = parent.first_child_dob || 'N/A';
+    } else {
+        portalDiv.classList.add('hidden');
+    }
 
     // Populate CNIC Images
     const frontContainer = document.getElementById('modalCNICFront');
@@ -284,6 +409,67 @@ function openParentModal(parent) {
 
 function closeParentModal() {
     document.getElementById('parentModal').classList.add('hidden');
+}
+
+function openNoticeModal(targetCnic, parentName = 'All Parents') {
+    const modal = document.getElementById('noticeModal');
+    const title = document.getElementById('noticeModalTitle');
+    const target = document.getElementById('noticeModalTarget');
+    const targetInput = document.getElementById('noticeTargetCnic');
+    const form = document.getElementById('noticeForm');
+    const typeField = document.getElementById('noticeTypeField');
+
+    form.reset();
+    targetInput.value = targetCnic;
+    
+    if (targetCnic === 'ALL') {
+        title.textContent = 'Global Announcement';
+        target.textContent = 'Target: All Enrolled Parents';
+        target.className = 'text-xs font-black text-amber-600 uppercase tracking-widest mt-1';
+        typeField.classList.remove('hidden');
+    } else {
+        title.textContent = 'Send Private Notice';
+        target.textContent = `Target: ${parentName} (${targetCnic})`;
+        target.className = 'text-xs font-black text-emerald-600 uppercase tracking-widest mt-1';
+        // Force private note type for individuals usually, but let them pick
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeNoticeModal() {
+    const modal = document.getElementById('noticeModal');
+    modal.classList.add('hidden');
+}
+
+async function saveNotice(event) {
+    event.preventDefault();
+    const btn = document.getElementById('noticeSubmitBtn');
+    const form = event.target;
+    const formData = new FormData(form);
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+
+    try {
+        const response = await fetch('../api/save_notice.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Notice sent successfully to the Parent Portal!');
+            closeNoticeModal();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        alert('Failed to send notice. Please check your connection.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Send to Portal';
+    }
 }
 
 // Close modal on Escape key

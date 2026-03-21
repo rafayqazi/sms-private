@@ -150,14 +150,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <div class="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-8"></div>
 
-                    <div class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2 pl-1">
+                    <!-- Login Mode Toggle -->
+                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-8 w-full max-w-[280px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
+                        <button type="button" id="staffModeBtn" onclick="setLoginMode('staff')" class="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100">
+                            <i class="fas fa-user-shield mr-2"></i> Staff Login
+                        </button>
+                        <button type="button" id="parentModeBtn" onclick="setLoginMode('parent')" class="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-user-friends mr-2"></i> Parent Portal
+                        </button>
+                    </div>
+
+                    <div class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2 pl-1" id="greetingText">
                         <?php 
                             $h = date('H');
                             echo ($h < 12) ? 'Good Morning' : 'Good Evening';
                         ?>
                     </div>
-                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter mb-2">Secure Login</h2>
-                    <p class="text-slate-500 font-medium">Authorized personnel only. Please verify your identity.</p>
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter mb-2" id="loginTitle">Secure Login</h2>
+                    <p class="text-slate-500 font-medium" id="loginSubtitle">Authorized personnel only. Please verify your identity.</p>
                 </div>
 
                 <?php if ($error): ?>
@@ -176,19 +186,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <form id="loginForm" action="" method="POST" class="space-y-6">
                     <?php echo csrfInput(); ?>
+                    <input type="hidden" name="login_mode" id="login_mode" value="staff">
                     
                     <div class="group">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Access Username</label>
+                        <label id="usernameLabel" class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Access Username</label>
                         <div class="relative">
-                            <input type="text" name="username" required 
+                            <input type="text" name="username" id="username" required 
                                 class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-2xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10" 
                                 placeholder="Username">
-                            <i class="fas fa-id-badge absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"></i>
+                            <i id="usernameIcon" class="fas fa-id-badge absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"></i>
                         </div>
                     </div>
 
                     <div class="group">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Security Token</label>
+                        <label id="passwordLabel" class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Security Token</label>
                         <div class="relative">
                             <input type="password" name="password" id="password" required 
                                 class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-2xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10" 
@@ -385,9 +396,66 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         init();
         animate();
 
-        // Standard Login Scripts
+        // Mode Handling
+        const loginForm = document.getElementById('loginForm');
+        const loginModeInput = document.getElementById('login_mode');
+        const staffModeBtn = document.getElementById('staffModeBtn');
+        const parentModeBtn = document.getElementById('parentModeBtn');
+        
+        const loginTitle = document.getElementById('loginTitle');
+        const loginSubtitle = document.getElementById('loginSubtitle');
+        const usernameLabel = document.getElementById('usernameLabel');
+        const passwordLabel = document.getElementById('passwordLabel');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameIcon = document.getElementById('usernameIcon');
+        const btnContent = document.getElementById('btnContent');
+        const btnLoading = document.getElementById('btnLoading');
+        const loginBtn = document.getElementById('loginBtn');
+
+        function setLoginMode(mode) {
+            loginModeInput.value = mode;
+            
+            if (mode === 'parent') {
+                // Parent Portal Styles
+                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
+                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-emerald-600 shadow-sm border border-emerald-100';
+                
+                loginTitle.textContent = 'Parent Portal';
+                loginSubtitle.textContent = 'Track your child\'s progress and activities.';
+                usernameLabel.textContent = 'Father\'s CNIC Number';
+                passwordLabel.textContent = 'Child\'s Date of Birth';
+                usernameInput.placeholder = 'XXXXX-XXXXXXX-X';
+                passwordInput.placeholder = 'YYYY-MM-DD';
+                usernameIcon.className = 'fas fa-id-card absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors';
+                
+                btnContent.querySelector('span').textContent = 'Access Portal';
+                btnContent.querySelector('i').className = 'fas fa-user-graduate text-xs animate-pulse';
+                loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
+            } else {
+                // Staff Login Styles
+                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
+                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100';
+                
+                loginTitle.textContent = 'Secure Login';
+                loginSubtitle.textContent = 'Authorized personnel only. Please verify your identity.';
+                usernameLabel.textContent = 'Access Username';
+                passwordLabel.textContent = 'Security Token';
+                usernameInput.placeholder = 'Username';
+                passwordInput.placeholder = '••••••••';
+                usernameIcon.className = 'fas fa-id-badge absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors';
+                
+                btnContent.querySelector('span').textContent = 'Authorize Access';
+                btnContent.querySelector('i').className = 'fas fa-shield-alt text-xs animate-pulse';
+                loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
+            }
+        }
+
+        // Keep global for onclick
+        window.setLoginMode = setLoginMode;
+
+        // Password Toggle
         const togglePassword = document.querySelector('#togglePassword');
-        const passwordInput = document.querySelector('#password');
         togglePassword.addEventListener('click', function() {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
@@ -395,17 +463,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             this.querySelector('i').classList.toggle('fa-eye-slash');
         });
 
-        // Form Submission Loading State
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const btn = document.getElementById('loginBtn');
-            const content = document.getElementById('btnContent');
-            const loading = document.getElementById('btnLoading');
-            
-            btn.disabled = true;
-            btn.classList.add('opacity-80', 'cursor-not-allowed');
-            content.classList.add('hidden');
-            loading.classList.remove('hidden');
-            loading.classList.add('flex');
+        // Form Handling
+        loginForm.addEventListener('submit', function(e) {
+            if (loginModeInput.value === 'parent') {
+                e.preventDefault();
+                
+                // Show loading state
+                btnContent.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+                btnLoading.classList.add('flex');
+                loginBtn.disabled = true;
+
+                const formData = new FormData(loginForm);
+                fetch('api/parent_login.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        // Show error
+                        alert(data.message);
+                        btnContent.classList.remove('hidden');
+                        btnLoading.classList.add('hidden');
+                        btnLoading.classList.remove('flex');
+                        loginBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                    btnContent.classList.remove('hidden');
+                    btnLoading.classList.add('hidden');
+                    btnLoading.classList.remove('flex');
+                    loginBtn.disabled = false;
+                });
+            } else {
+                // Staff mode: Normal submit but show loading
+                btnContent.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+                btnLoading.classList.add('flex');
+                loginBtn.disabled = true;
+                loginBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            }
         });
     </script>
     

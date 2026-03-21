@@ -165,8 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- Quick Actions Section -->
-<div class="mb-8 overflow-x-auto pb-2 no-scrollbar">
-    <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-4">
+<div class="mb-8 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+    <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-5">
         <button onclick="openAdmissionModal()" class="flex-1 bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4 text-left">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-user-plus"></i>
@@ -215,7 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <a href="pages/students.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
         <div class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $totalStudents; ?></div>
@@ -655,9 +658,9 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mt-8">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h2 class="text-xl font-bold text-gray-800">Recent Admissions</h2>
-        <a href="pages/students.php" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm border border-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-md transition-colors w-full md:w-auto text-center">View All</a>
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Admissions</h2>
+        <a href="pages/students.php" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium text-sm border border-indigo-600 dark:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950 px-4 py-2 rounded-md transition-colors w-full sm:w-auto text-center">View All</a>
     </div>
     <?php 
     $recentStudents = array_slice(array_reverse($students), 0, 5);

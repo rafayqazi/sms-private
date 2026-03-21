@@ -64,6 +64,9 @@ class Database {
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
             $fileHeaders = fgetcsv($handle, 0, ","); // Skip headers
             while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                // Trim all fields in the row
+                $row = array_map('trim', $row);
+                
                 // Adjust row to match headers length (for robustness against schema updates)
                 if (count($row) < count($this->headers)) {
                     $row = array_pad($row, count($this->headers), '');
@@ -3185,5 +3188,172 @@ class Database {
             }
         }
         return $defaulters;
+    }
+
+    /**
+     * Parent Portal Methods
+     */
+
+    public function verifyParentLogin($cnic, $password) {
+        // Trim inputs
+        $cnic = trim($cnic);
+        $password = trim($password);
+        
+        // Raw CNIC (remove dashes)
+        $raw_cnic = str_replace('-', '', $cnic);
+        if (empty($raw_cnic)) return false;
+
+        $students = $this->readData();
+        $parentChildren = [];
+        
+        foreach ($students as $student) {
+            $s_father_cnic = str_replace('-', '', $student['father_cnic']);
+            if ($s_father_cnic === $raw_cnic) {
+                $parentChildren[] = $student;
+            }
+        }
+
+        if (empty($parentChildren)) return false;
+
+        // Sort by ID to ensure consistent "first" child (eldest/first enrolled)
+        usort($parentChildren, function($a, $b) {
+            return $a['id'] - $b['id'];
+        });
+
+        $firstChild = $parentChildren[0];
+        $expectedPassword = $firstChild['date_of_birth']; // Format: YYYY-MM-DD
+
+        if ($password === $expectedPassword) {
+            return [
+                'father_cnic' => $raw_cnic,
+                'father_name' => $firstChild['father_name'],
+                'children_count' => count($parentChildren)
+            ];
+        }
+
+        return false;
+    }
+
+    public function getParentChildrenByCnic($cnic) {
+        $raw_cnic = str_replace('-', '', $cnic);
+        $students = $this->readData();
+        $children = [];
+        
+        foreach ($students as $student) {
+            $s_father_cnic = str_replace('-', '', $student['father_cnic'] ?? '');
+            if ($s_father_cnic === $raw_cnic) {
+                $children[] = $student;
+            }
+        }
+        return $children;
+    }
+
+    public function getStudentAttendanceHistory($studentId) {
+        $attendanceFile = __DIR__ . '/../data/attendance.csv';
+        $history = [];
+        
+        if (!file_exists($attendanceFile)) return [];
+
+        $handle = @fopen($attendanceFile, "r");
+        if ($handle === false) return [];
+
+        fgetcsv($handle); // Skip header
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            if (count($row) < 4) continue;
+            if ($row[2] == $studentId) {
+                $history[] = [
+                    'date' => $row[0],
+                    'class' => $row[1],
+                    'status' => $row[3]
+                ];
+            }
+        }
+        fclose($handle);
+        
+        // Sort by date descending
+        usort($history, function($a, $b) {
+            return strcmp($b['date'], $a['date']);
+        });
+        
+        return $history;
+    }
+
+    public function getStudentResults($studentId) {
+        $resultsFile = __DIR__ . '/../data/results.csv';
+        if (!file_exists($resultsFile)) return [];
+
+        $handle = @fopen($resultsFile, "r");
+        if ($handle === false) return [];
+
+        $results = [];
+        $header = fgetcsv($handle);
+        
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            $data = array_combine($header, $row);
+            if ($data['student_id'] == $studentId) {
+                $results[] = $data;
+            }
+        }
+        fclose($handle);
+        return $results;
+    }
+
+    public function getParentNotices($cnic) {
+        $noticesFile = __DIR__ . '/../data/parent_notices.csv';
+        if (!file_exists($noticesFile)) return [];
+
+        $handle = @fopen($noticesFile, "r");
+        if ($handle === false) return [];
+
+        $notices = [];
+        $header = fgetcsv($handle);
+        
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            $data = array_combine($header, $row);
+            
+            // Show if target is 'ALL' or specific parent CNIC
+            if ($data['target_cnic'] === 'ALL' || $data['target_cnic'] == $cnic) {
+                // Check expiry if set
+                if (!empty($data['expiry_date'])) {
+                    $expiry = strtotime($data['expiry_date']);
+                    if ($expiry < time()) {
+                        continue; // Skip expired notice
+                    }
+                }
+                $notices[] = $data;
+            }
+        }
+        fclose($handle);
+        
+        // Sort by date descending
+        usort($notices, function($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+        
+        return $notices;
+    }
+
+    public function saveParentNotice($data) {
+        $noticesFile = __DIR__ . '/../data/parent_notices.csv';
+        $isNew = !file_exists($noticesFile);
+        
+        $handle = fopen($noticesFile, "a");
+        if ($isNew) {
+            fputcsv($handle, ['id', 'target_cnic', 'title', 'message', 'type', 'created_at', 'expiry_date']);
+        }
+        
+        $row = [
+            $data['id'] ?? time(),
+            $data['target_cnic'],
+            $data['title'],
+            $data['message'],
+            $data['type'] ?? 'General',
+            $data['created_at'] ?? date('Y-m-d H:i:s'),
+            $data['expiry_date'] ?? ''
+        ];
+        
+        $result = fputcsv($handle, $row);
+        fclose($handle);
+        return $result !== false;
     }
 }

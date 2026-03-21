@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/auth_session.php';
+require_once '../includes/parent_or_staff_auth.php';
 require_once '../includes/db.php';
 
 $db = new Database();
