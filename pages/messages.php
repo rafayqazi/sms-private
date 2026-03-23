@@ -11,14 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
     if (!empty($message)) {
         if (isEditor()) {
             // Editor sends to admin (system admin ID is 'admin')
-            $db->sendMessage($_SESSION['teacher_id'], 'teacher', 'admin', $message);
+            $db->sendMessage($_SESSION['teacher_id'], 'teacher', 'admin', 'admin', $message);
         } elseif (isAdmin() || isSuperAdmin()) {
-            // Admin replies to specific teacher
-            $teacherId = $_POST['teacher_id'];
-            $db->sendMessage('admin', 'admin', $teacherId, $message);
+            // Admin replies to specific teacher or parent
+            $recipientId = $_POST['recipient_id'];
+            $recipientType = $_POST['recipient_type'] ?? 'teacher';
+            $db->sendMessage('admin', 'admin', $recipientId, $recipientType, $message);
         }
     }
-    header("Location: messages.php" . (isset($teacherId) ? "?teacher_id=$teacherId" : ""));
+    header("Location: messages.php" . (isset($recipientId) ? "?teacher_id=$recipientId" : ""));
     exit;
 }
 
@@ -42,6 +43,7 @@ $conversations = [];
 $currentConversation = [];
 $currentTeacherId = null;
 $currentTeacherName = '';
+$currentUserType = 'teacher';
 
 if (isEditor()) {
     // Editor only sees their conversation with admin
@@ -53,11 +55,20 @@ if (isEditor()) {
     // Admin sees all conversations
     $conversations = $db->getAllConversations();
     
-    // If a specific teacher is selected
+    // If a specific teacher/parent is selected
     if (isset($_GET['teacher_id'])) {
         $currentTeacherId = $_GET['teacher_id'];
+        
+        // Try to get as teacher first, then parent
         $teacher = $db->getTeacher($currentTeacherId);
-        $currentTeacherName = $teacher ? $teacher['name'] : 'Unknown';
+        if ($teacher) {
+            $currentTeacherName = $teacher['name'];
+            $currentUserType = 'teacher';
+        } else {
+            $currentTeacherName = $db->getParentNameByCnic($currentTeacherId) ?? 'Unknown';
+            $currentUserType = 'parent';
+        }
+        
         $currentConversation = $db->getConversation('admin', $currentTeacherId);
         $db->markMessagesAsRead('admin', $currentTeacherId);
     }
@@ -113,9 +124,14 @@ require_once '../includes/header.php';
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between mb-1">
                                 <h3 class="font-semibold text-gray-800 truncate"><?php echo htmlspecialchars($conv['teacher_name']); ?></h3>
-                                <?php if ($conv['unread_count'] > 0): ?>
-                                <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full"><?php echo $conv['unread_count']; ?></span>
-                                <?php endif; ?>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded <?php echo $conv['user_type'] === 'parent' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'; ?>">
+                                        <?php echo $conv['user_type']; ?>
+                                    </span>
+                                    <?php if ($conv['unread_count'] > 0): ?>
+                                    <span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold"><?php echo $conv['unread_count']; ?></span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <p class="text-sm text-gray-500 truncate"><?php echo htmlspecialchars(substr($conv['latest_message'], 0, 40)) . (strlen($conv['latest_message']) > 40 ? '...' : ''); ?></p>
                             <p class="text-xs text-gray-400 mt-1"><?php echo date('M j, g:i A', strtotime($conv['latest_time'])); ?></p>
@@ -143,16 +159,21 @@ require_once '../includes/header.php';
                     <div>
                         <h2 class="text-lg font-bold"><?php echo htmlspecialchars($currentTeacherName); ?></h2>
                         <p class="text-sm text-indigo-100">
-                            <?php echo isEditor() ? 'System Administrator' : 'Teacher'; ?>
+                            <?php 
+                            if ($currentUserType === 'parent') {
+                                echo 'Parent';
+                            } else {
+                                echo isEditor() ? 'System Administrator' : 'Teacher'; 
+                            }
+                            ?>
                         </p>
                     </div>
                 </div>
                 <?php if ((isAdmin() || isSuperAdmin()) && !isEditor()): ?>
-                <a href="?delete_conversation=<?php echo $currentTeacherId; ?>" 
-                   onclick="return confirm('Delete entire conversation with <?php echo htmlspecialchars($currentTeacherName); ?>? This cannot be undone.')"
-                   class="px-4 py-2 bg-red-500/20 border border-white/30 text-white rounded-lg hover:bg-red-500/30 transition-colors flex items-center gap-2">
-                    <i class="fas fa-trash-alt"></i> Delete Conversation
-                </a>
+                <button onclick="openResolveModal('<?php echo $currentTeacherId; ?>', '<?php echo $currentUserType; ?>', '<?php echo htmlspecialchars(addslashes($currentTeacherName)); ?>')" 
+                   class="px-4 py-2 bg-white/20 border border-white/30 text-white rounded-lg hover:bg-white/30 transition-colors flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i> Resolve Ticket
+                </button>
                 <?php endif; ?>
             </div>
             
@@ -195,7 +216,8 @@ require_once '../includes/header.php';
             <!-- Message Input -->
             <form method="POST" class="p-4 bg-white border-t border-gray-200">
                 <?php if (isAdmin() || isSuperAdmin()): ?>
-                <input type="hidden" name="teacher_id" value="<?php echo $currentTeacherId; ?>">
+                <input type="hidden" name="recipient_id" value="<?php echo $currentTeacherId; ?>">
+                <input type="hidden" name="recipient_type" value="<?php echo $currentUserType; ?>">
                 <?php endif; ?>
                 <div class="flex gap-2">
                     <textarea name="message" rows="2" required
@@ -225,7 +247,123 @@ const messagesContainer = document.getElementById('messagesContainer');
 if (messagesContainer) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// Resolve Ticket Modal Logic
+function openResolveModal(recipientId, recipientType, recipientName) {
+    document.getElementById('resolveRecipientId').value = recipientId;
+    document.getElementById('resolveRecipientType').value = recipientType;
+    document.getElementById('resolveRecipientName').textContent = recipientName;
+    document.getElementById('resolveModal').classList.remove('hidden');
+    document.getElementById('resolveModal').classList.add('flex');
+    document.getElementById('customMsgContainer').classList.add('hidden');
+}
+
+function closeResolveModal() {
+    document.getElementById('resolveModal').classList.add('hidden');
+    document.getElementById('resolveModal').classList.remove('flex');
+}
+
+function toggleCustomMsg(val) {
+    const container = document.getElementById('customMsgContainer');
+    if (val === 'Custom') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+document.getElementById('resolveForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+    
+    fetch('../api/resolve_ticket.php', {
+        method: 'POST',
+        body: new FormData(this)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = 'messages.php';
+        } else {
+            alert(data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Confirm Resolution';
+        }
+    })
+    .catch(() => {
+        alert('Error processing request.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Confirm Resolution';
+    });
+});
 </script>
+
+<!-- Resolve Ticket Modal -->
+<?php if (isAdmin() || isSuperAdmin()): ?>
+<div id="resolveModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5">
+            <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-clipboard-check"></i> Resolve Ticket</h3>
+            <p class="text-emerald-100 text-sm mt-1">Close conversation with <strong id="resolveRecipientName"></strong></p>
+        </div>
+        <form id="resolveForm" class="p-6 space-y-5">
+            <input type="hidden" name="recipient_id" id="resolveRecipientId">
+            <input type="hidden" name="recipient_type" id="resolveRecipientType">
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Resolution Status</label>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-3 p-3 border-2 border-gray-100 rounded-xl hover:border-emerald-300 transition-all cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                        <input type="radio" name="status" value="Resolved" checked onchange="toggleCustomMsg(this.value)" class="accent-emerald-600">
+                        <div class="flex-1">
+                            <span class="font-bold text-gray-800">✅ Resolved</span>
+                            <p class="text-xs text-gray-400">Ticket has been addressed successfully</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border-2 border-gray-100 rounded-xl hover:border-amber-300 transition-all cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                        <input type="radio" name="status" value="Pending" onchange="toggleCustomMsg(this.value)" class="accent-amber-600">
+                        <div class="flex-1">
+                            <span class="font-bold text-gray-800">⏳ Pending</span>
+                            <p class="text-xs text-gray-400">Under review, will follow up</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border-2 border-gray-100 rounded-xl hover:border-red-300 transition-all cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
+                        <input type="radio" name="status" value="Rejected" onchange="toggleCustomMsg(this.value)" class="accent-red-600">
+                        <div class="flex-1">
+                            <span class="font-bold text-gray-800">❌ Rejected</span>
+                            <p class="text-xs text-gray-400">Ticket closed without resolution</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border-2 border-gray-100 rounded-xl hover:border-indigo-300 transition-all cursor-pointer has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50">
+                        <input type="radio" name="status" value="Custom" onchange="toggleCustomMsg(this.value)" class="accent-indigo-600">
+                        <div class="flex-1">
+                            <span class="font-bold text-gray-800">📋 Custom Message</span>
+                            <p class="text-xs text-gray-400">Send a personalized response</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="customMsgContainer" class="hidden">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Custom Message</label>
+                <textarea name="custom_message" rows="3" placeholder="Type your custom resolution message..." 
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"></textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeResolveModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all text-sm">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all text-sm shadow-lg shadow-emerald-200">
+                    <i class="fas fa-check-circle mr-2"></i> Confirm Resolution
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php require_once '../includes/footer.php'; ?>
 

@@ -1420,9 +1420,9 @@ class Database {
 
 
     // Messaging System Methods
-    public function sendMessage($senderId, $senderType, $receiverId, $message) {
+    public function sendMessage($senderId, $senderType, $receiverId, $receiverType, $message) {
         $file = __DIR__ . '/../data/messages.csv';
-        $headers = ['id', 'sender_id', 'sender_type', 'receiver_id', 'message', 'created_at', 'is_read'];
+        $headers = ['id', 'sender_id', 'sender_type', 'receiver_id', 'receiver_type', 'message', 'created_at', 'is_read'];
 
         // Create file with headers if it doesn't exist
         if (!file_exists($file)) {
@@ -1446,8 +1446,9 @@ class Database {
         $record = [
             $id,
             $senderId,
-            $senderType, // 'admin' or 'teacher'
+            $senderType, // 'admin', 'teacher', or 'parent'
             $receiverId,
+            $receiverType, // 'admin', 'teacher', or 'parent'
             $message,
             date('Y-m-d H:i:s'),
             '0' // is_read = false
@@ -1475,7 +1476,23 @@ class Database {
                 // Get messages between these two users (both directions)
                 if (($row[1] == $userId1 && $row[3] == $userId2) || 
                     ($row[1] == $userId2 && $row[3] == $userId1)) {
-                    $messages[] = array_combine($headers, $row);
+                    
+                    if (count($headers) !== count($row)) {
+                        // Handle schema mismatch (7-col vs 8-col)
+                        $msg = [
+                            'id' => $row[0],
+                            'sender_id' => $row[1],
+                            'sender_type' => $row[2],
+                            'receiver_id' => $row[3],
+                            'receiver_type' => isset($row[4]) && count($row) === 8 ? $row[4] : ($row[2] === 'admin' ? 'teacher' : 'admin'),
+                            'message' => count($row) === 8 ? $row[5] : $row[4],
+                            'created_at' => count($row) === 8 ? $row[6] : $row[5],
+                            'is_read' => count($row) === 8 ? $row[7] : $row[6]
+                        ];
+                    } else {
+                        $msg = array_combine($headers, $row);
+                    }
+                    $messages[] = $msg;
                 }
             }
         }
@@ -1499,45 +1516,73 @@ class Database {
         
         $allMessages = [];
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-            if (count($row) >= 7) {
-                $allMessages[] = array_combine($headers, $row);
+            // Handle schema mismatch between headers and data rows
+            if (count($headers) !== count($row)) {
+                $msg = [
+                    'id' => $row[0],
+                    'sender_id' => $row[1],
+                    'sender_type' => $row[2],
+                    'receiver_id' => $row[3],
+                    'receiver_type' => isset($row[4]) && count($row) === 8 ? $row[4] : ($row[2] === 'admin' ? 'teacher' : 'admin'),
+                    'message' => count($row) === 8 ? $row[5] : $row[4],
+                    'created_at' => count($row) === 8 ? $row[6] : $row[5],
+                    'is_read' => count($row) === 8 ? $row[7] : $row[6]
+                ];
+            } else {
+                $msg = array_combine($headers, $row);
             }
+            $allMessages[] = $msg;
         }
         fclose($handle);
 
-        // Group messages by teacher (sender_id when sender_type is teacher)
+        // Group messages by the "other" participant
         $grouped = [];
         foreach ($allMessages as $msg) {
-            if ($msg['sender_type'] === 'teacher') {
-                $teacherId = $msg['sender_id'];
+            if ($msg['sender_id'] !== 'admin') {
+                $participantId = $msg['sender_id'];
+                $participantType = $msg['sender_type'];
             } else {
-                $teacherId = $msg['receiver_id'];
+                $participantId = $msg['receiver_id'];
+                $participantType = $msg['receiver_type'] ?? 'teacher';
             }
             
-            if (!isset($grouped[$teacherId])) {
-                $grouped[$teacherId] = [];
+            $key = $participantType . '_' . $participantId;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'id' => $participantId,
+                    'type' => $participantType,
+                    'messages' => []
+                ];
             }
-            $grouped[$teacherId][] = $msg;
+            $grouped[$key]['messages'][] = $msg;
         }
 
-        // Get latest message and unread count for each conversation
-        foreach ($grouped as $teacherId => $messages) {
+        // Get latest message, name and unread count for each conversation
+        foreach ($grouped as $key => $data) {
+            $messages = $data['messages'];
             usort($messages, function($a, $b) {
                 return strtotime($b['created_at']) - strtotime($a['created_at']);
             });
             
             $unreadCount = 0;
             foreach ($messages as $msg) {
-                if ($msg['is_read'] == '0' && $msg['sender_type'] === 'teacher') {
+                if ($msg['is_read'] == '0' && $msg['receiver_id'] === 'admin') {
                     $unreadCount++;
                 }
             }
             
-            $teacher = $this->getTeacher($teacherId);
+            $name = 'Unknown';
+            if ($data['type'] === 'teacher') {
+                $teacher = $this->getTeacher($data['id']);
+                $name = $teacher ? $teacher['name'] : 'Unknown Teacher';
+            } elseif ($data['type'] === 'parent') {
+                $name = $this->getParentNameByCnic($data['id']) ?? 'Parent';
+            }
             
             $conversations[] = [
-                'teacher_id' => $teacherId,
-                'teacher_name' => $teacher ? $teacher['name'] : 'Unknown',
+                'teacher_id' => $data['id'], // Keeping key as teacher_id for compatibility with pages/messages.php
+                'teacher_name' => $name,
+                'user_type' => $data['type'],
                 'latest_message' => $messages[0]['message'],
                 'latest_time' => $messages[0]['created_at'],
                 'unread_count' => $unreadCount,
@@ -1565,9 +1610,12 @@ class Database {
         $rows[] = $headers;
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            // Detect column count
+            $isReadIndex = (count($row) === 7) ? 6 : 7;
+            
             // Mark as read if sent to userId from otherUserId
             if ($row[3] == $userId && $row[1] == $otherUserId) {
-                $row[6] = '1'; // is_read = true
+                $row[$isReadIndex] = '1'; // is_read = true
             }
             $rows[] = $row;
         }
@@ -1620,9 +1668,23 @@ class Database {
         $rows[] = $headers;
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            // Skip empty or malformed rows
+            if (empty($row) || count($row) < 4 || $row[0] === null) {
+                continue;
+            }
+
+            // Handle schema mismatch between headers and data rows
+            if (count($headers) !== count($row)) {
+                $senderId = $row[1] ?? '';
+                $receiverId = $row[3] ?? ''; // Receiver ID is always at index 3 in both 7-col and 8-col formats sent from code
+            } else {
+                $senderId = $row[1] ?? '';
+                $receiverId = $row[3] ?? '';
+            }
+
             // Skip messages between these two users
-            if (!(($row[1] == $userId1 && $row[3] == $userId2) || 
-                  ($row[1] == $userId2 && $row[3] == $userId1))) {
+            if (!(($senderId == $userId1 && $receiverId == $userId2) || 
+                  ($senderId == $userId2 && $receiverId == $userId1))) {
                 $rows[] = $row;
             }
         }
@@ -1648,7 +1710,8 @@ class Database {
 
         fgetcsv($handle); // Skip header
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-            if (count($row) >= 7 && $row[3] == $userId && $row[6] == '0') {
+            $isReadIndex = (count($row) === 7) ? 6 : 7;
+            if (count($row) >= 7 && $row[3] == $userId && $row[$isReadIndex] == '0') {
                 $count++;
             }
         }
@@ -3194,18 +3257,44 @@ class Database {
      * Parent Portal Methods
      */
 
+    public function getParentNameByCnic($cnic) {
+        $raw_cnic = str_replace('-', '', $cnic);
+        $students = $this->readData();
+        foreach ($students as $student) {
+            $s_father_cnic = str_replace('-', '', $student['father_cnic']);
+            if ($s_father_cnic === $raw_cnic) {
+                return $student['father_name'];
+            }
+        }
+        return null;
+    }
+
     public function verifyParentLogin($cnic, $password) {
-        // Trim inputs
         $cnic = trim($cnic);
         $password = trim($password);
-        
-        // Raw CNIC (remove dashes)
         $raw_cnic = str_replace('-', '', $cnic);
         if (empty($raw_cnic)) return false;
 
+        // 1. Check custom credentials first
+        $customCredentials = $this->getParentCredentials();
+        if (isset($customCredentials[$raw_cnic])) {
+            if (password_verify($password, $customCredentials[$raw_cnic]['password_hash'])) {
+                $students = $this->readData();
+                foreach ($students as $student) {
+                    if (str_replace('-', '', $student['father_cnic']) === $raw_cnic) {
+                        return [
+                            'father_cnic' => $raw_cnic,
+                            'father_name' => $student['father_name'],
+                            'is_custom' => true
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback to eldest child DOB
         $students = $this->readData();
         $parentChildren = [];
-        
         foreach ($students as $student) {
             $s_father_cnic = str_replace('-', '', $student['father_cnic']);
             if ($s_father_cnic === $raw_cnic) {
@@ -3215,24 +3304,64 @@ class Database {
 
         if (empty($parentChildren)) return false;
 
-        // Sort by ID to ensure consistent "first" child (eldest/first enrolled)
         usort($parentChildren, function($a, $b) {
             return $a['id'] - $b['id'];
         });
 
         $firstChild = $parentChildren[0];
-        $expectedPassword = $firstChild['date_of_birth']; // Format: YYYY-MM-DD
+        $expectedPassword = $firstChild['date_of_birth'];
 
         if ($password === $expectedPassword) {
             return [
                 'father_cnic' => $raw_cnic,
                 'father_name' => $firstChild['father_name'],
-                'children_count' => count($parentChildren)
+                'children_count' => count($parentChildren),
+                'is_custom' => false
             ];
         }
 
         return false;
     }
+
+    public function getParentCredentials() {
+        $file = __DIR__ . '/../data/parent_credentials.csv';
+        if (!file_exists($file)) return [];
+        
+        $credentials = [];
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            $headers = fgetcsv($handle);
+            while (($data = fgetcsv($handle)) !== FALSE) {
+                if (count($data) >= 2) {
+                    $credentials[$data[0]] = [
+                        'password_hash' => $data[1],
+                        'updated_at' => $data[2] ?? ''
+                    ];
+                }
+            }
+            fclose($handle);
+        }
+        return $credentials;
+    }
+
+    public function saveParentPassword($cnic, $passwordHash) {
+        $file = __DIR__ . '/../data/parent_credentials.csv';
+        $credentials = $this->getParentCredentials();
+        $raw_cnic = str_replace('-', '', $cnic);
+        
+        $credentials[$raw_cnic] = [
+            'password_hash' => $passwordHash,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['father_cnic', 'password_hash', 'updated_at']);
+        foreach ($credentials as $cnic_key => $data) {
+            fputcsv($fp, [$cnic_key, $data['password_hash'], $data['updated_at']]);
+        }
+        fclose($fp);
+        return true;
+    }
+
 
     public function getParentChildrenByCnic($cnic) {
         $raw_cnic = str_replace('-', '', $cnic);
