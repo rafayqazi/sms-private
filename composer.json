@@ -1,0 +1,14 @@
+{
+    "name": "rafayqazi/sms-private",
+    "description": "SMS Private project",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}
