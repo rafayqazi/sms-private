@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/parent_or_staff_auth.php';
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 if (!isset($_GET['id']) || !isset($_GET['exam_type'])) {
@@ -17,6 +18,14 @@ $result = $database->getStudentResult($studentId, $examType, $year);
 
 if (!$student) {
     die("Student not found.");
+}
+
+$resultClass = !empty($result['class']) ? $result['class'] : $student['current_class'];
+if (isEditor()) {
+    $assigned = getAssignedClasses();
+    if (!in_array($resultClass, $assigned)) {
+        die("Unauthorized access to print this student's result.");
+    }
 }
 
 if (!$result) {

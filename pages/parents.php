@@ -51,6 +51,7 @@ foreach ($students as $student) {
 }
 
 // Post-process to find the "First Child" for password
+$customCredentials = $db->getParentCredentials();
 foreach ($parents as &$p) {
     if (!empty($p['children'])) {
         // Sort children by ID to find the first enrolled
@@ -61,6 +62,10 @@ foreach ($parents as &$p) {
     } else {
         $p['first_child_dob'] = 'N/A';
     }
+    
+    // Check if parent has changed password
+    $rawCnic = str_replace('-', '', $p['father_cnic']);
+    $p['custom_password'] = isset($customCredentials[$rawCnic]) ? $customCredentials[$rawCnic]['password_hash'] : null;
 }
 unset($p);
 ?>
@@ -83,6 +88,45 @@ unset($p);
                 </button>
             </span>
             <input type="search" id="parentSearchInput" class="py-2 text-sm text-gray-900 bg-white rounded-md pl-10 focus:outline-none focus:bg-white focus:text-gray-900 w-full md:w-64" placeholder="Search by Name, Contact, CNIC..." autocomplete="off">
+        </div>
+    </div>
+</div>
+
+
+<!-- Demo Credentials Notice for Testing -->
+<div class="mb-6 animate-[slideIn_0.5s_ease-out]">
+    <div class="bg-indigo-50 dark:bg-indigo-950/20 border-l-4 border-indigo-500 p-5 rounded-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0 shadow-sm border border-indigo-200 dark:border-indigo-800">
+                <i class="fas fa-info-circle text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="font-black text-indigo-900 dark:text-indigo-100 uppercase tracking-tight text-sm mb-1">Parent Portal Demo Credentials</h3>
+                <p class="text-indigo-700 dark:text-indigo-300 text-xs font-medium leading-relaxed">
+                    To test the Parent Portal features, use the credentials provided in the <span class="font-black text-indigo-900 dark:text-white underline decoration-indigo-300">Portal Login</span> column below.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <span class="bg-white/60 dark:bg-indigo-900/40 px-2 py-1 rounded text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                        <i class="fas fa-id-card mr-1"></i> User: Father's CNIC (Numbers only)
+                    </span>
+                    <span class="bg-white/60 dark:bg-indigo-900/40 px-2 py-1 rounded text-[10px] font-bold text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                        <i class="fas fa-calendar-alt mr-1"></i> Pass: Eldest Child's DOB
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white/80 dark:bg-slate-900/60 p-3 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm w-full md:w-auto">
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">Sample for Testing:</div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between gap-4">
+                    <span class="text-[10px] font-bold text-slate-500">CNIC:</span>
+                    <code class="text-[11px] font-black text-indigo-600 cursor-pointer hover:bg-indigo-50 rounded px-1 transition-colors" onclick="navigator.clipboard.writeText('4170111111111')">4170111111111</code>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <span class="text-[10px] font-bold text-slate-500">DOB:</span>
+                    <code class="text-[11px] font-black text-indigo-600 cursor-pointer hover:bg-indigo-50 rounded px-1 transition-colors" onclick="navigator.clipboard.writeText('26-08-2019')">26-08-2019</code>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -151,7 +195,16 @@ unset($p);
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Pass:</span>
-                                        <span class="text-xs font-bold text-indigo-700"><?php echo htmlspecialchars($parent['first_child_dob']); ?></span>
+                                        <div class="flex items-center gap-1">
+                                            <?php if ($parent['custom_password']): ?>
+                                                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-mono tracking-widest password-field" data-password="<?php echo htmlspecialchars($parent['custom_password']); ?>">••••••</span>
+                                            <?php else: ?>
+                                                <span class="text-xs font-bold text-indigo-700 font-mono tracking-widest password-field" data-password="<?php echo htmlspecialchars($parent['first_child_dob']); ?>">••••••</span>
+                                            <?php endif; ?>
+                                            <button onclick="togglePassword(this)" class="text-gray-400 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50 transition-colors" title="Toggle Password Visibility">
+                                                <i class="fas fa-eye text-[10px]"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             <?php else: ?>
@@ -235,8 +288,8 @@ unset($p);
                                                 <span id="modalPortalUser" class="text-sm font-black text-indigo-700"></span>
                                             </div>
                                             <div class="flex items-center justify-between border-t border-indigo-100 pt-2">
-                                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Password (Child DOB)</span>
-                                                <span id="modalPortalPass" class="text-sm font-black text-indigo-700"></span>
+                                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Password</span>
+                                                <div id="modalPortalPass"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -351,7 +404,22 @@ function openParentModal(parent) {
         portalDiv.classList.remove('hidden');
         // Raw CNIC
         document.getElementById('modalPortalUser').textContent = (parent.father_cnic).replace(/[^0-9]/g, '');
-        document.getElementById('modalPortalPass').textContent = parent.first_child_dob || 'N/A';
+        
+        // Password
+        const passEl = document.getElementById('modalPortalPass');
+        const passText = parent.custom_password || parent.first_child_dob || 'N/A';
+        const isCustom = !!parent.custom_password;
+        
+        passEl.innerHTML = `
+            <div class="flex items-center gap-2">
+                ${isCustom 
+                    ? `<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 font-mono tracking-widest password-field" data-password="${passText}">••••••</span>` 
+                    : `<span class="text-sm font-black text-indigo-700 font-mono tracking-widest password-field" data-password="${passText}">••••••</span>`}
+                <button onclick="togglePassword(this)" class="text-gray-400 hover:text-indigo-600 p-1.5 rounded-full hover:bg-indigo-50 transition-colors" title="Toggle Password Visibility">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        `;
     } else {
         portalDiv.classList.add('hidden');
     }
@@ -519,6 +587,24 @@ document.getElementById('parentSearchInput').addEventListener('keyup', function(
         table.appendChild(noRow);
     }
 });
+
+function togglePassword(btn) {
+    const container = btn.parentElement;
+    const passField = container.querySelector('.password-field');
+    const icon = btn.querySelector('i');
+    
+    if (passField.textContent === '••••••') {
+        passField.textContent = passField.getAttribute('data-password');
+        passField.classList.remove('tracking-widest');
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passField.textContent = '••••••';
+        passField.classList.add('tracking-widest');
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
 </script>
 
 <?php include '../includes/footer.php'; ?>

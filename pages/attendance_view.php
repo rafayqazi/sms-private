@@ -11,6 +11,13 @@ $attendanceData = [];
 $stats = ['P' => 0, 'A' => 0, 'L' => 0, 'Unmarked' => 0];
 
 if ($class) {
+    if (isEditor()) {
+        $assigned = getAssignedClasses();
+        if (!in_array($class, $assigned)) {
+            die("Unauthorized to view this class.");
+        }
+    }
+    
     $students = $db->filterStudents(['class' => $class, 'sort_by' => 'gr_no', 'order' => 'ASC']);
     $attendanceData = $db->getAttendance($date, $class);
 

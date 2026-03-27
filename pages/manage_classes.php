@@ -1,6 +1,13 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
+
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
+}
+
 require_once '../includes/header.php';
 
 $db = new Database();
@@ -8,8 +15,13 @@ $db = new Database();
 $successMsg = '';
 $errorMsg = '';
 
+$isTeacher = isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'teacher';
+
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($isTeacher) {
+        die("Unauthorized logic.");
+    }
     // CSRF Verification
     if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
         die("CSRF token validation failed.");
@@ -116,7 +128,8 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
             </div>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 <?php echo $isTeacher ? 'md:grid-cols-1' : 'md:grid-cols-3'; ?> gap-8">
+            <?php if (!$isTeacher): ?>
             <!-- Add/Edit Class Form -->
             <div class="md:col-span-1">
                 <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 sticky top-4">
@@ -172,9 +185,10 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                     </form>
                 </div>
             </div>
+            <?php endif; ?>
 
             <!-- Classes List -->
-            <div class="md:col-span-2">
+            <div class="<?php echo $isTeacher ? 'md:col-span-1' : 'md:col-span-2'; ?>">
                 <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
@@ -184,7 +198,9 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                     <th class="p-4">Class Name</th>
                                     <th class="p-4 text-center text-[10px]">GR Required</th>
                                     <th class="p-4 text-center text-[10px]">Has Group</th>
+                                    <?php if (!$isTeacher): ?>
                                     <th class="p-4 text-center">Actions</th>
+                                    <?php endif; ?>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -221,6 +237,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                                 </span>
                                             <?php endif; ?>
                                         </td>
+                                        <?php if (!$isTeacher): ?>
                                         <td class="p-4 text-center">
                                             <div class="flex items-center justify-center gap-2">
                                                 <a href="manage_classes.php?edit=<?php echo $c['id']; ?>" class="text-blue-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50" title="Edit Class">
@@ -235,6 +252,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                                 </form>
                                             </div>
                                         </td>
+                                        <?php endif; ?>
                                     </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

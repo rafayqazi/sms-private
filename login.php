@@ -151,12 +151,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <div class="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-8"></div>
 
                     <!-- Login Mode Toggle -->
-                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-8 w-full max-w-[280px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
-                        <button type="button" id="staffModeBtn" onclick="setLoginMode('staff')" class="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100">
-                            <i class="fas fa-user-shield mr-2"></i> Staff Login
+                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-8 w-full max-w-[340px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
+                        <button type="button" id="staffModeBtn" onclick="setLoginMode('staff')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100">
+                            <i class="fas fa-user-shield mr-1"></i> Admin
                         </button>
-                        <button type="button" id="parentModeBtn" onclick="setLoginMode('parent')" class="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
-                            <i class="fas fa-user-friends mr-2"></i> Parent Portal
+                        <button type="button" id="teacherModeBtn" onclick="setLoginMode('teacher')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-chalkboard-teacher mr-1"></i> Teacher
+                        </button>
+                        <button type="button" id="parentModeBtn" onclick="setLoginMode('parent')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
+                            <i class="fas fa-user-friends mr-1"></i> Parent
                         </button>
                     </div>
 
@@ -212,15 +215,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 
                     <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-4">
-                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <!-- Liquid Gooey Container -->
+                        <div class="absolute inset-0 liquid-goo-container opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                            <div class="blob blob-1"></div>
+                            <div class="blob blob-2"></div>
+                            <div class="blob blob-3"></div>
+                            <div class="blob blob-4"></div>
+                        </div>
+                        
+                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                        
                         <div id="btnContent" class="relative flex items-center justify-center gap-3">
-                            <span class="uppercase tracking-[0.2em]">Authorize Access</span>
+                            <span class="uppercase tracking-[0.2em] drop-shadow-md">Authorize Access</span>
                             <i class="fas fa-shield-alt text-xs animate-pulse"></i>
                         </div>
                         <div id="btnLoading" class="relative hidden items-center justify-center gap-3">
                             <span class="uppercase tracking-[0.2em]">Authorizing...</span>
                             <i class="fas fa-circle-notch fa-spin text-sm"></i>
                         </div>
+
+                        <!-- Gooey Filter Definition -->
+                        <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden">
+                            <defs>
+                                <filter id="goo">
+                                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+                                    <feBlend in="SourceGraphic" in2="goo" />
+                                </filter>
+                            </defs>
+                        </svg>
                     </button>
                 </form>
 
@@ -400,6 +423,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         const loginForm = document.getElementById('loginForm');
         const loginModeInput = document.getElementById('login_mode');
         const staffModeBtn = document.getElementById('staffModeBtn');
+        const teacherModeBtn = document.getElementById('teacherModeBtn');
         const parentModeBtn = document.getElementById('parentModeBtn');
         
         const loginTitle = document.getElementById('loginTitle');
@@ -416,10 +440,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         function setLoginMode(mode) {
             loginModeInput.value = mode;
             
+            // Reset all buttons
+            [staffModeBtn, teacherModeBtn, parentModeBtn].forEach(btn => {
+                btn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
+            });
+
             if (mode === 'parent') {
-                // Parent Portal Styles
-                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
-                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-emerald-600 shadow-sm border border-emerald-100';
+                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-emerald-600 shadow-sm border border-emerald-100';
                 
                 loginTitle.textContent = 'Parent Portal';
                 loginSubtitle.textContent = 'Track your child\'s progress and activities.';
@@ -432,10 +459,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 btnContent.querySelector('span').textContent = 'Access Portal';
                 btnContent.querySelector('i').className = 'fas fa-user-graduate text-xs animate-pulse';
                 loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
+            } else if (mode === 'teacher') {
+                teacherModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-violet-600 shadow-sm border border-violet-100';
+                
+                loginTitle.textContent = 'Teacher Portal';
+                loginSubtitle.textContent = 'Manage classes and academic records.';
+                usernameLabel.textContent = 'Teacher CNIC Number';
+                passwordLabel.textContent = 'Your Date of Birth';
+                usernameInput.placeholder = 'XXXXX-XXXXXXX-X';
+                passwordInput.placeholder = 'YYYY-MM-DD';
+                usernameIcon.className = 'fas fa-id-card absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-500 transition-colors';
+                
+                btnContent.querySelector('span').textContent = 'Teacher Access';
+                btnContent.querySelector('i').className = 'fas fa-chalkboard-teacher text-xs animate-pulse';
+                loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
             } else {
-                // Staff Login Styles
-                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
-                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100';
+                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100';
                 
                 loginTitle.textContent = 'Secure Login';
                 loginSubtitle.textContent = 'Authorized personnel only. Please verify your identity.';
@@ -465,7 +504,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Form Handling
         loginForm.addEventListener('submit', function(e) {
-            if (loginModeInput.value === 'parent') {
+            const mode = loginModeInput.value;
+            if (mode === 'parent' || mode === 'teacher') {
                 e.preventDefault();
                 
                 // Show loading state
@@ -475,7 +515,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 loginBtn.disabled = true;
 
                 const formData = new FormData(loginForm);
-                fetch('api/parent_login.php', {
+                const apiUrl = mode === 'parent' ? 'api/parent_login.php' : 'api/teacher_login.php';
+                
+                fetch(apiUrl, {
                     method: 'POST',
                     body: formData
                 })
@@ -534,6 +576,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+        /* Liquid Gooey Effect Styles */
+        .liquid-goo-container {
+            filter: url('#goo');
+            background: linear-gradient(to right, #4f46e5, #9333ea);
+        }
+        .blob {
+            position: absolute;
+            background: #4f46e5;
+            border-radius: 50%;
+            filter: blur(1px); /* Slight blur to help merging */
+            transition: all 0.5s ease;
+            mix-blend-mode: screen;
+        }
+        .blob-1 {
+            width: 100px; height: 100px;
+            left: -10%; top: -20%;
+            background: #4f46e5;
+            animation: blob-move-1 8s infinite alternate ease-in-out;
+        }
+        .blob-2 {
+            width: 120px; height: 120px;
+            right: -10%; top: 30%;
+            background: #9333ea;
+            animation: blob-move-2 10s infinite alternate ease-in-out;
+        }
+        .blob-3 {
+            width: 80px; height: 80px;
+            left: 30%; bottom: -30%;
+            background: #d946ef;
+            animation: blob-move-3 7s infinite alternate ease-in-out;
+        }
+        .blob-4 {
+            width: 140px; height: 140px;
+            right: 20%; bottom: 20%;
+            background: #6366f1;
+            animation: blob-move-1 12s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes blob-move-1 {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(20px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(10px, -10px) scale(1.05); }
+        }
+        @keyframes blob-move-2 {
+            0% { transform: translate(0, 0) scale(1.1); }
+            50% { transform: translate(-30px, 40px) scale(0.9); }
+            100% { transform: translate(20px, -20px) scale(1); }
+        }
+        @keyframes blob-move-3 {
+            0% { transform: translate(0, 0) scale(0.9); }
+            50% { transform: translate(40px, -20px) scale(1.2); }
+            100% { transform: translate(-10px, 30px) scale(1); }
+        }
     </style>
 </body>
 </html>

@@ -1,9 +1,22 @@
 <?php
-require_once '../includes/auth_session.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Allow either Admin OR Parent login
+$is_admin = isset($_SESSION['user']);
+$is_parent = isset($_SESSION['parent_cnic']) && $_SESSION['user_type'] === 'parent';
+
+if (!$is_admin && !$is_parent) {
+    header("Location: ../login.php?error=unauthorized");
+    exit;
+}
+
 require_once '../includes/db.php';
 
 $gr_nos_raw = isset($_GET['gr_no']) ? trim($_GET['gr_no']) : '';
 $gr_nos = !empty($gr_nos_raw) ? explode(',', $gr_nos_raw) : [];
+$hide_controls = isset($_GET['hide_controls']) && $_GET['hide_controls'] == '1';
 
 if (empty($gr_nos)) {
     die("GR Number(s) are required.");
@@ -108,6 +121,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
+    <?php if (!$hide_controls): ?>
     <!-- Controls -->
     <div class="no-print mb-8 flex gap-4">
         <a href="print_id_card.php" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow transition">
@@ -117,6 +131,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
             <i class="fas fa-print"></i> Print Cards (<?php echo count($students); ?>)
         </button>
     </div>
+    <?php endif; ?>
 
     <div class="flex flex-col items-center gap-8">
     <?php foreach ($students as $student): ?>

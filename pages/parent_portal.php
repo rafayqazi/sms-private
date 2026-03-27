@@ -49,6 +49,7 @@ $overall_exam_avg = (!empty($latest_results)) ? round($total_pct / count($latest
 // Calculate Fee Status (New)
 $unpaid_count = 0;
 $current_month = date('Y-m');
+$current_month_name = date('M Y'); // e.g. Mar 2026
 foreach ($children as $child) {
     $fee_history = $db->getStudentFeeHistory($child['gr_no']);
     $paid_months = array_column($fee_history, 'month_for');
@@ -282,8 +283,8 @@ foreach ($children as $child) {
                         <i class="fas fa-file-invoice-dollar"></i>
                     </div>
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fee Status</span>
-                    <span class="text-sm font-black <?php echo $unpaid_count > 0 ? 'text-amber-600' : 'text-emerald-600'; ?>">
-                        <?php echo $unpaid_count > 0 ? $unpaid_count . ' Pending' : 'All Paid'; ?>
+                    <span class="text-xs font-black text-center <?php echo $unpaid_count > 0 ? 'text-amber-600' : 'text-emerald-600'; ?>">
+                        <?php echo $unpaid_count > 0 ? 'Pending: ' . $current_month_name : 'All Paid'; ?>
                     </span>
                 </div>
 

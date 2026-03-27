@@ -3,9 +3,10 @@ require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 require_once '../includes/header.php';
 
-// Only Admin or Editor can access
-if ($_SESSION['user_role'] === 'Editor' && !in_array('certificates', $allowed_pages ?? [])) {
-    // Basic permission check - although header hides link, direct access check is good practice
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
 }
 ?>
 

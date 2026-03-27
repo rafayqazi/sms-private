@@ -1,6 +1,14 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
+require_once '../includes/functions.php';
+
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
+}
+
 
 $db = new Database();
 $classes = $db->getClasses();
@@ -130,11 +138,15 @@ include '../includes/header.php';
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <?php foreach ($feeStats['class_breakdown'] as $cls => $amt): ?>
-                <div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    <div class="text-[10px] text-gray-500 font-bold uppercase"><?php echo htmlspecialchars($cls); ?></div>
+                <div onclick="showClassDetail('<?php echo htmlspecialchars($cls); ?>')" class="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:border-indigo-300 hover:shadow-md transition cursor-pointer group">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="text-[10px] text-gray-500 font-bold uppercase"><?php echo htmlspecialchars($cls); ?></div>
+                        <i class="fas fa-external-link-alt text-[8px] text-gray-300 group-hover:text-indigo-400"></i>
+                    </div>
                     <div class="text-sm font-bold text-gray-900">Rs. <?php echo number_format($amt); ?></div>
                 </div>
                 <?php endforeach; ?>
+
                 <?php if (empty($feeStats['class_breakdown'])): ?>
                 <div class="col-span-full py-4 text-center text-gray-400 text-sm italic">No collections recorded yet for this month.</div>
                 <?php endif; ?>
@@ -294,8 +306,15 @@ include '../includes/header.php';
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">All Collections</h3>
                 <div class="flex gap-2">
+                    <select id="history_class" class="text-sm border rounded px-3 py-1" onchange="loadHistory()">
+                        <option value="">All Classes</option>
+                        <?php foreach ($classes as $c): ?>
+                            <option value="<?php echo $c['class_name']; ?>"><?php echo $c['class_name']; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                     <input type="month" id="history_month" class="text-sm border rounded px-3 py-1" onchange="loadHistory()">
                 </div>
+
             </div>
             <div id="history_table_container">
                 <!-- Loaded via AJAX -->
@@ -318,6 +337,39 @@ include '../includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- Class Detail Modal -->
+<div id="class_detail_modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true" onclick="window.closeFeeModal()">
+
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100">
+            <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-indigo-50/30">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900" id="modal_title">Class Details</h3>
+                    <p class="text-xs text-indigo-600 font-medium" id="modal_subtitle">Payment status for March 2026</p>
+                </div>
+                <button onclick="window.closeFeeModal()" class="text-gray-400 hover:text-gray-600 transition p-1">
+
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+            <div class="px-6 py-4 max-h-[60vh] overflow-y-auto custom-scrollbar" id="modal_content">
+                <!-- Content loaded via JS -->
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100">
+                <button onclick="window.closeFeeModal()" class="bg-white text-gray-700 font-bold py-2 px-6 rounded-lg border border-gray-300 hover:bg-gray-100 transition text-sm">
+
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
 function switchTab(tabId) {
@@ -464,15 +516,117 @@ function handleCollection(e) {
 
 function loadHistory() {
     const month = document.getElementById('history_month').value;
+    const className = document.getElementById('history_class').value;
     const container = document.getElementById('history_table_container');
     container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading history...</div>';
     
-    fetch(`../api/get_fee_history.php?month=${month}`)
+    fetch(`../api/get_fee_history.php?month=${month}&class=${encodeURIComponent(className)}`)
         .then(res => res.text())
         .then(html => {
             container.innerHTML = html;
         });
 }
+
+window.showClassDetail = function(className) {
+    const modal = document.getElementById('class_detail_modal');
+    const content = document.getElementById('modal_content');
+    const title = document.getElementById('modal_title');
+    const subtitle = document.getElementById('modal_subtitle');
+    
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date());
+    
+    title.innerText = `Class: ${className}`;
+    subtitle.innerText = `Payment summary for ${monthName} ${new Date().getFullYear()}`;
+    content.innerHTML = '<div class="py-12 text-center"><i class="fas fa-circle-notch fa-spin fa-2x text-indigo-500"></i><p class="mt-2 text-gray-400">Fetching student list...</p></div>';
+    
+    if (modal) {
+        modal.style.display = 'block';
+        modal.classList.remove('hidden');
+    }
+
+    fetch(`../api/get_class_fee_status.php?class=${encodeURIComponent(className)}&month=${currentMonth}`)
+        .then(res => res.json())
+        .then(response => {
+            const data = response.data || [];
+            if (data.length === 0) {
+                content.innerHTML = '<p class="py-8 text-center text-gray-500 italic">No students found in this class.</p>';
+                return;
+            }
+
+            let html = '<div class="grid grid-cols-1 gap-3">';
+            data.forEach(s => {
+                const isPaid = s.status === 'Paid';
+                html += `
+                    <div class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-indigo-100 transition shadow-sm bg-white">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 rounded-lg ${isPaid ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">
+                                <i class="fas ${isPaid ? 'fa-check-circle' : 'fa-clock'}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900">${s.student_name}</div>
+                                <div class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">GR: ${s.gr_no}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${s.status}
+                            </span>
+                            ${!isPaid ? `
+                            <button onclick="pickStudent('${s.gr_no}', '${s.student_name}')" class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fas fa-hand-holding-usd"></i> Collect
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            content.innerHTML = html;
+        });
+}
+
+window.showStudentHistory = function(gr, name) {
+    const modal = document.getElementById('class_detail_modal');
+    const content = document.getElementById('modal_content');
+    const title = document.getElementById('modal_title');
+    const subtitle = document.getElementById('modal_subtitle');
+    
+    title.innerText = `Fee History: ${name}`;
+    subtitle.innerText = `Full payment records for GR: ${gr}`;
+    content.innerHTML = '<div class="py-12 text-center"><i class="fas fa-circle-notch fa-spin fa-2x text-indigo-500"></i><p class="mt-2 text-gray-400">Loading history...</p></div>';
+    
+    if (modal) {
+        modal.style.display = 'block';
+        modal.classList.remove('hidden');
+    }
+
+    fetch(`../api/get_fee_history.php?gr_no=${gr}`)
+        .then(res => res.text())
+        .then(html => {
+            content.innerHTML = html;
+        });
+}
+
+window.closeFeeModal = function() {
+
+    const modal = document.getElementById('class_detail_modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+    }
+};
+
+// Add ESC key listener to document
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.closeFeeModal();
+    }
+});
+
+
+
+
 
 function loadDefaulters() {
     const month = document.getElementById('defaulter_month').value;

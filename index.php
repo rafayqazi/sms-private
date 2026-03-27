@@ -1,11 +1,30 @@
 <?php
 require_once 'includes/auth_session.php';
+
+// Redirect Parents to their portal
+if (isParent()) {
+    header("Location: pages/parent_portal.php");
+    exit();
+}
+
+// Redirect Teachers to their dedicated dashboard
+if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'teacher') {
+    header("Location: pages/teacher_dashboard.php");
+    exit();
+}
+
+// Global page access check
+if (!canAccessPage('index.php')) {
+    header("Location: login.php");
+    exit();
+}
+
 require_once 'includes/db.php';
 $db = new Database();
 $students = $db->readData();
 
 // Filter out Alumni students - they only appear in Alumni tab
-$activeStudents = array_filter($students, function($student) {
+$activeStudents = array_filter($students, function ($student) {
     return !isset($student['student_status']) || $student['student_status'] !== 'Alumni';
 });
 
@@ -15,11 +34,14 @@ $femaleCount = 0;
 $classes = [];
 
 foreach ($activeStudents as $student) {
-    if (isset($student['gender']) && $student['gender'] == 'Male') $maleCount++;
-    elseif (isset($student['gender']) && $student['gender'] == 'Female') $femaleCount++;
-    
+    if (isset($student['gender']) && $student['gender'] == 'Male')
+        $maleCount++;
+    elseif (isset($student['gender']) && $student['gender'] == 'Female')
+        $femaleCount++;
+
     $class = isset($student['current_class']) ? $student['current_class'] : 'Unknown';
-    if (!isset($classes[$class])) $classes[$class] = 0;
+    if (!isset($classes[$class]))
+        $classes[$class] = 0;
     $classes[$class]++;
 }
 $alumniCount = 0;
@@ -45,9 +67,11 @@ $classPerfStats = $db->getClassPerformanceStats(3);
 $birthdays = $db->getBirthdaysToday();
 
 $allInventory = $db->getInventory(['status' => 'Active']);
-$lowStockItems = array_filter($allInventory, function($item) {
+$lowStockItems = array_filter($allInventory, function ($item) {
     return (int)$item['quantity'] < 5;
 });
+
+
 ?>
 
 <?php include 'includes/header.php'; ?>
@@ -84,7 +108,8 @@ $lowStockItems = array_filter($allInventory, function($item) {
         </div>
     </div>
 </div>
-<?php endif; ?>
+<?php
+endif; ?>
 
 <script>
 function dismissUpdateNotification() {
@@ -135,7 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>
     </div>
 </div>
-<?php unset($_SESSION['success_message']); endif; ?>
+<?php unset($_SESSION['success_message']);
+endif; ?>
 
 
 <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 rounded-lg shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
@@ -215,11 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
     <a href="pages/students.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
         <div class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $totalStudents; ?></div>
     </a>
+
     <a href="pages/students.php?gender=Male" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-blue-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Male</div>
         <div class="text-3xl font-bold text-blue-600 dark:text-blue-400"><?php echo $maleCount; ?></div>
@@ -234,18 +262,17 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Alumni Students</div>
         <div class="text-3xl font-bold text-purple-600 dark:text-purple-400"><?php echo $alumniCount; ?></div>
     </a>
-    <a href="pages/assign_roles.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-amber-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Teaching Staff</div>
-        <div class="text-3xl font-bold text-amber-600 dark:text-amber-400"><?php echo $teacherCount; ?></div>
-    </a>
+
     <a href="pages/attendance.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-teal-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
         <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Today's Attendance</div>
         <div class="text-3xl font-bold text-teal-600 dark:text-teal-400">
             <?php if ($attendanceStats['is_today']): ?>
                 <?php echo $presentCount; ?> <span class="text-lg text-gray-400 dark:text-gray-500 font-normal">(<?php echo $attendancePercentage; ?>%)</span>
-            <?php else: ?>
+            <?php
+else: ?>
                 <span class="text-2xl text-gray-400 dark:text-gray-500">Unmarked</span>
-            <?php endif; ?>
+            <?php
+endif; ?>
         </div>
     </a>
 </div>
@@ -263,11 +290,13 @@ document.addEventListener('DOMContentLoaded', () => {
                          <p class="text-gray-600 font-medium text-lg mb-1">Attendance Unmarked for Today</p>
                     </div>
                 </div>
-            <?php else: ?>
+            <?php
+else: ?>
                 <div class="relative h-[300px]">
                     <canvas id="overallAttendanceChart"></canvas>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
         </div>
 
         <!-- Class-wise Attendance Bar Chart -->
@@ -290,17 +319,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <span class="text-gray-700 font-medium"><?php echo htmlspecialchars($className); ?></span>
                                         <span class="text-red-500 text-xs font-semibold">Unmarked</span>
                                     </div>
-                                <?php endforeach; ?>
+                                <?php
+    endforeach; ?>
                             </div>
                         </div>
                     </div>
                 </div>
-            <?php else: ?>
+            <?php
+else: ?>
                 <!-- Show Bar Chart -->
                 <div class="relative h-[300px]">
                     <canvas id="classAttendanceChart"></canvas>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
         </div>
     </div>
 </div>
@@ -333,21 +365,24 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="content-academic" class="topper-content space-y-4">
                 <?php if (empty($toppers)): ?>
                     <p class="text-gray-400 text-center py-6 text-xs italic">No exam data found</p>
-                <?php else: ?>
+                <?php
+else: ?>
                     <?php foreach ($toppers as $index => $topper): ?>
                         <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors">
                             <div class="relative">
-                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-yellow-400' : 'border-gray-200 dark:border-gray-700'; ?> overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo($index == 0) ? 'border-yellow-400' : 'border-gray-200 dark:border-gray-700'; ?> overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
                                     <?php if ($topper['profile_image']): ?>
                                         <img src="<?php echo htmlspecialchars($topper['profile_image']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
+                                    <?php
+        else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-indigo-400 dark:text-indigo-300 font-bold uppercase text-sm">
                                             <?php echo substr($topper['student_name'], 0, 1); ?>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+        endif; ?>
                                 </div>
                                 <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold
-                                    <?php echo ($index == 0) ? 'bg-yellow-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
+                                    <?php echo($index == 0) ? 'bg-yellow-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
                                     <?php echo $index + 1; ?>
                                 </div>
                             </div>
@@ -359,29 +394,34 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                    <?php
+    endforeach; ?>
+                <?php
+endif; ?>
             </div>
 
             <!-- Attendance Toppers -->
             <div id="content-attendance" class="topper-content hidden space-y-4">
                 <?php if (empty($attendanceToppers)): ?>
                     <p class="text-gray-400 text-center py-6 text-xs italic">No attendance records found</p>
-                <?php else: ?>
+                <?php
+else: ?>
                     <?php foreach ($attendanceToppers as $index => $atopper): ?>
                         <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 transition-colors group">
                             <div class="relative">
-                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-emerald-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo($index == 0) ? 'border-emerald-400' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
                                     <?php if ($atopper['profile_image']): ?>
                                         <img src="<?php echo htmlspecialchars($atopper['profile_image']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
+                                    <?php
+        else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-emerald-400 font-bold uppercase text-sm">
                                             <?php echo substr($atopper['student_name'], 0, 1); ?>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+        endif; ?>
                                 </div>
                                 <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold
-                                    <?php echo ($index == 0) ? 'bg-emerald-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
+                                    <?php echo($index == 0) ? 'bg-emerald-500' : (($index == 1) ? 'bg-slate-400' : 'bg-amber-600'); ?>">
                                     <?php echo $index + 1; ?>
                                 </div>
                             </div>
@@ -393,27 +433,32 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    <?php
+    endforeach; ?>
                     <div class="text-[9px] text-center text-gray-400 pt-2 border-t border-gray-50 italic">Based on overall presence percentage</div>
-                <?php endif; ?>
+                <?php
+endif; ?>
             </div>
 
             <!-- Class-wise Performance -->
             <div id="content-classwise" class="topper-content hidden space-y-4">
                 <?php if (empty($classPerfStats)): ?>
                     <p class="text-gray-400 text-center py-6 text-xs italic">No result data available</p>
-                <?php else: ?>
+                <?php
+else: ?>
                     <?php foreach ($classPerfStats as $index => $cs): ?>
                         <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-50 transition-colors group">
                             <div class="relative">
-                                <div class="w-10 h-10 rounded-full border-2 <?php echo ($index == 0) ? 'border-primary' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full border-2 <?php echo($index == 0) ? 'border-primary' : 'border-gray-200'; ?> overflow-hidden bg-gray-100 flex-shrink-0">
                                     <?php if ($cs['topper_img']): ?>
                                         <img src="<?php echo htmlspecialchars($cs['topper_img']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
+                                    <?php
+        else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-primary font-bold uppercase text-sm">
                                             <?php echo substr($cs['class_name'], 0, 1); ?>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+        endif; ?>
                                 </div>
                                 <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white shadow-sm font-bold bg-primary border border-white">
                                     <i class="fas fa-users"></i>
@@ -429,9 +474,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    <?php
+    endforeach; ?>
                     <div class="text-[9px] text-center text-gray-400 pt-2 border-t border-gray-50 italic">Top classes based on average student score</div>
-                <?php endif; ?>
+                <?php
+endif; ?>
             </div>
         </div>
     </div>
@@ -450,7 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
                     <p class="text-gray-500 text-sm">All inventory is well-stocked</p>
                 </div>
-            <?php else: ?>
+            <?php
+else: ?>
                 <div class="space-y-3">
                     <?php foreach ($lowStockItems as $item): ?>
                         <div class="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
@@ -462,9 +510,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fas fa-arrow-right text-sm"></i>
                             </a>
                         </div>
-                    <?php endforeach; ?>
+                    <?php
+    endforeach; ?>
                 </div>
-            <?php endif; ?>
+            <?php
+endif; ?>
         </div>
     </div>
 
@@ -484,32 +534,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 </h3>
                 <?php if (empty($birthdays['today'])): ?>
                     <p class="text-gray-400 text-xs text-center py-2">No birthdays today</p>
-                <?php else: ?>
+                <?php
+else: ?>
                     <div class="space-y-4">
                         <?php foreach ($birthdays['today'] as $bday): ?>
                             <div class="flex items-center gap-3 bg-pink-50/50 p-2 rounded-lg border border-pink-100/50">
                                 <div class="w-10 h-10 rounded-full bg-pink-100 border border-pink-200 overflow-hidden shrink-0">
                                     <?php if ($bday['image']): ?>
                                         <img src="<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
+                                    <?php
+        else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-pink-500 font-bold">
                                             <?php echo substr($bday['name'], 0, 1); ?>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+        endif; ?>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="text-sm font-bold text-gray-800 truncate"><?php echo htmlspecialchars($bday['name']); ?></div>
                                     <div class="text-[10px] text-gray-500 flex items-center gap-1">
-                                        <i class="fas <?php echo ($bday['type'] == 'teacher') ? 'fa-chalkboard-teacher' : 'fa-user-graduate'; ?>"></i>
+                                        <i class="fas <?php echo($bday['type'] == 'teacher') ? 'fa-chalkboard-teacher' : 'fa-user-graduate'; ?>"></i>
                                         <?php echo htmlspecialchars($bday['class']); ?>
                                     </div>
                                     <div class="text-[10px] font-semibold text-pink-600"><?php echo date('d M Y', strtotime($bday['dob'])); ?></div>
                                 </div>
                                 <div class="ml-auto text-xl">🎉</div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php
+    endforeach; ?>
                     </div>
-                <?php endif; ?>
+                <?php
+endif; ?>
             </div>
 
             <!-- Upcoming Section -->
@@ -519,18 +574,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 </h3>
                 <?php if (empty($birthdays['upcoming'])): ?>
                     <p class="text-gray-400 text-xs text-center py-2 italic">Nothing for now</p>
-                <?php else: ?>
+                <?php
+else: ?>
                     <div class="space-y-3">
                         <?php foreach ($birthdays['upcoming'] as $bday): ?>
                             <div class="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
                                 <div class="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
                                     <?php if ($bday['image']): ?>
                                         <img src="uploads/<?php echo htmlspecialchars($bday['image']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
+                                    <?php
+        else: ?>
                                         <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">
                                             <?php echo substr($bday['name'], 0, 1); ?>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+        endif; ?>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="text-xs font-bold text-gray-700 truncate"><?php echo htmlspecialchars($bday['name']); ?></div>
@@ -540,9 +598,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <?php echo date('d M', strtotime($bday['dob'])); ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php
+    endforeach; ?>
                     </div>
-                <?php endif; ?>
+                <?php
+endif; ?>
             </div>
         </div>
     </div>
@@ -588,7 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    <?php endif; ?>
+    <?php
+endif; ?>
 
     // Class-wise Attendance Chart - Only render if attendance is marked for today
     <?php if ($attendanceStats['is_today']): ?>
@@ -651,7 +712,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    <?php endif; ?>
+    <?php
+endif; ?>
 </script>
 
 <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mt-8">
@@ -659,9 +721,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Admissions</h2>
         <a href="pages/students.php" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium text-sm border border-indigo-600 dark:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950 px-4 py-2 rounded-md transition-colors w-full sm:w-auto text-center">View All</a>
     </div>
-    <?php 
-    $recentStudents = array_slice(array_reverse($students), 0, 5);
-    ?>
+    <?php
+$recentStudents = array_slice(array_reverse($students), 0, 5);
+?>
     <!-- Mobile Card View (Visible on small screens) -->
     <div class="md:hidden space-y-4">
         <?php foreach ($recentStudents as $student): ?>
@@ -691,7 +753,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         </div>
-        <?php endforeach; ?>
+        <?php
+endforeach; ?>
     </div>
 
     <!-- Desktop Table View (Hidden on small screens) -->
@@ -726,7 +789,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td class="p-4 text-gray-500 text-sm"><?php echo htmlspecialchars($student['admission_date']); ?></td>
                 </tr>
-                <?php endforeach; ?>
+                <?php
+endforeach; ?>
             </tbody>
         </table>
     </div>
@@ -758,9 +822,10 @@ document.addEventListener('DOMContentLoaded', () => {
     100% { transform: scale(1); opacity: 1; }
 }
 </style>
-<?php 
+<?php
     unset($_SESSION['show_welcome_animation']);
-endif; 
+endif;
+
 ?>
 
 <script>

@@ -1,6 +1,13 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
+require_once '../includes/functions.php';
+
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
+}
 
 $db = new Database();
 // Admin/Super Admin can see all classes, others restricted

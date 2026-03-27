@@ -17,6 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class = $_POST['class'];
     $attendanceData = isset($_POST['attendance']) ? $_POST['attendance'] : [];
     
+    if (isEditor()) {
+        $assigned = getAssignedClasses();
+        if (!in_array($class, $assigned)) {
+            die("Unauthorized to mark attendance for this class.");
+        }
+    }
+    
     if ($db->saveAttendance($date, $class, $attendanceData)) {
         $message = "Attendance saved successfully!";
     } else {
@@ -28,6 +35,12 @@ $students = [];
 $existingAttendance = [];
 
 if ($class) {
+    if (isEditor()) {
+        $assigned = getAssignedClasses();
+        if (!in_array($class, $assigned)) {
+            die("Unauthorized to mark attendance for this class.");
+        }
+    }
     $students = $db->filterStudents(['class' => $class, 'sort_by' => 'gr_no', 'order' => 'ASC']);
     $existingAttendance = $db->getAttendance($date, $class);
 }

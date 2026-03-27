@@ -2,6 +2,12 @@
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
+}
+
 // Sample CSV Download - MUST BE BEFORE ANY HTML OUTPUT
 if (isset($_GET['download_sample'])) {
     header('Content-Type: text/csv');

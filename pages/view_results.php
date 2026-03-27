@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/auth_session.php';
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 // Check if user can access this page
@@ -12,6 +13,13 @@ $db = new Database();
 $selectedClass = isset($_GET['class']) ? $_GET['class'] : '';
 $selectedExam = isset($_GET['exam_type']) ? $_GET['exam_type'] : '';
 $selectedYear = isset($_GET['year']) ? $_GET['year'] : date('Y');
+
+if ($selectedClass && isEditor()) {
+    $assigned = getAssignedClasses();
+    if (!in_array($selectedClass, $assigned)) {
+        die("Unauthorized access to this class.");
+    }
+}
 
 $students = [];
 $results = [];
@@ -46,7 +54,7 @@ if ($selectedClass && $selectedExam && $selectedYear) {
             <label class="text-sm font-medium text-gray-700">Class</label>
             <select name="class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" required>
                 <option value="">Select Class</option>
-                <?php foreach ($db->getClassNames() as $c): ?>
+                <?php foreach (getAssignedClasses() as $c): ?>
                     <option value="<?= $c ?>" <?= $selectedClass == $c ? 'selected' : '' ?>>Class <?= $c ?></option>
                 <?php endforeach; ?>
             </select>

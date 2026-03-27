@@ -1,6 +1,13 @@
 <?php
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
+
+// Check permissions
+if (!canAccessPage(basename(__FILE__))) {
+    header("Location: ../index.php");
+    exit;
+}
+
 require_once '../includes/header.php';
 
 $settingsFile = __DIR__ . '/../data/settings.json';

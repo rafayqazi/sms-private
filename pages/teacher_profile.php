@@ -3,7 +3,10 @@ require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
 // Check if user can access this page
-if (!canAccessPage('teacher_profile.php')) {
+$isTeacherSelf = isEditor() && isset($_SESSION['teacher_id']) && isset($_GET['id']) && $_GET['id'] == $_SESSION['teacher_id'];
+$isTeacherView = isEditor() && isset($_SESSION['teacher_id']);
+
+if (!canAccessPage('teacher_profile.php') && !$isTeacherSelf) {
     header("Location: ../index.php");
     exit;
 }
@@ -11,9 +14,15 @@ $db = new Database();
 
 $teacher = null;
 $id = isset($_GET['id']) ? $_GET['id'] : null;
+$salaryHistory = [];
 
 if ($id) {
     $teacher = $db->getTeacher($id);
+    if (!$teacher) {
+        header("Location: teacher_profile.php");
+        exit;
+    }
+    $salaryHistory = $db->getTeacherSalaryHistory($id);
 } else {
     $allTeachers = $db->getAllTeachers();
 }
@@ -27,9 +36,11 @@ if ($id) {
         <p class="text-green-100 mt-1">Manage teaching staff details</p>
     </div>
     <div class="flex gap-2 w-full md:w-auto">
+        <?php if (!$isTeacherView): ?>
         <a href="teacher_form.php" class="bg-white text-primary border border-white px-6 py-2 rounded-md hover:bg-green-50 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
             <i class="fas fa-plus-circle"></i> Add New Teacher
         </a>
+        <?php endif; ?>
         <a href="../index.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium w-full md:w-auto">
             <i class="fas fa-arrow-left"></i> Dashboard
         </a>
@@ -40,16 +51,22 @@ if ($id) {
     <!-- Detailed Profile View -->
     <div class="bg-white shadow-lg rounded-lg p-4 md:p-6 max-w-7xl mx-auto">
         <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <?php if (!$isTeacherView): ?>
             <a href="teacher_profile.php" class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-md transition duration-200 flex items-center justify-center gap-2 w-full md:w-auto">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
+            <?php else: ?>
+            <div></div> <!-- Spacer -->
+            <?php endif; ?>
             <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <?php if (!$isTeacherView): ?>
                 <a href="teacher_form.php?edit=<?php echo $teacher['id']; ?>" class="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition duration-200 flex items-center justify-center gap-2">
                     <i class="fas fa-edit"></i> Edit Profile
                 </a>
                 <a href="../api/delete_teacher.php?id=<?php echo $teacher['id']; ?>" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 flex items-center justify-center gap-2" onclick="return confirm('Are you sure you want to delete this teacher? This action cannot be undone.');">
                     <i class="fas fa-trash"></i> Delete Profile
                 </a>
+                <?php endif; ?>
             </div>
         </div>
         <div class="flex flex-col md:flex-row gap-4">
@@ -98,17 +115,78 @@ if ($id) {
                     <div><strong>Address:</strong> <?php echo htmlspecialchars($teacher['address']); ?></div>
                 </div>
 
-                <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-6">Professional Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div><strong>Department:</strong> <?php echo htmlspecialchars($teacher['department']); ?></div>
-                    <div><strong>Posting:</strong> <?php echo htmlspecialchars($teacher['posting']); ?></div>
-                    <div><strong>Date of Joining:</strong> <?php echo isset($teacher['joining_date']) ? htmlspecialchars($teacher['joining_date']) : 'N/A'; ?></div>
-                    <div><strong>Basic Scale:</strong> <?php echo htmlspecialchars($teacher['basic_scale']); ?></div>
-                    <div><strong>Date of Retirement:</strong> <?php echo htmlspecialchars($teacher['retirement_date']); ?></div>
+                <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-6 text-indigo-600"><i class="fas fa-key mr-2"></i>Login Credentials</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 text-indigo-100 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i class="fas fa-shield-alt fa-8x"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-1">Username (CNIC)</p>
+                        <div class="flex items-center gap-2">
+                             <span class="text-sm font-bold text-indigo-900 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm"><?php echo formatCnic($teacher['cnic']); ?></span>
+                             <button onclick="copyToClipboard('<?php echo str_replace('-', '', $teacher['cnic']); ?>')" class="text-indigo-400 hover:text-indigo-600 transition-colors" title="Copy Raw CNIC">
+                                 <i class="far fa-copy text-xs"></i>
+                             </button>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-1">Password (DOB)</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-indigo-900 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm"><?php echo htmlspecialchars($teacher['dob']); ?></span>
+                            <button onclick="copyToClipboard('<?php echo $teacher['dob']; ?>')" class="text-indigo-400 hover:text-indigo-600 transition-colors" title="Copy DOB">
+                                 <i class="far fa-copy text-xs"></i>
+                             </button>
+                        </div>
+                    </div>
+                    <div class="col-span-full pt-2 mt-2 border-t border-indigo-100/50">
+                        <p class="text-[10px] text-indigo-500/70 italic flex items-center gap-1.5">
+                            <i class="fas fa-info-circle text-[10px]"></i>
+                            Authorized teachers use these credentials to log in via the <strong>Teacher Portal</strong> Mode.
+                        </p>
+                    </div>
                 </div>
+
+                <script>
+                function copyToClipboard(text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        // Use the existing showModal if available, or just a simple alert
+                        if (typeof showModal === 'function') {
+                            showModal('success', 'Copied', 'Copied to clipboard: ' + text);
+                        } else {
+                            alert('Copied: ' + text);
+                        }
+                    });
+                }
+                </script>
 
                 <h3 class="mb-4 border-b pb-2 text-lg font-semibold mt-6">Financial Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex flex-wrap items-center justify-between col-span-full bg-gray-50 p-3 rounded-lg border border-gray-100 mb-2 gap-3">
+                        <div>
+                            <strong>Monthly Salary:</strong> 
+                            <span class="text-lg font-bold text-gray-900 ml-2">Rs. <?php echo number_format($teacher['salary'] ?? 0, 2); ?></span>
+                        </div>
+                        <div class="flex gap-2">
+                            <?php 
+                            $currentMonth = date('Y-m');
+                            $isPaidThisMonth = false;
+                            foreach ($salaryHistory as $h) {
+                                if ($h['month'] === $currentMonth) { $isPaidThisMonth = true; break; }
+                            }
+                            if (!$isPaidThisMonth && ($teacher['salary'] ?? 0) > 0): 
+                            ?>
+                                <?php if (!$isTeacherView): ?>
+                                <button onclick="openPayModal('<?php echo $id; ?>', '<?php echo htmlspecialchars($teacher['name']); ?>', <?php echo $teacher['salary']; ?>)" 
+                                        class="bg-green-600 hover:bg-green-700 text-white font-bold text-sm px-4 py-2 rounded-lg shadow-sm transition-all hover:shadow-md">
+                                    <i class="fas fa-money-bill-wave mr-2"></i> Pay Now (<?php echo date('M'); ?>)
+                                </button>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <button onclick="openHistoryModal()" class="text-indigo-600 hover:text-indigo-800 font-bold text-sm bg-white px-4 py-2 rounded-lg border border-indigo-100 shadow-sm transition-all hover:shadow-md">
+                                <i class="fas fa-history mr-2"></i> View Payment History
+                            </button>
+                        </div>
+                    </div>
                     <div><strong>Payment Type:</strong> <?php echo htmlspecialchars($teacher['payment_type']); ?></div>
                     <div><strong>Payment No:</strong> <?php echo htmlspecialchars($teacher['payment_no']); ?></div>
                     <div><strong>IBAN:</strong> <?php echo htmlspecialchars($teacher['iban']); ?></div>
@@ -327,5 +405,156 @@ if ($id) {
         });
     </script>
 <?php endif; ?>
+
+    <!-- Salary History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col animate-modal-up">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-900">Salary Payment History</h3>
+                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 text-sm">
+                <?php if (empty($salaryHistory)): ?>
+                    <div class="text-center py-12 text-gray-400 italic">No payment history found for this teacher.</div>
+                <?php else: ?>
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-4">Month</th>
+                                <th class="px-6 py-4">Base</th>
+                                <th class="px-6 py-4">Deduction</th>
+                                <th class="px-6 py-4">Net Paid</th>
+                                <th class="px-6 py-4">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <?php 
+                            // Sort history by date descending
+                            usort($salaryHistory, function($a, $b) {
+                                return strcmp($b['payment_date'], $a['payment_date']);
+                            });
+                            foreach ($salaryHistory as $h): 
+                            ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-bold text-gray-800"><?php echo date('F Y', strtotime($h['month'])); ?></td>
+                                <td class="px-6 py-4">Rs. <?php echo number_format($h['base_salary'], 2); ?></td>
+                                <td class="px-6 py-4 text-red-500">
+                                    <?php echo $h['deduction'] > 0 ? ('-Rs. ' . number_format($h['deduction'], 2)) : '-'; ?>
+                                    <?php if (!empty($h['notes'])): ?>
+                                        <div class="text-[10px] text-gray-400 font-normal italic"><?php echo htmlspecialchars($h['notes']); ?></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4 font-bold text-green-600">Rs. <?php echo number_format($h['net_salary'], 2); ?></td>
+                                <td class="px-6 py-4 text-gray-500"><?php echo date('d M Y', strtotime($h['payment_date'])); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+            <div class="p-6 border-t border-gray-100 bg-gray-50 text-right">
+                <button onclick="closeHistoryModal()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openHistoryModal() {
+        document.getElementById('historyModal').classList.remove('hidden');
+    }
+    function closeHistoryModal() {
+        document.getElementById('historyModal').classList.add('hidden');
+    }
+    </script>
+
+    <!-- Pay Salary Modal -->
+    <div id="payModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md animate-modal-up overflow-hidden">
+            <div class="p-6 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-900">Pay Salary</h3>
+                <p id="pay_teacher_name" class="text-sm text-indigo-600 font-medium"></p>
+            </div>
+            <form id="paySalaryForm" class="p-6 space-y-4">
+                <input type="hidden" name="teacher_id" id="pay_teacher_id">
+                <input type="hidden" name="base_salary" id="pay_base_salary">
+                <input type="hidden" name="month" value="<?php echo date('Y-m'); ?>">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Base Salary</label>
+                    <div class="text-lg font-bold text-gray-900" id="display_base_salary"></div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deduction (if any)</label>
+                    <input type="number" name="deduction" id="pay_deduction" value="0" step="0.01" 
+                           class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500"
+                           oninput="calculateNetSalary()">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Net Payable</label>
+                    <div class="text-xl font-black text-green-600" id="display_net_salary"></div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Reason for Deduction</label>
+                    <textarea name="notes" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500" rows="2" placeholder="e.g. 1 day leave deducted"></textarea>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="closePayModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">Confirm Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function openHistoryModal() {
+        document.getElementById('historyModal').classList.remove('hidden');
+    }
+    function closeHistoryModal() {
+        document.getElementById('historyModal').classList.add('hidden');
+    }
+    function openPayModal(id, name, salary) {
+        document.getElementById('pay_teacher_id').value = id;
+        document.getElementById('pay_teacher_name').innerText = 'Paying for: ' + name;
+        document.getElementById('pay_base_salary').value = salary;
+        document.getElementById('display_base_salary').innerText = 'Rs. ' + salary.toLocaleString();
+        document.getElementById('pay_deduction').value = 0;
+        calculateNetSalary();
+        document.getElementById('payModal').classList.remove('hidden');
+    }
+    function closePayModal() {
+        document.getElementById('payModal').classList.add('hidden');
+    }
+    function calculateNetSalary() {
+        const base = parseFloat(document.getElementById('pay_base_salary').value || 0);
+        const ded = parseFloat(document.getElementById('pay_deduction').value || 0);
+        const net = base - ded;
+        document.getElementById('display_net_salary').innerText = 'Rs. ' + net.toLocaleString();
+    }
+
+    document.getElementById('paySalaryForm').onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        fetch('../api/pay_salary.php', { // Path adjusted for pages/ folder
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Salary paid successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    };
+    </script>
 
 <?php include '../includes/footer.php'; ?>

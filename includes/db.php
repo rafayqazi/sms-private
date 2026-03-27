@@ -553,7 +553,8 @@ class Database {
             'id', 'name', 'father_name', 'gender', 'cnic', 'dob', 'age', 'email', 
             'disability', 'payment_type', 'payment_no', 'iban', 'contact', 
             'retirement_date', 'designation', 'department', 'posting', 'basic_scale', 
-            'address', 'district', 'tahsil', 'profile_image', 'joining_date', 'created_at'
+            'address', 'district', 'tahsil', 'profile_image', 'joining_date', 'salary', 
+            'assigned_classes', 'created_at'
         ];
 
         // Create file with headers if it doesn't exist
@@ -599,6 +600,8 @@ class Database {
             $data['tahsil'],
             isset($data['profile_image']) ? $data['profile_image'] : '',
             isset($data['joining_date']) ? $data['joining_date'] : '',
+            isset($data['salary']) ? $data['salary'] : '0',
+            isset($data['assigned_classes']) ? $data['assigned_classes'] : '',
             date('Y-m-d H:i:s')
         ];
 
@@ -747,8 +750,10 @@ class Database {
                     $data['address'],
                     $data['district'],
                     $data['tahsil'],
-                    isset($data['profile_image']) ? $data['profile_image'] : $row[21], // Use new image or keep old
-                    isset($data['joining_date']) ? $data['joining_date'] : (isset($row[22]) ? $row[22] : ''), // Preserve old value if not editing, though here we update all
+                    isset($data['profile_image']) ? $data['profile_image'] : (isset($row[21]) ? $row[21] : ''), // Use new image or keep old
+                    isset($data['joining_date']) ? $data['joining_date'] : (isset($row[22]) ? $row[22] : ''), 
+                    isset($data['salary']) ? $data['salary'] : (isset($row[23]) ? $row[23] : '0'),
+                    isset($data['assigned_classes']) ? $data['assigned_classes'] : (isset($row[24]) ? $row[24] : ''),
                     $createdAt
                 ];
                 $rows[] = $updatedRow;
@@ -767,6 +772,112 @@ class Database {
         fclose($fp);
         return true;
     }
+
+    public function getTotalTeacherSalaries() {
+        $teachers = $this->getAllTeachers();
+        $total = 0;
+        foreach ($teachers as $t) {
+            $total += (float)($t['salary'] ?? 0);
+        }
+        return $total;
+    }
+
+    public function payTeacherSalary($data) {
+        $file = __DIR__ . '/../data/salary_payments.csv';
+        $headers = ['id', 'teacher_id', 'month', 'base_salary', 'deduction', 'net_salary', 'payment_date', 'notes', 'created_at'];
+
+        if (!file_exists($file)) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            fclose($fp);
+        }
+
+        $id = 1;
+        $rows = file($file);
+        if (count($rows) > 1) {
+            $lastRow = str_getcsv(trim(end($rows)));
+            $id = (int)$lastRow[0] + 1;
+        }
+
+        $record = [
+            $id,
+            $data['teacher_id'],
+            $data['month'],
+            $data['base_salary'],
+            $data['deduction'],
+            $data['net_salary'],
+            $data['payment_date'],
+            $data['notes'],
+            date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $record);
+        fclose($fp);
+        return true;
+    }
+
+    public function getTeacherSalaryHistory($teacherId) {
+        $file = __DIR__ . '/../data/salary_payments.csv';
+        $history = [];
+        if (!file_exists($file)) return $history;
+
+        $handle = fopen($file, 'r');
+        $headers = fgetcsv($handle);
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($row[1] == $teacherId) {
+                $history[] = array_combine($headers, $row);
+            }
+        }
+        fclose($handle);
+        return $history;
+    }
+
+    public function getTeacherSalaryStatus($month) {
+        $teachers = $this->getAllTeachers();
+        $file = __DIR__ . '/../data/salary_payments.csv';
+        $paidTeachers = [];
+
+        if (file_exists($file)) {
+            $handle = fopen($file, 'r');
+            fgetcsv($handle); // skip headers
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($row[2] == $month) {
+                    $paidTeachers[$row[1]] = $row; // teacher_id => record
+                }
+            }
+            fclose($handle);
+        }
+
+        $status = [];
+        foreach ($teachers as $t) {
+            $status[] = [
+                'id' => $t['id'],
+                'name' => $t['name'],
+                'salary' => $t['salary'],
+                'status' => isset($paidTeachers[$t['id']]) ? 'Paid' : 'Pending',
+                'payment_info' => isset($paidTeachers[$t['id']]) ? $paidTeachers[$t['id']] : null
+            ];
+        }
+        return $status;
+    }
+
+    public function getTotalPaidSalaries($month) {
+        $file = __DIR__ . '/../data/salary_payments.csv';
+        $total = 0;
+        if (!file_exists($file)) return 0;
+
+        $handle = fopen($file, 'r');
+        fgetcsv($handle);
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($row[2] == $month) {
+                $total += (float)$row[5]; // net_salary
+            }
+        }
+        fclose($handle);
+        return $total;
+    }
+
     public function getAttendanceStats() {
         $file = __DIR__ . '/../data/attendance.csv';
         $todayDate = date('Y-m-d');
@@ -3278,7 +3389,7 @@ class Database {
         // 1. Check custom credentials first
         $customCredentials = $this->getParentCredentials();
         if (isset($customCredentials[$raw_cnic])) {
-            if (password_verify($password, $customCredentials[$raw_cnic]['password_hash'])) {
+            if ($password === $customCredentials[$raw_cnic]['password_hash']) {
                 $students = $this->readData();
                 foreach ($students as $student) {
                     if (str_replace('-', '', $student['father_cnic']) === $raw_cnic) {
@@ -3320,6 +3431,40 @@ class Database {
             ];
         }
 
+        return false;
+    }
+
+    public function verifyTeacherLogin($cnic, $password) {
+        $cnic = trim($cnic);
+        $password = trim($password);
+        $raw_cnic = str_replace('-', '', $cnic);
+        if (empty($raw_cnic)) return false;
+
+        $file = __DIR__ . '/../data/teachers.csv';
+        if (!file_exists($file)) return false;
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 0, ",");
+        
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            if (count($row) < count($headers)) {
+                $row = array_pad($row, count($headers), '');
+            } elseif (count($row) > count($headers)) {
+                $row = array_slice($row, 0, count($headers));
+            }
+            
+            $teacher = array_combine($headers, $row);
+            $s_teacher_cnic = str_replace('-', '', $teacher['cnic'] ?? '');
+            
+            if ($s_teacher_cnic === $raw_cnic) {
+                // Password is DOB (YYYY-MM-DD)
+                if ($password === ($teacher['dob'] ?? '')) {
+                    fclose($handle);
+                    return $teacher;
+                }
+            }
+        }
+        fclose($handle);
         return false;
     }
 

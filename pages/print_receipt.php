@@ -109,6 +109,11 @@ $settings = $db->getSchoolSettings();
         <div class="footer">
             Computer Generated Receipt.<br>
             Thank you for your payment!
+            
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 10px; color: #888;">
+                Software Developed by <strong>Abdul Rafay</strong><br>
+                Contact: +92 371 0273699
+            </div>
         </div>
     </div>
 

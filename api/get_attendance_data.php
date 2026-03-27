@@ -1,4 +1,6 @@
 <?php
+require_once '../includes/auth_session.php';
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 header('Content-Type: application/json');
@@ -9,6 +11,14 @@ $date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 if (empty($class)) {
     echo json_encode([]);
     exit;
+}
+
+if (isEditor()) {
+    $assigned = getAssignedClasses();
+    if (!in_array($class, $assigned)) {
+        echo json_encode([]);
+        exit;
+    }
 }
 
 $db = new Database();

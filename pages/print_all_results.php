@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/auth_session.php';
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 if (!isset($_GET['class']) || !isset($_GET['exam_type'])) {
@@ -11,6 +12,13 @@ $settings = $database->getSchoolSettings();
 $class = $_GET['class'];
 $examType = $_GET['exam_type'];
 $year = isset($_GET['year']) ? $_GET['year'] : date('Y');
+
+if (isEditor()) {
+    $assigned = getAssignedClasses();
+    if (!in_array($class, $assigned)) {
+        die("Unauthorized access to print results for this class.");
+    }
+}
 
 // Fetch results and students
 $results = $database->getResults($class, $examType, $year);

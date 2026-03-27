@@ -3,7 +3,7 @@ require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
 // Access control
-if (!isAdmin() && !isSuperAdmin()) {
+if (!canAccessPage(basename(__FILE__))) {
     header("Location: ../index.php");
     exit;
 }

@@ -73,7 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'basic_scale' => $_POST['basic_scale'],
         'address' => $_POST['address'],
         'district' => $_POST['district'],
-        'tahsil' => $_POST['tahsil']
+        'tahsil' => $_POST['tahsil'],
+        'salary' => $_POST['salary'],
+        'assigned_classes' => isset($_POST['assigned_classes']) ? implode(',', $_POST['assigned_classes']) : ''
     ];
 
     if ($profileImage) {
@@ -246,6 +248,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <?php endfor; ?>
                 </select>
             </div>
+
+            <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">Monthly Salary (Rs.) <span class="text-red-500">*</span></label>
+                <input type="number" name="salary" required value="<?php echo $editMode ? (isset($teacher['salary']) ? htmlspecialchars($teacher['salary']) : '0') : '0'; ?>" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+            </div>
+        </div>
+
+        <!-- Class Assignment Information -->
+        <div class="border-b pb-2 mb-6 mt-8">
+            <h3 class="text-xl font-semibold text-gray-800">Class Assignment</h3>
+            <p class="text-xs text-gray-500 mt-1">Select the classes this teacher is responsible for</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8 bg-gray-50 p-6 rounded-xl border border-gray-100">
+            <?php 
+            $allClasses = $db->getClasses();
+            $assignedClasses = $editMode && isset($teacher['assigned_classes']) ? explode(',', $teacher['assigned_classes']) : [];
+            foreach ($allClasses as $class): 
+                $className = $class['class_name'];
+                $isChecked = in_array($className, $assignedClasses);
+            ?>
+            <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer group">
+                <input type="checkbox" name="assigned_classes[]" value="<?php echo htmlspecialchars($className); ?>" 
+                       id="class_<?php echo md5($className); ?>"
+                       <?php echo $isChecked ? 'checked' : ''; ?>
+                       class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2">
+                <label for="class_<?php echo md5($className); ?>" class="text-sm font-medium text-gray-700 cursor-pointer group-hover:text-primary transition-colors">
+                    <?php echo htmlspecialchars($className); ?>
+                </label>
+            </div>
+            <?php endforeach; ?>
+            <?php if (empty($allClasses)): ?>
+                <div class="col-span-full py-4 text-center text-gray-400 italic text-sm">No classes defined. Please manage classes first.</div>
+            <?php endif; ?>
         </div>
 
         <div class="mt-8">

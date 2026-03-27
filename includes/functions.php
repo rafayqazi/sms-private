@@ -56,6 +56,11 @@ function canAccessPage($page) {
         return true;
     }
 
+    // Parents cannot access any admin pages (they use parent_portal.php)
+    if (isParent()) {
+        return $page === 'parent_portal.php';
+    }
+
     // Viewer restrictions - Read only access to specific pages
     if (isViewer()) {
         $allowedPages = [
@@ -72,7 +77,7 @@ function canAccessPage($page) {
         return in_array($page, $allowedPages);
     }
     
-    // Editor restrictions - can only access attendance pages
+    // Editor restrictions - can only access attendance and result entry pages
     if (isEditor()) {
         $restrictedPages = [
             'student_form.php',
@@ -83,8 +88,18 @@ function canAccessPage($page) {
             'teacher_profile.php',
             'parents.php',
             'reset_app.php',
-            'assign_roles.php',
-            'settings.php'
+            'settings.php',
+            'backup_restore.php',
+            'manage_classes.php',
+            'bulk_admission.php',
+            'school_settings.php',
+            'certificates.php',
+            'certificate_character.php',
+            'certificate_school_leaving.php',
+            'certificate_testimonial.php',
+            'certificate_transfer.php',
+            'migrate_classes.php',
+            'missing_files.php'
         ];
         
         return !in_array($page, $restrictedPages);
@@ -94,11 +109,25 @@ function canAccessPage($page) {
 }
 
 function getAssignedClasses() {
-    if (isEditor()) {
-        return isset($_SESSION['assigned_classes']) ? $_SESSION['assigned_classes'] : [];
-    }
-    // Admin/Super Admin can see all classes
     $db = new Database();
+    
+    if (isEditor() && isset($_SESSION['teacher_id'])) {
+        $teacher = $db->getTeacher($_SESSION['teacher_id']);
+        if ($teacher && !empty($teacher['assigned_classes'])) {
+            $rawClasses = explode(',', $teacher['assigned_classes']);
+            $assignedClasses = [];
+            foreach ($rawClasses as $c) {
+                $clean = trim($c);
+                if ($clean !== '') {
+                    $assignedClasses[] = $clean;
+                }
+            }
+            return $assignedClasses;
+        }
+        return [];
+    }
+    
+    // Admin/Super Admin can see all classes
     return $db->getClassNames();
 }
 
@@ -135,72 +164,7 @@ function getUserRoleBadge() {
     }
 }
 
-function sendRoleChangeEmail($to, $name, $role, $username, $password = null, $action = 'assigned') {
-    $subject = "Role Update Notification - GBPS Ali Bux Jarwar";
-    
-    // Construct message based on action
-    $message = "
-    <html>
-    <head>
-        <title>Role Update Notification</title>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-            .header { background-color: #15803d; color: white; padding: 10px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { padding: 20px; }
-            .footer { text-align: center; font-size: 0.8em; color: #777; margin-top: 20px; }
-            .highlight { color: #15803d; font-weight: bold; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <h2>Role Update Notification</h2>
-            </div>
-            <div class='content'>
-                <p>Dear <strong>$name</strong>,</p>";
 
-    if ($action === 'removed') {
-        $message .= "
-                <p>Your user role has been <span class='highlight' style='color: #dc2626;'>removed</span> from the School Management System.</p>
-                <p>You no longer have access to the administrative/editor panel.</p>";
-    } else {
-        $actionText = ($action === 'updated') ? 'updated' : 'assigned';
-        $message .= "
-                <p>Your user role has been <span class='highlight'>$actionText</span> in the School Management System.</p>
-                <p><strong>Role:</strong> $role</p>
-                <p><strong>Username:</strong> $username</p>";
-        
-        if ($password) {
-            $message .= "<p><strong>Password:</strong> $password</p>";
-        } else {
-            $message .= "<p><strong>Password:</strong> (Unchanged)</p>";
-        }
-        
-        $message .= "
-                <p>Please log in to the system to access your assigned features.</p>";
-    }
-
-    $message .= "
-                <p>Best Regards,<br>GBPS Ali Bux Jarwar Administration</p>
-            </div>
-            <div class='footer'>
-                <p>This is an automated message. Please do not reply directly to this email.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    ";
-
-    // Headers
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= 'From: noreply@school.com' . "\r\n";
-
-    // Send email
-    // Note: This requires a configured mail server (e.g., SMTP in php.ini) to work on localhost
-    return mail($to, $subject, $message, $headers);
-}
 
 // CSRF Protection Functions
 function generateCsrfToken() {

@@ -165,11 +165,7 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
 - **Dead Stock Register**: Dedicated module for disposing of broken or obsolete items with reasons and remarks.
 - **Categories Management**: Organize items for better auditing.
 
-### 7. User Roles & RBAC (`pages/assign_roles.php`)
-- **Multi-Role Access**:
-  - **Admin**: Full system access including backups and resets.
-  - **Editor (Teacher)**: Access limited to assigned classes for attendance and results.
-- **Credential Management**: Assign usernames and passwords to staff members.
+
 
 ### 8. Communication & Support
 - **Messaging (`pages/messages.php`)**: Internal chat system between Teachers (Editors) and the Admin.
@@ -193,7 +189,6 @@ The system follows a bespoke **Model-View-Controller (MVC)** pattern tailored fo
 - `POST /api/backup_data.php`: Manual backup generation.
 - `GET /api/backup_data_auto.php`: Cron-ready automated backup script.
 - `POST /api/verify_admin_password.php`: Secure gate for critical actions.
-- `POST /api/assign_role.php`: Update user permissions.
 
 ---
 
@@ -215,7 +210,7 @@ Editors' access is governed by the `assigned_classes` array in their session.
 ### Adding a New Module
 1. Create the UI in `pages/`.
 2. Implement backend logic in `api/` or `includes/db.php`.
-3. Register the page in `pages/assign_roles.php` if it needs specific permission gating.
+
 
 ---
 
