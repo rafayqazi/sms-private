@@ -181,16 +181,18 @@ include '../includes/header.php';
                             foreach ($allStudents as $st) $sMap[$st['gr_no']] = $st['student_name'];
                         ?>
                             <?php foreach ($feeStats['recent'] as $r): ?>
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-indigo-50/50 cursor-pointer group/row transition-colors" onclick="selectStudentWithMonth('<?php echo $r['gr_no']; ?>', '<?php echo addslashes($sMap[$r['gr_no']] ?? 'Unknown'); ?>', '<?php echo $r['month_for']; ?>')">
                                 <td class="px-6 py-4">
-                                    <div class="font-bold text-gray-800"><?php echo htmlspecialchars($sMap[$r['gr_no']] ?? 'Unknown'); ?></div>
+                                    <div class="font-bold text-gray-800 group-hover/row:text-indigo-600 transition-colors"><?php echo htmlspecialchars($sMap[$r['gr_no']] ?? 'Unknown'); ?></div>
                                     <div class="text-[10px] text-gray-500">GR: <?php echo $r['gr_no']; ?></div>
                                 </td>
-                                <td class="px-6 py-4 font-semibold text-indigo-600"><?php echo $r['month_for']; ?></td>
-                                <td class="px-6 py-4 font-bold">Rs. <?php echo number_format($r['amount_paid'], 2); ?></td>
-                                <td class="px-6 py-4 text-sm text-gray-500"><?php echo $r['payment_date']; ?></td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-0.5 bg-gray-100 rounded text-[10px] uppercase font-bold text-gray-600">
+                                    <span class="font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md text-xs"><?php echo $r['month_for']; ?></span>
+                                </td>
+                                <td class="px-6 py-4 font-bold text-slate-700">Rs. <?php echo number_format($r['amount_paid'], 2); ?></td>
+                                <td class="px-6 py-4 text-sm text-gray-500 font-medium"><?php echo date('d M, Y', strtotime($r['payment_date'])); ?></td>
+                                <td class="px-6 py-4">
+                                    <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] uppercase font-black text-gray-500 shadow-sm transition-all group-hover/row:border-indigo-200 group-hover/row:text-indigo-600">
                                         <?php echo $r['payment_method']; ?>
                                     </span>
                                 </td>
@@ -305,14 +307,19 @@ include '../includes/header.php';
             <!-- Full History Table -->
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">All Collections</h3>
-                <div class="flex gap-2">
-                    <select id="history_class" class="text-sm border rounded px-3 py-1" onchange="loadHistory()">
+                <div class="flex items-center gap-2">
+                    <select id="history_class" class="text-sm border rounded px-3 py-1 bg-white focus:ring-2 focus:ring-indigo-500 transition" onchange="loadHistory()">
                         <option value="">All Classes</option>
                         <?php foreach ($classes as $c): ?>
                             <option value="<?php echo $c['class_name']; ?>"><?php echo $c['class_name']; ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="month" id="history_month" class="text-sm border rounded px-3 py-1" onchange="loadHistory()">
+                    <div class="relative flex items-center">
+                        <input type="month" id="history_month" class="text-sm border rounded-l px-3 py-1 focus:ring-2 focus:ring-indigo-500 transition" onchange="loadHistory()">
+                        <button onclick="document.getElementById('history_month').value=''; loadHistory();" class="text-[10px] bg-gray-100 border border-l-0 rounded-r px-2 py-1.5 hover:bg-gray-200 transition font-bold text-gray-600" title="All Time History">
+                            ALL TIME
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -436,64 +443,295 @@ function selectStudent(student) {
         });
 }
 
+window.selectStudentWithMonth = function(gr_no, name, month) {
+    switchTab('collect');
+    const student = { gr_no: gr_no, student_name: name };
+    
+    const container = document.getElementById('collection_details');
+    container.innerHTML = `<div class="p-12 text-center"><i class="fas fa-spinner fa-spin fa-2x text-indigo-500"></i></div>`;
+    container.classList.remove('hidden');
+
+    fetch(`../api/get_fee_status.php?gr_no=${gr_no}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            renderCollectionForm(student, data);
+            // Ensure student name is cleared from search if picking from recent
+            if(studentSearch) studentSearch.value = name;
+        });
+}
+
 function renderCollectionForm(student, feeData) {
     const container = document.getElementById('collection_details');
-    // Implementation of form rendering here
+    const existing = feeData.existing_payment;
+    const isUpdate = !!existing;
+    
+    // Set base fee for recalculation
+    currentBaseFee = parseInt(feeData.structure.monthly_fee) || 0;
+
     container.innerHTML = `
-        <div class="bg-indigo-50 rounded-lg p-4 mb-6 flex items-center justify-between border border-indigo-100">
-            <div>
-                <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider">Student Details</p>
-                <p class="text-lg font-bold text-gray-900">${student.student_name}</p>
-                <p class="text-sm text-gray-600">GR No: ${student.gr_no} | Class: ${student.current_class}</p>
+        <div class="bg-indigo-50 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between border-2 border-indigo-100 shadow-sm relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-100/50 rounded-full group-hover:scale-110 transition-transform"></div>
+            <div class="relative z-10 w-full md:w-auto mb-4 md:mb-0">
+                <span class="px-3 py-1 bg-indigo-600/10 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] rounded-full mb-3 inline-block">Student Profile</span>
+                <p class="text-2xl font-black text-gray-900 leading-none mb-2">${student.student_name}</p>
+                <div class="flex items-center gap-3 text-sm text-gray-500 font-bold">
+                    <span class="flex items-center gap-1"><i class="fas fa-id-card text-indigo-400"></i> ${student.gr_no}</span>
+                    <span class="flex items-center gap-1"><i class="fas fa-school text-indigo-400"></i> ${student.current_class}</span>
+                </div>
             </div>
-            <div class="text-right">
-                <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider">Class Fee</p>
-                <p class="text-lg font-bold text-gray-900">Rs. ${feeData.structure.monthly_fee}</p>
+            
+            <div class="flex flex-col items-center md:items-end gap-3 w-full md:w-auto relative z-10">
+                <div class="text-center md:text-right">
+                    <p class="text-[10px] text-indigo-600/60 font-black uppercase tracking-wider mb-1">Assigned Fee</p>
+                    <p class="text-3xl font-black text-slate-800">Rs. ${feeData.structure.monthly_fee}</p>
+                </div>
+                ${isUpdate ? `
+                    <div class="px-6 py-2 bg-emerald-100 text-emerald-700 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 border-2 border-emerald-200 animate-pulse">
+                        <i class="fas fa-check-circle"></i> Already Paid
+                    </div>
+                ` : `
+                    <div class="px-6 py-2 bg-amber-100 text-amber-700 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 border-2 border-amber-200">
+                        <i class="fas fa-clock"></i> Not Paid
+                    </div>
+                `}
             </div>
         </div>
 
-        <form id="fee_collection_form" class="space-y-4">
+        <form id="fee_collection_form" class="space-y-6">
             <input type="hidden" name="gr_no" value="${student.gr_no}">
+            <input type="hidden" name="transaction_id" value="${existing ? existing.id : ''}">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fee Month</label>
-                    <input type="month" name="month_for" value="${new Date().toISOString().slice(0, 7)}" class="w-full border rounded-lg p-2.5" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Fee for Member of</label>
+                    <div class="relative group">
+                        <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition"></i>
+                        <input type="month" name="month_for" id="fee_month_picker" 
+                               value="${existing ? existing.month_for : (document.getElementById('fee_month_picker')?.value || new Date().toISOString().slice(0, 7))}" 
+                               onchange="checkFeeStatusForMonth('${student.gr_no}')"
+                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-indigo-500 focus:bg-white transition-all outline-none font-bold text-gray-800" required>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount to Collect (Rs.)</label>
-                    <input type="number" name="amount_paid" value="${feeData.structure.monthly_fee}" class="w-full border rounded-lg p-2.5 font-bold text-lg" required>
+                <div class="space-y-4">
+                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Fee Breakdown</label>
+                    <div id="fees_breakdown_list" class="space-y-3">
+                        <!-- Base Tuition Fee (Always there) -->
+                        <div class="flex items-center gap-3 p-3 bg-white border-2 border-slate-100 rounded-xl shadow-sm">
+                            <div class="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500">
+                                <i class="fas fa-book-reader"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Tuition Fee</p>
+                                <p class="text-sm font-black text-gray-800">${feeData.month_name || 'Standard Month'}</p>
+                            </div>
+                            <div class="w-24">
+                                <input type="number" name="tuition_fee" class="fee-item-input w-full bg-transparent border-none text-right font-black text-lg focus:ring-0" 
+                                       value="${existing ? (existing.amount_paid - (existing.admission_fee || 0) - (existing.exam_fee || 0)) : feeData.structure.monthly_fee}" 
+                                       oninput="recalculateTotal()" data-type="tuition">
+                            </div>
+                            <div class="w-6"></div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Toggles -->
+                    <div class="flex flex-wrap gap-2 pt-2 border-t border-dashed border-gray-200">
+                        <button type="button" id="btn_toggle_admission"
+                                onclick="toggleBreakdownField('admission', 'Admission Fee', ${feeData.structure.admission_fee}, 'fa-user-plus', 'indigo', this)" 
+                                class="fee-toggle-btn px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all border-2 border-indigo-100 flex items-center gap-2 shadow-sm"
+                                data-selected="false">
+                            <i class="fas fa-plus-circle opacity-40"></i> Admission
+                        </button>
+                        
+                        <button type="button" id="btn_toggle_exam"
+                                onclick="toggleBreakdownField('exam', 'Exam Fee', ${feeData.structure.exam_fee}, 'fa-file-invoice', 'amber', this)" 
+                                class="fee-toggle-btn px-4 py-2 bg-amber-50 text-amber-700 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-amber-100 transition-all border-2 border-amber-100 flex items-center gap-2 shadow-sm"
+                                data-selected="false">
+                            <i class="fas fa-plus-circle opacity-40"></i> Exam Fee
+                        </button>
+                        
+                        <button type="button" id="btn_toggle_other"
+                                onclick="toggleBreakdownField('other', 'Other Fee', 0, 'fa-ellipsis-h', 'slate', this)" 
+                                class="fee-toggle-btn px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-slate-100 transition-all border-2 border-slate-200 flex items-center gap-2 shadow-sm"
+                                data-selected="false">
+                            <i class="fas fa-plus-circle opacity-40"></i> Others
+                        </button>
+                    </div>
+
+                    <!-- Total Display -->
+                    <div class="bg-slate-900 rounded-2xl p-5 mt-6 relative overflow-hidden group shadow-2xl">
+                        <div class="absolute right-[-10px] top-[-10px] text-gray-800 opacity-20 text-7xl select-none group-hover:rotate-12 transition-transform">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div>
+                                <p class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Amount Paid</p>
+                                <p class="text-white text-3xl font-black tracking-tight flex items-center gap-2">
+                                    <span class="text-indigo-500 text-xl font-bold uppercase">Rs.</span>
+                                    <span id="total_amount_display">0.00</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <i class="fas fa-money-bill-wave text-emerald-400 text-3xl opacity-50"></i>
+                            </div>
+                        </div>
+                        <input type="hidden" name="amount_paid" id="total_amount_input" value="0">
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Discount (Optional)</label>
-                    <input type="number" name="discount" value="0" class="w-full border rounded-lg p-2.5 text-red-600 font-medium">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Discount (Optional)</label>
+                    <div class="relative group">
+                        <i class="fas fa-tag absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-red-500 transition"></i>
+                        <input type="number" name="discount" value="${existing ? (existing.discount || 0) : 0}" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-red-500 focus:bg-white transition-all outline-none font-bold text-red-600">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                    <select name="payment_method" class="w-full border rounded-lg p-2.5">
-                        <option value="Cash">Cash</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Online">Online</option>
-                    </select>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Payment Method</label>
+                    <div class="relative group">
+                        <i class="fas fa-credit-card absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition"></i>
+                        <select name="payment_method" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-indigo-500 focus:bg-white transition-all outline-none font-bold text-gray-800 appearance-none cursor-pointer">
+                            <option value="Cash" ${existing && existing.payment_method === 'Cash' ? 'selected' : ''}>Cash Payment</option>
+                            <option value="Bank Transfer" ${existing && existing.payment_method === 'Bank Transfer' ? 'selected' : ''}>Direct Bank Transfer</option>
+                            <option value="Online" ${existing && existing.payment_method === 'Online' ? 'selected' : ''}>Online Payment</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea name="notes" rows="2" class="w-full border rounded-lg p-2.5" placeholder="Any remarks..."></textarea>
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Transaction Notes</label>
+                <div class="relative group">
+                    <i class="fas fa-comment-dots absolute left-4 top-6 text-gray-400 group-hover:text-indigo-500 transition"></i>
+                    <textarea name="notes" rows="3" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-indigo-500 focus:bg-white transition-all outline-none font-medium text-gray-700" placeholder="Enter any specific details or remarks...">${existing ? (existing.notes || '') : ''}</textarea>
+                </div>
             </div>
 
-            <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2">
-                <i class="fas fa-file-invoice-dollar"></i> Confirm Collection & Print Receipt
-            </button>
+            <div class="pt-4">
+                <button type="submit" class="w-full group/btn relative ${isUpdate ? 'bg-indigo-600' : 'bg-emerald-600'} text-white font-black py-5 rounded-2xl hover:translate-y-[-4px] active:translate-y-0 transition-all shadow-xl ${isUpdate ? 'shadow-indigo-100' : 'shadow-emerald-100'} flex items-center justify-center gap-3 text-lg tracking-widest uppercase">
+                    <i class="fas ${isUpdate ? 'fa-edit' : 'fa-hand-holding-usd'} text-xl group-hover/btn:rotate-12 transition-transform"></i>
+                    ${isUpdate ? 'Update Payment Record' : 'Confirm Collection & Print'}
+                    <div class="absolute inset-x-0 bottom-0 h-1 bg-black/10 rounded-b-2xl"></div>
+                </button>
+            </div>
         </form>
     `;
 
     document.getElementById('fee_collection_form').onsubmit = handleCollection;
 }
+
+window.checkFeeStatusForMonth = function(gr_no) {
+    const month = document.getElementById('fee_month_picker').value;
+    const container = document.getElementById('collection_details');
+    
+    // Add a slight overlay to indicate loading
+    container.classList.add('opacity-50');
+    
+    fetch(`../api/get_fee_status.php?gr_no=${gr_no}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            container.classList.remove('opacity-50');
+            renderCollectionForm(data.student, data);
+        });
+}
+
+window.addToTotalAmount = function(amt) {
+    const input = document.getElementById('amount_paid_input');
+    if (input) {
+        let current = parseInt(input.value) || 0;
+        input.value = current + parseInt(amt);
+        // Visual feedback
+        input.classList.add('ring-4', 'ring-emerald-500/20');
+        setTimeout(() => input.classList.remove('ring-4', 'ring-emerald-500/20'), 500);
+    }
+}
+
+window.addOtherFee = function() {
+    const amount = prompt("Enter custom amount to add:", "0");
+    if (amount !== null && !isNaN(amount) && amount !== "") {
+        window.addToTotalAmount(amount);
+    }
+}
+
+window.toggleBreakdownField = function(id, label, defaultAmt, icon, color, btn) {
+    const list = document.getElementById('fees_breakdown_list');
+    const isSelected = btn.getAttribute('data-selected') === 'true';
+    const newStatus = !isSelected;
+    
+    btn.setAttribute('data-selected', newStatus);
+    
+    if (newStatus) {
+        // Add Field
+        const div = document.createElement('div');
+        div.id = `fee_row_${id}`;
+        div.className = "flex items-center gap-3 p-3 bg-white border-2 border-slate-100 rounded-xl shadow-sm animate-in slide-in-from-left-4 duration-300";
+        div.innerHTML = `
+            <div class="w-10 h-10 bg-${color}-50 rounded-lg flex items-center justify-center text-${color}-500">
+                <i class="fas ${icon}"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">${label}</p>
+                ${id === 'other' ? `<input type="text" name="other_label" class="text-[10px] font-bold text-slate-400 bg-transparent border-none p-0 focus:ring-0 w-full" value="Other Charges" placeholder="Enter Label...">` : `<p class="text-xs font-bold text-gray-400">Standard ${label}</p>`}
+            </div>
+            <div class="w-24">
+                <input type="number" name="${id}_fee" class="fee-item-input w-full bg-transparent border-none text-right font-black text-lg focus:ring-0" 
+                       value="${defaultAmt}" oninput="recalculateTotal()" data-type="${id}">
+            </div>
+            <button type="button" onclick="toggleBreakdownField('${id}', '', 0, '', '', document.getElementById('btn_toggle_${id}'))" class="w-6 h-6 flex items-center justify-center text-red-300 hover:text-red-500 transition-colors">
+                <i class="fas fa-times-circle"></i>
+            </button>
+        `;
+        list.appendChild(div);
+        
+        // Update Button
+        btn.classList.add(`bg-${color}-600`, 'text-white', `border-${color}-600`);
+        btn.classList.remove(`bg-${color}-50`, `text-${color}-700`, `border-${color}-100`);
+        btn.querySelector('i').classList.replace('fa-plus-circle', 'fa-check-circle');
+    } else {
+        // Remove Field
+        const row = document.getElementById(`fee_row_${id}`);
+        if(row) row.remove();
+        
+        // Update Button
+        btn.classList.remove(`bg-${color}-600`, 'text-white', `border-${color}-600`);
+        btn.classList.add(`bg-${color}-50`, `text-${color}-700`, `border-${color}-100`);
+        btn.querySelector('i').classList.replace('fa-check-circle', 'fa-plus-circle');
+    }
+    
+    recalculateTotal();
+}
+
+function recalculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.fee-item-input').forEach(input => {
+        total += parseInt(input.value) || 0;
+    });
+    
+    const display = document.getElementById('total_amount_display');
+    const hiddenInput = document.getElementById('total_amount_input');
+    
+    if (display) display.innerText = total.toLocaleString();
+    if (hiddenInput) hiddenInput.value = total;
+}
+
+window.confirmDeletion = function(id, month) {
+    if (confirm(`Are you sure you want to delete the payment for ${month}? This cannot be undone.`)) {
+        fetch(`../api/delete_fee_payment.php?id=${id}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Record deleted successfully!');
+                    location.reload(); // Refresh to update all stats
+                } else {
+                    alert(data.error || 'Failed to delete record.');
+                }
+            });
+    }
+}
+
+// Global initialization in renderCollectionForm
+setTimeout(recalculateTotal, 100);
 
 function handleCollection(e) {
     e.preventDefault();
@@ -518,7 +756,9 @@ function loadHistory() {
     const month = document.getElementById('history_month').value;
     const className = document.getElementById('history_class').value;
     const container = document.getElementById('history_table_container');
-    container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading history...</div>';
+    
+    let loadingMsg = month ? `Loading records for ${month}...` : 'Loading all-time records...';
+    container.innerHTML = `<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> ${loadingMsg}</div>`;
     
     fetch(`../api/get_fee_history.php?month=${month}&class=${encodeURIComponent(className)}`)
         .then(res => res.text())

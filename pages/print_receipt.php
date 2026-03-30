@@ -78,25 +78,51 @@ $settings = $db->getSchoolSettings();
                 <span class="label">Class:</span>
                 <span><?php echo htmlspecialchars($student['current_class']); ?></span>
             </div>
-            <div class="info-row">
-                <span class="label">Month For:</span>
-                <span><?php echo $payment['month_for']; ?></span>
+            <div class="info-row" style="background: #eee; padding: 5px; margin: 5px 0;">
+                <span class="label">Fee for Month:</span>
+                <span style="font-weight: bold;"><?php echo date('F Y', strtotime($payment['month_for'] . "-01")); ?></span>
             </div>
         </div>
 
         <div class="amount-section">
             <div class="info-row">
+                <?php 
+                $tuition = (float)($payment['tuition_fee'] ?? ($payment['amount_paid'] - ($payment['admission_fee'] ?? 0) - ($payment['exam_fee'] ?? 0) - ($payment['other_fee'] ?? 0))); 
+                ?>
                 <span>Tuition Fee:</span>
-                <span>Rs. <?php echo number_format($payment['amount_paid'] + $payment['discount'], 2); ?></span>
+                <span>Rs. <?php echo number_format($tuition + $payment['discount'], 2); ?></span>
             </div>
+
+            <?php if (!empty($payment['admission_fee']) && $payment['admission_fee'] > 0): ?>
+            <div class="info-row">
+                <span>Admission Fee:</span>
+                <span>Rs. <?php echo number_format($payment['admission_fee'], 2); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($payment['exam_fee']) && $payment['exam_fee'] > 0): ?>
+            <div class="info-row">
+                <span>Exam Fee:</span>
+                <span>Rs. <?php echo number_format($payment['exam_fee'], 2); ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($payment['other_fee']) && $payment['other_fee'] > 0): ?>
+            <div class="info-row">
+                <span><?php echo htmlspecialchars($payment['other_label'] ?: 'Other Fee'); ?>:</span>
+                <span>Rs. <?php echo number_format($payment['other_fee'], 2); ?></span>
+            </div>
+            <?php endif; ?>
+
             <?php if ($payment['discount'] > 0): ?>
             <div class="info-row" style="color: red;">
                 <span>Discount:</span>
                 <span>- Rs. <?php echo number_format($payment['discount'], 2); ?></span>
             </div>
             <?php endif; ?>
+
             <div class="info-row amount-total">
-                <span>PAID AMOUNT:</span>
+                <span>GRAND TOTAL:</span>
                 <span>Rs. <?php echo number_format($payment['amount_paid'], 2); ?></span>
             </div>
         </div>

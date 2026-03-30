@@ -3265,7 +3265,7 @@ class Database {
 
     public function recordFeePayment($data) {
         $file = __DIR__ . '/../data/fee_collections.csv';
-        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes'];
+        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label'];
         
         $id = time() . rand(100, 999);
         $row = [
@@ -3277,13 +3277,87 @@ class Database {
             $data['discount'] ?? 0,
             $data['payment_method'] ?? 'Cash',
             $_SESSION['user_id'] ?? 'System',
-            $data['notes'] ?? ''
+            $data['notes'] ?? '',
+            $data['admission_fee'] ?? 0,
+            $data['exam_fee'] ?? 0,
+            $data['other_fee'] ?? 0,
+            $data['other_label'] ?? ''
         ];
 
         $fp = fopen($file, 'a');
         fputcsv($fp, $row);
         fclose($fp);
         return $id;
+    }
+
+    public function updateFeePayment($id, $data) {
+        $file = __DIR__ . '/../data/fee_collections.csv';
+        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label'];
+        
+        $collections = [];
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            fgetcsv($handle); // skip headers
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                if ($row[0] == $id) {
+                    // Update fields
+                    if (isset($data['payment_date'])) $row[2] = $data['payment_date'];
+                    if (isset($data['month_for'])) $row[3] = $data['month_for'];
+                    if (isset($data['amount_paid'])) $row[4] = $data['amount_paid'];
+                    if (isset($data['discount'])) $row[5] = $data['discount'];
+                    if (isset($data['payment_method'])) $row[6] = $data['payment_method'];
+                    if (isset($data['notes'])) $row[8] = $data['notes'];
+                    $row[7] = $_SESSION['user_id'] ?? $row[7]; // updated by
+                    
+                    // Update breakdown fields
+                    // If row was shorter, pad it
+                    while (count($row) < count($headers)) $row[] = '';
+                    $row[9] = $data['admission_fee'] ?? ($row[9] ?? 0);
+                    $row[10] = $data['exam_fee'] ?? ($row[10] ?? 0);
+                    $row[11] = $data['other_fee'] ?? ($row[11] ?? 0);
+                    $row[12] = $data['other_label'] ?? ($row[12] ?? '');
+                }
+                $collections[] = $row;
+            }
+            fclose($handle);
+        }
+
+        $fp = fopen($file, 'w');
+        fputcsv($fp, $headers);
+        foreach ($collections as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function deleteFeePayment($id) {
+        $file = __DIR__ . '/../data/fee_collections.csv';
+        if (!file_exists($file)) return false;
+
+        $temp = [];
+        $found = false;
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            $headers = fgetcsv($handle);
+            $temp[] = $headers;
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                if ($row[0] == $id) {
+                    $found = true;
+                    continue;
+                }
+                $temp[] = $row;
+            }
+            fclose($handle);
+        }
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            foreach ($temp as $row) {
+                fputcsv($fp, $row);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
     }
 
     public function getFeeCollections($filters = []) {
@@ -3293,11 +3367,16 @@ class Database {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle);
                 while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                    // Ensure row matches header length for older records
+                    if (count($row) < count($headers)) {
+                        $row = array_pad($row, count($headers), '');
+                    }
                     $item = array_combine($headers, $row);
                     
                     $match = true;
                     if (isset($filters['gr_no']) && $item['gr_no'] != $filters['gr_no']) $match = false;
                     if (isset($filters['month']) && $item['month_for'] != $filters['month']) $match = false;
+                    if (isset($filters['id']) && $item['id'] != $filters['id']) $match = false;
                     
                     if ($match) {
                         $collections[] = $item;

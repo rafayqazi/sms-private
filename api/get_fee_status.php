@@ -23,10 +23,21 @@ $classFees = $feeStructure[$student['current_class']] ?? [
     'exam_fee' => 0
 ];
 
+$month = $_GET['month'] ?? '';
 $history = $db->getStudentFeeHistory($gr_no);
+
+$existing_payment = null;
+if ($month) {
+    foreach ($history as $h) {
+        if ($h['month_for'] == $month) {
+            $existing_payment = $h;
+            break;
+        }
+    }
+}
 
 echo json_encode([
     'student' => $student,
     'structure' => $classFees,
-    'history' => $history
+    'existing_payment' => $existing_payment
 ]);

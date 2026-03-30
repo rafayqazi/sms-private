@@ -20,8 +20,8 @@ $all_students = $db->readData();
 $display_list = [];
 $is_student_history = $gr_no && !$month && !$class_filter;
 
-if (($month || $class_filter) && !$gr_no) {
-    // Status View: Show all students in the filtered scope and their status for that month
+if ($month && !$gr_no) {
+    // Status View: Show all students in the filtered scope and their status for that specific month
     foreach ($all_students as $s) {
         $student_gr = $s['gr_no'];
         $student_class = $s['current_class'];
@@ -54,8 +54,17 @@ if (($month || $class_filter) && !$gr_no) {
         // Find student details
         $s_name = 'Unknown';
         $s_class = 'N/A';
-        foreach($all_students as $s) if($s['gr_no'] == $h['gr_no']) { $s_name = $s['student_name']; $s_class = $s['current_class']; break; }
+        foreach($all_students as $s) {
+            if ($s['gr_no'] == $h['gr_no']) { 
+                $s_name = $s['student_name']; 
+                $s_class = $s['current_class']; 
+                break; 
+            }
+        }
         
+        // Apply class filter if present
+        if ($class_filter && $s_class !== $class_filter) continue;
+
         $display_list[] = [
             'gr_no' => $h['gr_no'],
             'student_name' => $s_name,
@@ -66,6 +75,18 @@ if (($month || $class_filter) && !$gr_no) {
 }
 
 ?>
+<?php if ($is_student_history && !empty($display_list)): ?>
+<div class="px-6 py-4 bg-gray-50 flex flex-col md:flex-row justify-between items-center border-b border-gray-100 gap-3">
+    <div class="flex items-center gap-2">
+        <i class="fas fa-history text-indigo-500"></i>
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Payment History</span>
+    </div>
+    <a href="print_fee_history.php?gr_no=<?php echo $gr_no; ?>" target="_blank" class="text-xs bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition font-bold shadow-md no-print">
+        <i class="fas fa-file-pdf"></i> Download PDF / Print All
+    </a>
+</div>
+<?php endif; ?>
+
 <div class="overflow-x-auto">
     <table class="w-full text-left">
         <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b border-gray-100">
@@ -105,7 +126,10 @@ if (($month || $class_filter) && !$gr_no) {
                     </td>
 
                     <td class="px-6 py-4 font-semibold text-gray-700">
-                        <?php echo $isPaid ? htmlspecialchars($p['month_for']) : ($month ?: 'Current'); ?>
+                        <?php 
+                        $m = $isPaid ? $p['month_for'] : ($month ?: date('Y-m'));
+                        echo date('F Y', strtotime($m . "-01")); 
+                        ?>
                     </td>
                     <td class="px-6 py-4">
                         <?php if ($isPaid): ?>
@@ -127,9 +151,17 @@ if (($month || $class_filter) && !$gr_no) {
                     </td>
                     <td class="px-6 py-4 text-right">
                         <?php if ($isPaid): ?>
-                            <a href="print_receipt.php?id=<?php echo $p['id']; ?>" target="_blank" class="p-2 inline-flex items-center justify-center bg-gray-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition shadow-sm" title="Print Receipt">
-                                <i class="fas fa-print"></i>
-                            </a>
+                            <div class="flex items-center gap-2 justify-end">
+                                <a href="print_receipt.php?id=<?php echo $p['id']; ?>" target="_blank" class="p-2 inline-flex items-center justify-center bg-gray-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition shadow-sm" title="Print Receipt">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                <button onclick="window.selectStudentWithMonth('<?php echo $p['gr_no']; ?>', '<?php echo $p['month_for']; ?>')" class="p-2 inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm" title="Modify Entry">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="window.confirmDeletion('<?php echo $p['id']; ?>', '<?php echo date('F Y', strtotime($p['month_for'] . '-01')); ?>')" class="p-2 inline-flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm" title="Delete Entry">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
                         <?php else: ?>
                             <button onclick="pickStudent('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5 ml-auto">
                                 <i class="fas fa-hand-holding-usd"></i> Collect
