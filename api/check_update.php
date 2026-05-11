@@ -43,61 +43,60 @@ try {
     $debug_info['local_hash'] = $local_hash;
     $debug_info['remote_hash'] = $remote_hash;
 
-    // 5. Compare hashes to see if they are different
+    // 5. Comparison Logic
+    $update_available = false;
+    $message = "";
+    $commits_behind = 0;
+    $commit_messages = [];
+
     if ($local_hash !== $remote_hash) {
-        // Calculate how many commits behind we are
         $commits_behind = (int)trim(shell_exec("git rev-list HEAD..origin/$current_branch --count"));
-        
-        // Get the list of changed files
         $changed_files = [];
         exec("git diff --name-only HEAD origin/$current_branch", $changed_files);
         
-        // If we have commits behind OR file content differences
         if ($commits_behind > 0 || !empty($changed_files)) {
-            // Get the last few commit messages
-            $commit_messages = [];
+            $update_available = true;
+            $message = "New update found! You are $commits_behind commit(s) behind.";
             exec("git log HEAD..origin/$current_branch --oneline -5", $commit_messages);
-            
-            echo json_encode([
-                'success' => true,
-                'update_available' => true,
-                'message' => "New update found! You are $commits_behind commit(s) behind.",
-                'commits_behind' => $commits_behind,
-                'details' => $commit_messages,
-                'debug' => $debug_info
-            ]);
         } else {
-             // Hashes are different but no commits behind? Could be ahead or diverged.
-             // Check if we are ahead
              $commits_ahead = (int)trim(shell_exec("git rev-list origin/$current_branch..HEAD --count"));
-             
              if ($commits_ahead > 0) {
-                 echo json_encode([
-                    'success' => true,
-                    'update_available' => false,
-                    'message' => "You are $commits_ahead commit(s) AHEAD of the remote version. No updates needed.",
-                    'debug' => $debug_info
-                ]);
+                 $update_available = false;
+                 $message = "You are $commits_ahead commit(s) AHEAD of the remote version. No updates needed.";
              } else {
-                // If we get here, hashes differ but neither ahead nor behind in simple count? 
-                // Treat as update available to be safe (sync with remote)
-                echo json_encode([
-                    'success' => true,
-                    'update_available' => true,
-                    'message' => "Version mismatch detected. An update is recommended safely sync with the repo.",
-                    'commits_behind' => 'Unknown',
-                    'debug' => $debug_info
-                ]);
+                $update_available = true;
+                $message = "Version mismatch detected. An update is recommended to safely sync with the repo.";
              }
         }
     } else {
-        echo json_encode([
-            'success' => true,
-            'update_available' => false,
-            'message' => "Your software is fully up to date.",
-            'debug' => $debug_info
-        ]);
+        $update_available = false;
+        $message = "Your software is fully up to date.";
     }
+
+    // 6. Sync results with Session to clear/set update lock
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if ($update_available) {
+        $_SESSION['updates_available'] = true;
+        $_SESSION['remote_commit'] = substr($remote_hash, 0, 7);
+        $_SESSION['local_commit'] = substr($local_hash, 0, 7);
+    } else {
+        $_SESSION['updates_available'] = false;
+        unset($_SESSION['remote_commit']);
+        unset($_SESSION['local_commit']);
+    }
+    $_SESSION['update_check_done'] = true;
+
+    echo json_encode([
+        'success' => true,
+        'update_available' => $update_available,
+        'message' => $message,
+        'commits_behind' => $commits_behind,
+        'details' => $commit_messages,
+        'debug' => $debug_info
+    ]);
 
 } catch (Exception $e) {
     echo json_encode([
