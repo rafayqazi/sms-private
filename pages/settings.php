@@ -300,7 +300,7 @@ $settings = $db->getSchoolSettings();
                                             <td class="px-6 py-4">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700">
-                                                        <?php if (!empty($user['profile_image']) && file_exists('../' . $user['profile_image'])): ?>
+                                                        <?php if (!empty($user['profile_image'])): ?>
                                                             <img src="../<?php echo $user['profile_image']; ?>?v=<?php echo time(); ?>" alt="Avatar" class="w-full h-full object-cover">
                                                         <?php else: ?>
                                                             <i class="fas fa-user text-teal-600 dark:text-teal-400"></i>

@@ -28,9 +28,7 @@ if (isset($_SESSION['user'])) {
     // Priority: Session > Teacher Record > Default
     if (!empty($_SESSION['profile_image'])) {
         $cleanedPath = ltrim(str_replace('../', '', $_SESSION['profile_image']), '/');
-        if (file_exists(__DIR__ . '/../' . $cleanedPath)) {
-            $userProfileImage = $base_path . $cleanedPath;
-        }
+        $userProfileImage = $base_path . $cleanedPath;
     }
     
     // Fallback for teachers if session was not updated yet
@@ -38,9 +36,7 @@ if (isset($_SESSION['user'])) {
         $teacherRecord = $db_for_messages->getTeacher($currentUserId);
         if ($teacherRecord && !empty($teacherRecord['profile_image'])) {
             $cleanedPath = ltrim(str_replace('../', '', $teacherRecord['profile_image']), '/');
-            if (file_exists(__DIR__ . '/../' . $cleanedPath)) {
-                $userProfileImage = $base_path . $cleanedPath;
-            }
+            $userProfileImage = $base_path . $cleanedPath;
         }
     }
 }
