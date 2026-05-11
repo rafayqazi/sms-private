@@ -67,7 +67,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = $_POST['username'];
         $password = $_POST['password'];
         $role = $_POST['role'];
-        $result = $db->createUserRole(0, $role, $username, $password);
+        $profileImage = '';
+
+        // Handle Profile Image Upload
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+            $allowed = ['png', 'jpg', 'jpeg'];
+            $ext = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, $allowed)) {
+                $new_filename = 'profile_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                $target_rel = 'uploads/profiles/' . $new_filename;
+                $target_abs = '../' . $target_rel;
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_abs)) {
+                    $profileImage = $target_rel;
+                }
+            }
+        }
+
+        $result = $db->createUserRole(0, $role, $username, $password, [], $profileImage);
         if ($result['success']) {
             $successMsg = "User created successfully!";
         } else {
@@ -78,7 +94,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = $_POST['username'];
         $password = $_POST['password']; // Optional password change
         $role = $_POST['role'];
-        $result = $db->updateUserRoleById($id, $role, $username, $password);
+        $profileImage = null;
+
+        // Handle Profile Image Upload
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+            $allowed = ['png', 'jpg', 'jpeg'];
+            $ext = strtolower(pathinfo($_FILES['profile_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, $allowed)) {
+                $new_filename = 'profile_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                $target_rel = 'uploads/profiles/' . $new_filename;
+                $target_abs = '../' . $target_rel;
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_abs)) {
+                    $profileImage = $target_rel;
+                }
+            }
+        }
+
+        $result = $db->updateUserRoleById($id, $role, $username, $password, [], $profileImage);
         if ($result['success']) {
             $successMsg = "User updated successfully!";
         } else {
@@ -248,7 +280,7 @@ $settings = $db->getSchoolSettings();
                             <table class="w-full text-left">
                                 <thead class="bg-gray-50 text-gray-600 uppercase text-xs font-bold">
                                     <tr>
-                                        <th class="px-6 py-4">Username</th>
+                                        <th class="px-6 py-4">User</th>
                                         <th class="px-6 py-4">Role</th>
                                         <th class="px-6 py-4">Linked To</th>
                                         <th class="px-6 py-4 text-right">Actions</th>
@@ -265,7 +297,18 @@ $settings = $db->getSchoolSettings();
                                         }
                                     ?>
                                         <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="px-6 py-4 font-semibold text-gray-800"><?php echo htmlspecialchars($user['username']); ?></td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700">
+                                                        <?php if (!empty($user['profile_image']) && file_exists('../' . $user['profile_image'])): ?>
+                                                            <img src="../<?php echo $user['profile_image']; ?>?v=<?php echo time(); ?>" alt="Avatar" class="w-full h-full object-cover">
+                                                        <?php else: ?>
+                                                            <i class="fas fa-user text-teal-600 dark:text-teal-400"></i>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <span class="font-semibold text-gray-800"><?php echo htmlspecialchars($user['username']); ?></span>
+                                                </div>
+                                            </td>
                                             <td class="px-6 py-4">
                                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase <?php echo $user['role'] === 'Admin' ? 'bg-indigo-100 text-indigo-700' : ($user['role'] === 'Editor' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-700'); ?>">
                                                     <?php echo htmlspecialchars($user['role']); ?>
@@ -626,7 +669,7 @@ $settings = $db->getSchoolSettings();
             </h3>
             <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
         </div>
-        <form action="?tab=users" method="POST" class="p-6 space-y-4">
+        <form action="?tab=users" method="POST" class="p-6 space-y-4" enctype="multipart/form-data">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                 <input type="text" name="username" required placeholder="User's login name"
@@ -643,6 +686,11 @@ $settings = $db->getSchoolSettings();
                     <option value="Admin">Admin (Full Access)</option>
                     <option value="Viewer">Viewer (Read Only)</option>
                 </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Profile Picture (Optional)</label>
+                <input type="file" name="profile_image" accept="image/png, image/jpeg"
+                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
             </div>
             <div class="pt-4 flex justify-end gap-3">
                 <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
@@ -663,7 +711,7 @@ $settings = $db->getSchoolSettings();
             </h3>
             <button onclick="closeEditUserModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
         </div>
-        <form action="?tab=users" method="POST" class="p-6 space-y-4">
+        <form action="?tab=users" method="POST" class="p-6 space-y-4" enctype="multipart/form-data">
             <input type="hidden" name="user_id" id="edit_user_id">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
@@ -681,6 +729,16 @@ $settings = $db->getSchoolSettings();
                     <option value="Admin">Admin (Full Access)</option>
                     <option value="Viewer">Viewer (Read Only)</option>
                 </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Change Profile Picture (Optional)</label>
+                <div class="flex items-center gap-4">
+                    <div id="edit_user_avatar_preview" class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <input type="file" name="profile_image" accept="image/png, image/jpeg" onchange="previewEditAvatar(this)"
+                        class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
             </div>
             <div class="pt-4 flex justify-end gap-3">
                 <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
@@ -728,6 +786,14 @@ function openEditUserModal(user) {
     document.getElementById('edit_username').value = user.username;
     document.getElementById('edit_role').value = user.role;
     
+    // Set preview
+    const preview = document.getElementById('edit_user_avatar_preview');
+    if (user.profile_image) {
+        preview.innerHTML = `<img src="../${user.profile_image}?v=${Date.now()}" class="w-full h-full object-cover">`;
+    } else {
+        preview.innerHTML = `<i class="fas fa-user text-gray-400"></i>`;
+    }
+    
     const modal = document.getElementById('editUserModal');
     const content = document.getElementById('editUserModalContent');
     modal.classList.remove('hidden');
@@ -764,6 +830,17 @@ function previewLogo(input) {
             // Add a small bounce effect for feedback
             preview.classList.add('scale-110');
             setTimeout(() => preview.classList.remove('scale-110'), 300);
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function previewEditAvatar(input) {
+    const preview = document.getElementById('edit_user_avatar_preview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
         }
         reader.readAsDataURL(input.files[0]);
     }

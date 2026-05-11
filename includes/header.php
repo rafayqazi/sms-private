@@ -13,24 +13,35 @@ if (isset($_SESSION['teacher_name'])) {
 // Determine if we're in a subdirectory
 $base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
 
-// Message Count Logic (Moved from sidebar)
+// Message Count & Profile Image Logic
 $db_for_messages = new Database();
 $headerSettings = $db_for_messages->getSchoolSettings();
 $currentUserId = isSuperAdmin() ? 'admin' : (isset($_SESSION['teacher_id']) ? $_SESSION['teacher_id'] : null);
 $unreadCount = 0;
-$teacherProfileImage = null;
-if ($currentUserId) {
-    if ($currentUserId !== 'admin') {
-        $unreadCount = $db_for_messages->getUnreadMessageCount($currentUserId);
+$userProfileImage = null;
+
+if (isset($_SESSION['user'])) {
+    // 1. Get Unread Count
+    $unreadCount = $db_for_messages->getUnreadMessageCount($currentUserId ?: 'admin');
+
+    // 2. Resolve Profile Image
+    // Priority: Session > Teacher Record > Default
+    if (!empty($_SESSION['profile_image'])) {
+        $cleanedPath = ltrim(str_replace('../', '', $_SESSION['profile_image']), '/');
+        if (file_exists(__DIR__ . '/../' . $cleanedPath)) {
+            $userProfileImage = $base_path . $cleanedPath;
+        }
+    }
+    
+    // Fallback for teachers if session was not updated yet
+    if (!$userProfileImage && $currentUserId && $currentUserId !== 'admin') {
         $teacherRecord = $db_for_messages->getTeacher($currentUserId);
         if ($teacherRecord && !empty($teacherRecord['profile_image'])) {
             $cleanedPath = ltrim(str_replace('../', '', $teacherRecord['profile_image']), '/');
             if (file_exists(__DIR__ . '/../' . $cleanedPath)) {
-                $teacherProfileImage = $base_path . $cleanedPath;
+                $userProfileImage = $base_path . $cleanedPath;
             }
         }
-    } else {
-        $unreadCount = $db_for_messages->getUnreadMessageCount('admin');
     }
 }
 ?>
@@ -457,8 +468,8 @@ if ($currentUserId) {
                                 </div>
                             </div>
                             <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-black border-2 border-white dark:border-gray-800 shadow-sm transition-all group-hover:scale-110 group-hover:border-indigo-200 overflow-hidden shrink-0">
-                                <?php if (!empty($teacherProfileImage)): ?>
-                                    <img src="<?php echo htmlspecialchars($teacherProfileImage); ?>?v=<?php echo time(); ?>" alt="Profile" class="w-full h-full object-cover">
+                                <?php if (!empty($userProfileImage)): ?>
+                                    <img src="<?php echo htmlspecialchars($userProfileImage); ?>?v=<?php echo time(); ?>" alt="Profile" class="w-full h-full object-cover">
                                 <?php else: ?>
                                     <i class="fas fa-user text-lg md:text-xl"></i>
                                 <?php endif; ?>

@@ -1216,9 +1216,9 @@ class Database {
         return $modified ? $this->writeData($students) : true;
     }
 
-    public function createUserRole($teacherId, $role, $username, $password, $classes = []) {
+    public function createUserRole($teacherId, $role, $username, $password, $classes = [], $profileImage = '') {
         $file = __DIR__ . '/../data/user_roles.csv';
-        $headers = ['id', 'teacher_id', 'role', 'username', 'password_hash', 'assigned_classes', 'created_at', 'updated_at'];
+        $headers = ['id', 'teacher_id', 'role', 'username', 'password_hash', 'assigned_classes', 'profile_image', 'created_at', 'updated_at'];
 
         // Create file with headers if it doesn't exist
         if (!file_exists($file)) {
@@ -1262,6 +1262,7 @@ class Database {
             $username,
             $passwordHash,
             $classesJson,
+            $profileImage,
             date('Y-m-d H:i:s'),
             date('Y-m-d H:i:s')
         ];
@@ -1315,7 +1316,7 @@ class Database {
         return null;
     }
 
-    public function updateUserRole($teacherId, $role, $username, $password, $classes = []) {
+    public function updateUserRole($teacherId, $role, $username, $password, $classes = [], $profileImage = null) {
         $file = __DIR__ . '/../data/user_roles.csv';
         if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
 
@@ -1339,6 +1340,7 @@ class Database {
                 // Update record
                 $passwordHash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : $row[4];
                 $classesJson = json_encode($classes);
+                $finalProfileImage = ($profileImage !== null) ? $profileImage : ($row[6] ?? '');
                 
                 $updatedRow = [
                     $row[0], // id
@@ -1347,7 +1349,8 @@ class Database {
                     $username,
                     $passwordHash,
                     $classesJson,
-                    $row[6], // created_at
+                    $finalProfileImage,
+                    $row[7] ?? date('Y-m-d H:i:s'), // created_at
                     date('Y-m-d H:i:s') // updated_at
                 ];
                 $rows[] = $updatedRow;
@@ -1372,7 +1375,7 @@ class Database {
         return ['success' => true, 'message' => 'Role updated successfully'];
     }
 
-    public function updateUserRoleById($id, $role, $username, $password, $classes = []) {
+    public function updateUserRoleById($id, $role, $username, $password, $classes = [], $profileImage = null) {
         $file = __DIR__ . '/../data/user_roles.csv';
         if (!file_exists($file)) return ['success' => false, 'message' => 'User roles file not found'];
 
@@ -1398,6 +1401,7 @@ class Database {
                 // Update record
                 $passwordHash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : $row[4];
                 $classesJson = json_encode($classes);
+                $finalProfileImage = ($profileImage !== null) ? $profileImage : ($row[6] ?? '');
                 
                 $updatedRow = [
                     $id,
@@ -1406,7 +1410,8 @@ class Database {
                     $username,
                     $passwordHash,
                     $classesJson,
-                    $row[6], // created_at
+                    $finalProfileImage,
+                    $row[7] ?? date('Y-m-d H:i:s'), // created_at
                     date('Y-m-d H:i:s') // updated_at
                 ];
                 $rows[] = $updatedRow;

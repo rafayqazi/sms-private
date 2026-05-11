@@ -812,6 +812,7 @@ endforeach; ?>
             </div>
         </div>
         <h1 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight drop-shadow-2xl uppercase">
+            Hello, <span class="text-teal-400"><?php echo htmlspecialchars($username); ?></span><br> 
             Welcome to <br> 
             <span class="text-indigo-300"><?php echo htmlspecialchars($headerSettings['school_name']); ?></span>
         </h1>

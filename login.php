@@ -45,6 +45,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['username'] = $username;
         $_SESSION['teacher_id'] = null;
         $_SESSION['assigned_classes'] = [];
+        
+        // Get profile image from user role if exists
+        $userRole = $db->getUserRoleByUsername($username);
+        $_SESSION['profile_image'] = ($userRole && !empty($userRole['profile_image'])) ? $userRole['profile_image'] : '';
+        
         $_SESSION['login_time'] = time(); // Set login timestamp
         $_SESSION['show_welcome_animation'] = true; // Trigger animation
         
@@ -68,6 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['teacher_id'] = $userRole['teacher_id'];
             $_SESSION['teacher_name'] = $teacher ? $teacher['name'] : 'Teacher';
             $_SESSION['assigned_classes'] = $userRole['assigned_classes'] ? $userRole['assigned_classes'] : [];
+            $_SESSION['profile_image'] = !empty($userRole['profile_image']) ? $userRole['profile_image'] : ($teacher ? $teacher['profile_image'] : '');
             $_SESSION['login_time'] = time(); // Set login timestamp
             $_SESSION['show_welcome_animation'] = true; // Trigger animation
             
