@@ -39,7 +39,8 @@ try {
     $projectRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
     
     // 0.5 Ensure git considers this directory safe (Required in newer Git versions)
-    exec("git config --global --add safe.directory \"$projectRoot\" 2>&1", $safe_output);
+    // We use "*" to handle cases where the directory name might vary or be accessed via aliases
+    exec("git config --global --add safe.directory \"*\" 2>&1", $safe_output);
     $debug['safe_dir'] = $safe_output;
 
     // 1. Reset any local changes to ensure clean pull (Safety step)
