@@ -11,9 +11,9 @@ $debug = [];
 $output = [];
 
 try {
-    // Any authenticated user can perform this mandatory security patch when locked
-    if (!isset($_SESSION['user'])) {
-        throw new Exception('Unauthorized access');
+    // Only Admin or Super Admin can perform updates
+    if (!isAdmin() && !isSuperAdmin()) {
+        throw new Exception('Unauthorized access. Only administrators can perform updates.');
     }
 
     // RELEASE SESSION LOCK: Critical for avoiding Network Errors during long-running tasks
@@ -30,42 +30,65 @@ try {
     }
     $debug['backup'] = "Safety backup created: $backupFile";
 
+    // --- ENHANCED GIT CONFIGURATION FOR WINDOWS/XAMPP ---
+    // Set HOME environment variable as git often needs it for config/credentials
+    putenv('HOME=' . __DIR__ . '/..');
+    putenv('GIT_TERMINAL_PROMPT=0'); // Prevent hanging on credential prompts
+    
+    // Get the absolute path to the project root for safe.directory
+    $projectRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+    
+    // 0.5 Ensure git considers this directory safe (Required in newer Git versions)
+    exec("git config --global --add safe.directory \"$projectRoot\" 2>&1", $safe_output);
+    $debug['safe_dir'] = $safe_output;
+
     // 1. Reset any local changes to ensure clean pull (Safety step)
-    // Note: This discards local unauthorized changes. A production system might want to 'stash' instead.
-    // For this use case, we prioritize successful update over preserving local hacks unless ignored.
+    // We also remove index.lock if it exists to prevent "Another git process seems to be running" error
+    $lockFile = __DIR__ . '/../.git/index.lock';
+    if (file_exists($lockFile)) {
+        unlink($lockFile);
+        $debug['lock_removed'] = true;
+    }
+
     $reset_output = [];
     $reset_var = 0;
     exec("git reset --hard HEAD 2>&1", $reset_output, $reset_var);
     $debug['reset'] = $reset_output;
 
-    // 2. Pull the changes
-    // Using --rebase can sometimes be cleaner if there are local commits, but standard pull is safer for general use
-    // We explicitly specify origin main to be sure
+    // 2. Determine the active branch (main or master)
+    $current_branch = trim(shell_exec("git rev-parse --abbrev-ref HEAD 2>/dev/null") ?: 'main');
+    $debug['active_branch'] = $current_branch;
+
+    // 3. Pull the changes
     $pull_output = [];
     $return_var = 0;
-    exec("git pull origin main 2>&1", $pull_output, $return_var);
+    // We try to pull with --no-edit to avoid entering an editor
+    exec("git pull origin $current_branch --no-edit 2>&1", $pull_output, $return_var);
     $debug['pull'] = $pull_output;
 
     if ($return_var !== 0) {
-        // Fallback: Try a fetch and reset hard to origin/main (More aggressive "Force Update")
+        // Fallback: Try a fetch and reset hard to origin/[branch] (More aggressive "Force Update")
         $fetch_output = [];
-        exec("git fetch origin main 2>&1", $fetch_output);
+        exec("git fetch origin $current_branch 2>&1", $fetch_output);
         
         $hard_reset_output = [];
         $hard_reset_return = 0;
-        exec("git reset --hard origin/main 2>&1", $hard_reset_output, $hard_reset_return);
+        exec("git reset --hard origin/$current_branch 2>&1", $hard_reset_output, $hard_reset_return);
         
         $debug['fallback_fetch'] = $fetch_output;
         $debug['fallback_reset'] = $hard_reset_output;
         
         if ($hard_reset_return !== 0) {
-             throw new Exception("Update failed even after forced reset. Git output: " . implode("\n", $pull_output));
+             $git_error = implode("\n", array_merge($pull_output, $hard_reset_output));
+             throw new Exception("Update failed even after forced reset.\nGit Output:\n" . $git_error);
         }
     }
 
-    // 3. Post-update tasks
+    // 4. Post-update tasks
     // Re-open session to clear update flags upon success
-    session_start();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     unset($_SESSION['updates_available']);
     unset($_SESSION['remote_commit']);
     unset($_SESSION['local_commit']);

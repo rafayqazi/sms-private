@@ -19,36 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Check for password verification
-if (!isset($_POST['password'])) {
-    echo json_encode(['success' => false, 'message' => 'Password is required to restore data']);
-    exit;
-}
+// No password verification as per user request
 
-$password = $_POST['password'];
-$verified = false;
-$db = new Database();
-
-// Get current username or 'abdul rafay' if superadmin
-$username = $_SESSION['username'] ?? $_POST['username'] ?? '';
-
-// 1. Check Superadmin/Admin credentials using Database class
-if ($db->verifyAdmin($username, $password)) {
-    $verified = true;
-} 
-// 2. Check Teacher credentials if they have Admin role
-else if ($username) {
-    $userRole = $db->getUserRoleByUsername($username);
-    if ($userRole && $userRole['role'] === 'Admin' && password_verify($password, $userRole['password_hash'])) {
-        $verified = true;
-    }
-}
-
-if (!$verified) {
-    ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'Incorrect password. Authorization failed.']);
-    exit;
-}
 
 // Check for file upload
 if (!isset($_FILES['backup_file'])) {

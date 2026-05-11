@@ -70,7 +70,7 @@ $schoolSettings = $db->getSchoolSettings();
                 </label>
             </form>
 
-            <button id="restore-trigger-btn" disabled onclick="openRestoreAuth()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-5 rounded-2xl font-black shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed">
+            <button id="restore-trigger-btn" disabled onclick="runRestore()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-5 rounded-2xl font-black shadow-lg transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed">
                 <i class="fas fa-sync-alt"></i> Upload & Restore
             </button>
         </div>
@@ -127,7 +127,6 @@ function renderAuthModal($id, $title, $description, $colorClass, $btnText, $acti
 
 <?php 
 // renderAuthModal('backupModal', 'Database Backup', 'System will prepare ZIP file', 'emerald-600', 'Start Backup', 'runBackup()');
-renderAuthModal('restoreModal', 'Restore System', 'Overwriting with backup data', 'orange-600', 'Confirm Restore', 'runRestore()');
 renderAuthModal('resetModal', 'Factory Reset', 'Deleting every file on system', 'red-600', 'Yes, Format Everything', 'runReset()');
 ?>
 
@@ -221,9 +220,7 @@ function closeModal(id) {
     }, 300);
 }
 
-function openRestoreAuth() {
-    if (activeFile) openModal('restoreModal');
-}
+
 
 // Action Execution
 async function verifyPass(pass, btnId, errorId) {
@@ -315,41 +312,37 @@ async function runBackup() {
 }
 
 async function runRestore() {
-    const pass = document.getElementById('restoreModal_pass').value;
-    const btn = document.getElementById('restoreModal_btn');
-    const errDiv = document.getElementById('restoreModal_error');
-    const errMsg = document.getElementById('restoreModal_error_msg');
-
+    const btn = document.getElementById('restore-trigger-btn');
+    
     if (!activeFile) return;
     
-    // Manual verification not needed because restore_data.php does it, 
-    // but we use verifyPass for consistent UI feedback before upload starts
-    if (await verifyPass(pass, 'restoreModal_btn', 'restoreModal_error')) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Restoring...';
-        
-        const fd = new FormData();
-        fd.append('password', pass);
-        fd.append('backup_file', activeFile);
+    if (!confirm('Are you sure you want to restore? This will overwrite all current system data!')) {
+        return;
+    }
 
-        try {
-            const res = await fetch('../api/restore_data.php', { method: 'POST', body: fd });
-            const data = await res.json();
-            
-            if (data.success) {
-                btn.innerHTML = '<i class="fas fa-check"></i> Success!';
-                setTimeout(() => window.location.href = '../index.php?restored=true', 1500);
-            } else {
-                errMsg.innerText = data.message;
-                errDiv.classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerHTML = "Retry Restore";
-            }
-        } catch(e) {
-            errMsg.innerText = "Restore Failed";
-            errDiv.classList.remove('hidden');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Uploading & Restoring...';
+    
+    const fd = new FormData();
+    fd.append('backup_file', activeFile);
+
+    try {
+        const res = await fetch('../api/restore_data.php', { method: 'POST', body: fd });
+        const data = await res.json();
+        
+        if (data.success) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+            setTimeout(() => window.location.href = '../index.php?restored=true', 1500);
+        } else {
+            alert('Restore Failed: ' + data.message);
             btn.disabled = false;
+            btn.innerHTML = originalText;
         }
+    } catch(e) {
+        alert('Restore Failed: Network Error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 

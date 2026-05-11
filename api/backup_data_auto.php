@@ -13,8 +13,8 @@ if (!isset($_SESSION['user_type']) || ($_SESSION['user_type'] !== 'admin' && $_S
 
 // RELEASE SESSION LOCK: This prevents other scripts (like perform_update.php) 
 // from waiting for this backup to finish, fixing "Network Errors".
-session_write_close();
-
+require_once '../includes/db.php';
+$db = new Database();
 $settings = $db->getSchoolSettings();
 $schoolName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $settings['school_name'] ?? 'School');
 $zipFilename = $schoolName . '_AutoBackup_' . date('Y-m-d_H-i-s') . '.zip';

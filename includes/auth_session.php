@@ -64,22 +64,27 @@ if (!isset($_SESSION['update_check_done']) || $_SESSION['update_check_done'] ===
     $_SESSION['updates_available'] = false; // Default to false
     
     // Check if git is available
+    putenv('HOME=' . __DIR__ . '/..');
+    putenv('GIT_TERMINAL_PROMPT=0');
+    $projectRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+    exec("git config --global --add safe.directory \"$projectRoot\" 2>&1");
+
     $gitVersion = shell_exec("git --version");
     if ($gitVersion) {
         try {
-            // 1. Fetch latest state without pruning to save time, unless crucial
-            // Using a timeout to prevent hanging if network is down
-            // In Windows, timeout is harder, so we trust git's internal timeout or rely on default behavior
-            // We adding 2>&1 to suppress output to screen
-            shell_exec("git fetch origin main 2>&1");
+            // 1. Determine active branch
+            $currentBranch = trim(shell_exec("git rev-parse --abbrev-ref HEAD 2>/dev/null") ?: 'main');
             
-            // 2. Get local and remote hashes
+            // 2. Fetch latest state
+            shell_exec("git fetch origin $currentBranch 2>&1");
+            
+            // 3. Get local and remote hashes
             $localHash = trim(shell_exec("git rev-parse HEAD"));
-            $remoteHash = trim(shell_exec("git rev-parse origin/main"));
+            $remoteHash = trim(shell_exec("git rev-parse origin/$currentBranch"));
             
             if ($localHash && $remoteHash && $localHash !== $remoteHash) {
                 // Check if we are actually behind
-                $commitsBehind = (int)trim(shell_exec("git rev-list HEAD..origin/main --count"));
+                $commitsBehind = (int)trim(shell_exec("git rev-list HEAD..origin/$currentBranch --count"));
                 
                 if ($commitsBehind > 0) {
                     $_SESSION['updates_available'] = true;
