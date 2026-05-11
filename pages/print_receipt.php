@@ -87,10 +87,11 @@ $settings = $db->getSchoolSettings();
         <div class="amount-section">
             <div class="info-row">
                 <?php 
-                $tuition = (float)($payment['tuition_fee'] ?? ($payment['amount_paid'] - ($payment['admission_fee'] ?? 0) - ($payment['exam_fee'] ?? 0) - ($payment['other_fee'] ?? 0))); 
+                $tuition = (float)($payment['tuition_fee'] ?: ((float)$payment['amount_paid'] - (float)($payment['admission_fee'] ?? 0) - (float)($payment['exam_fee'] ?? 0) - (float)($payment['other_fee'] ?? 0))); 
+                $discount = (float)($payment['discount'] ?? 0);
                 ?>
                 <span>Tuition Fee:</span>
-                <span>Rs. <?php echo number_format($tuition + $payment['discount'], 2); ?></span>
+                <span>Rs. <?php echo number_format($tuition + $discount, 2); ?></span>
             </div>
 
             <?php if (!empty($payment['admission_fee']) && $payment['admission_fee'] > 0): ?>

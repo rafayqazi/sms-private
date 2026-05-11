@@ -89,8 +89,11 @@ include '../includes/header.php';
             <button onclick="switchTab('history')" id="tab-history" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Collection History
             </button>
-            <button onclick="switchTab('defaulters')" id="tab-defaulters" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            <button onclick="switchTab('defaulters')" id="tab-defaulters" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
                 Defaulters List
+                <span id="defaulter_badge" class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-black ring-1 ring-red-100 shadow-sm">
+                    <?php echo count($defaulters); ?>
+                </span>
             </button>
         </nav>
     </div>
@@ -386,16 +389,32 @@ include '../includes/header.php';
 
     <div id="content-defaulters" class="tab-content hidden">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="font-bold text-gray-800">Defaulters List</h3>
-                <div class="flex gap-2">
-                    <select id="defaulter_stage" class="text-sm border rounded px-3 py-1" onchange="loadDefaulters()">
+            <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50/30">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-bold text-gray-800">Defaulters List</h3>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                        <input type="text" id="defaulter_search" placeholder="Search name or GR..." 
+                               class="text-xs border border-gray-200 rounded-lg pl-8 pr-3 py-2 w-48 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                               oninput="loadDefaulters()">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <select id="defaulter_stage" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" onchange="filterDefaulterClasses(); loadDefaulters();">
                         <option value="">All Stages</option>
                         <option value="Pre-Primary">Pre-Primary</option>
                         <option value="Elementary">Elementary</option>
                         <option value="College">College</option>
                     </select>
-                    <input type="month" id="defaulter_month" class="text-sm border rounded px-3 py-1" value="<?php echo date('Y-m'); ?>" onchange="loadDefaulters()">
+                    <select id="defaulter_class" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" onchange="loadDefaulters()">
+                        <option value="">All Classes</option>
+                        <?php foreach($classes as $c): ?>
+                            <option value="<?php echo htmlspecialchars($c['class_name']); ?>" data-stage="<?php echo $c['stage']; ?>">
+                                <?php echo htmlspecialchars($c['class_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="month" id="defaulter_month" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value="<?php echo date('Y-m'); ?>" onchange="loadDefaulters()">
                 </div>
             </div>
             <div id="defaulters_table_container">
@@ -499,7 +518,8 @@ function selectStudent(student) {
     container.innerHTML = `<div class="p-12 text-center"><i class="fas fa-spinner fa-spin fa-2x text-indigo-500"></i></div>`;
     container.classList.remove('hidden');
 
-    fetch(`../api/get_fee_status.php?gr_no=${student.gr_no}`)
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    fetch(`../api/get_fee_status.php?gr_no=${student.gr_no}&month=${currentMonth}`)
         .then(res => res.json())
         .then(data => {
             renderCollectionForm(student, data);
@@ -520,6 +540,21 @@ window.selectStudentWithMonth = function(gr_no, name, month) {
             renderCollectionForm(student, data);
             // Ensure student name is cleared from search if picking from recent
             if(studentSearch) studentSearch.value = name;
+        });
+}
+
+window.checkFeeStatusForMonth = function(gr_no) {
+    const month = document.getElementById('fee_month_picker').value;
+    if (!month) return;
+    
+    // Extract student name from the UI
+    const nameEl = document.querySelector('#collection_details h2');
+    const name = nameEl ? nameEl.innerText : 'Student';
+    
+    fetch(`../api/get_fee_status.php?gr_no=${gr_no}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            renderCollectionForm({ gr_no: gr_no, student_name: name }, data);
         });
 }
 
@@ -566,13 +601,14 @@ function renderCollectionForm(student, feeData) {
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Fee for Member of</label>
+                    <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest">Fee for Month of</label>
                     <div class="relative group">
                         <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition"></i>
                         <input type="month" name="month_for" id="fee_month_picker" 
                                value="${existing ? existing.month_for : (document.getElementById('fee_month_picker')?.value || new Date().toISOString().slice(0, 7))}" 
                                onchange="checkFeeStatusForMonth('${student.gr_no}')"
-                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-indigo-500 focus:bg-white transition-all outline-none font-bold text-gray-800" required>
+                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl pl-12 pr-4 py-4 focus:border-indigo-500 focus:bg-white transition-all outline-none font-bold text-gray-800" 
+                               required>
                     </div>
                 </div>
                 <div class="space-y-4">
@@ -589,7 +625,7 @@ function renderCollectionForm(student, feeData) {
                             </div>
                             <div class="w-24">
                                 <input type="number" name="tuition_fee" class="fee-item-input w-full bg-transparent border-none text-right font-black text-lg focus:ring-0" 
-                                       value="${existing ? (existing.amount_paid - (existing.admission_fee || 0) - (existing.exam_fee || 0)) : feeData.structure.monthly_fee}" 
+                                       value="${existing ? (parseFloat(existing.amount_paid) - (parseFloat(existing.admission_fee) || 0) - (parseFloat(existing.exam_fee) || 0) - (parseFloat(existing.other_fee) || 0) + (parseFloat(existing.discount) || 0)) : feeData.structure.monthly_fee}" 
                                        oninput="recalculateTotal()" data-type="tuition">
                             </div>
                             <div class="w-6"></div>
@@ -701,6 +737,21 @@ function renderCollectionForm(student, feeData) {
 
     document.getElementById('fee_collection_form').onsubmit = handleCollection;
     
+    // Auto-toggle breakdown fields for existing payment
+    if (existing) {
+        if (parseFloat(existing.admission_fee) > 0) {
+            toggleBreakdownField('admission', 'Admission Fee', existing.admission_fee, 'fa-user-plus', 'indigo', document.getElementById('btn_toggle_admission'));
+        }
+        if (parseFloat(existing.exam_fee) > 0) {
+            toggleBreakdownField('exam', 'Exam Fee', existing.exam_fee, 'fa-file-invoice', 'amber', document.getElementById('btn_toggle_exam'));
+        }
+        if (parseFloat(existing.other_fee) > 0) {
+            toggleBreakdownField('other', 'Other Fee', existing.other_fee, 'fa-ellipsis-h', 'slate', document.getElementById('btn_toggle_other'));
+            const labelInput = document.querySelector('input[name="other_label"]');
+            if (labelInput) labelInput.value = existing.other_label || 'Other Charges';
+        }
+    }
+
     // Force immediate recalculation
     setTimeout(recalculateTotal, 50);
 }
@@ -1061,16 +1112,41 @@ const originalLoadDefaulters = window.loadDefaulters;
 window.loadDefaulters = function() {
     const month = document.getElementById('defaulter_month').value;
     const stage = document.getElementById('defaulter_stage').value;
+    const className = document.getElementById('defaulter_class').value;
+    const search = document.getElementById('defaulter_search').value;
     const container = document.getElementById('defaulters_table_container');
     
     container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading defaulters...</div>';
     
-    fetch(`../api/get_defaulters.php?month=${month}&stage=${encodeURIComponent(stage)}`)
+    fetch(`../api/get_defaulters.php?month=${month}&stage=${encodeURIComponent(stage)}&class=${encodeURIComponent(className)}&search=${encodeURIComponent(search)}`)
         .then(res => res.text())
         .then(html => {
             container.innerHTML = html;
+            // Update badge count
+            const badge = document.getElementById('defaulter_badge');
+            if (badge) {
+                const rowCount = container.querySelectorAll('tbody tr:not(.no-defaulters)').length;
+                const isEmpty = container.querySelector('td[colspan="6"]');
+                badge.innerText = isEmpty ? 0 : rowCount;
+            }
         });
 };
+
+function filterDefaulterClasses() {
+    const stage = document.getElementById('defaulter_stage').value;
+    const classSelector = document.getElementById('defaulter_class');
+    const options = classSelector.querySelectorAll('option');
+    
+    classSelector.value = '';
+    options.forEach(opt => {
+        if (!opt.value) return;
+        if (!stage || opt.dataset.stage === stage) {
+            opt.classList.remove('hidden');
+        } else {
+            opt.classList.add('hidden');
+        }
+    });
+}
 
 function fillFullPayment() {
     // 1. Ensure Tuition is at assigned value

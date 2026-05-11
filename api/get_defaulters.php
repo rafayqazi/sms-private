@@ -4,9 +4,27 @@ require_once '../includes/db.php';
 
 $month = $_GET['month'] ?? date('Y-m');
 $stage = $_GET['stage'] ?? '';
+$class = $_GET['class'] ?? '';
+$search = $_GET['search'] ?? '';
 
 $db = new Database();
 $defaulters = $db->getDefaulters($month);
+
+// Filter by search (Name or GR)
+if (!empty($search)) {
+    $search = strtolower($search);
+    $defaulters = array_filter($defaulters, function($s) use ($search) {
+        return strpos(strtolower($s['student_name']), $search) !== false || 
+               strpos(strtolower($s['gr_no']), $search) !== false;
+    });
+}
+
+// Filter by class
+if (!empty($class)) {
+    $defaulters = array_filter($defaulters, function($s) use ($class) {
+        return $s['current_class'] === $class;
+    });
+}
 
 // Filter by stage if requested
 if (!empty($stage)) {
@@ -37,7 +55,7 @@ if (!empty($stage)) {
         </thead>
         <tbody class="divide-y divide-gray-100">
             <?php if (empty($defaulters)): ?>
-                <tr><td colspan="6" class="px-6 py-8 text-center text-green-500 font-medium">All students have paid for this month!</td></tr>
+                <tr class="no-defaulters"><td colspan="6" class="px-6 py-8 text-center text-green-500 font-medium italic">All students have paid for this month!</td></tr>
             <?php else: ?>
                 <?php foreach ($defaulters as $s): ?>
                 <tr class="hover:bg-red-50 transition">
