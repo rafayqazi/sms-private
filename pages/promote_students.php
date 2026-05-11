@@ -15,6 +15,25 @@ $students = [];
 if ($selectedClass) {
     $students = $db->getStudentsByClass($selectedClass);
 }
+
+// Build progression map for UI feedback (Section-Locked)
+$allClasses = $db->getClasses();
+$progressionMap = [];
+$stageGroups = [];
+foreach ($allClasses as $c) {
+    $s = $c['stage'] ?? 'Elementary';
+    if (!isset($stageGroups[$s])) $stageGroups[$s] = [];
+    $stageGroups[$s][] = $c;
+}
+
+foreach ($stageGroups as $stage => $groupClasses) {
+    for ($i = 0; $i < count($groupClasses); $i++) {
+        $current = $groupClasses[$i]['class_name'];
+        $next = ($i < count($groupClasses) - 1) ? $groupClasses[$i+1]['class_name'] : 'Pass Out / Alumni';
+        $progressionMap[$current] = $next;
+    }
+}
+$suggestedNextClass = $progressionMap[$selectedClass] ?? 'Next Class';
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -115,7 +134,7 @@ if ($selectedClass) {
                     <div class="space-y-2">
                         <label class="flex items-center p-2 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors border border-transparent hover:border-emerald-100 group/option">
                             <input type="radio" name="promotion_<?php echo $student['id']; ?>" value="pass" class="mr-3 text-emerald-600 focus:ring-emerald-500" checked>
-                            <span class="text-sm font-bold text-gray-600 group-hover/option:text-emerald-700">Promote to Next</span>
+                            <span class="text-sm font-bold text-gray-600 group-hover/option:text-emerald-700">Promote to <?php echo htmlspecialchars($suggestedNextClass); ?></span>
                         </label>
                         <label class="flex items-center p-2 rounded-lg hover:bg-amber-50 cursor-pointer transition-colors border border-transparent hover:border-amber-100 group/option">
                             <input type="radio" name="promotion_<?php echo $student['id']; ?>" value="passout" class="mr-3 text-amber-600 focus:ring-amber-500">
@@ -223,6 +242,12 @@ function switchMode(mode) {
     }
 }
 
+function updateSearchPlaceholder() {
+    // Currently only one option, but keeping for future or to avoid JS errors
+    const searchInput = document.getElementById('single-search');
+    searchInput.placeholder = "Enter Student Name or GR Number to search...";
+}
+
 function bulkSetDecisions(value) {
     if (!value) return;
     const radios = document.querySelectorAll(`input[value="${value}"]`);
@@ -255,18 +280,25 @@ searchInput.addEventListener('input', function() {
             .then(res => res.json())
             .then(data => {
                 searchLoading.classList.add('hidden');
-                if (data.length === 0) {
+                
+                if (data.error) {
+                    resultsContainer.innerHTML = `<div class="col-span-full py-12 text-center text-red-500 italic"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><br>Error: ${data.error}</div>`;
+                    return;
+                }
+
+                if (!Array.isArray(data) || data.length === 0) {
                     resultsContainer.innerHTML = '<div class="col-span-full py-12 text-center text-gray-500 italic"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>No matching active students found</div>';
                     return;
                 }
                 
                 let html = '';
                 data.forEach(student => {
+                    const initial = student.student_name ? student.student_name[0].toUpperCase() : '?';
                     html += `
                     <div class="border border-indigo-100 rounded-xl p-5 hover:shadow-xl transition-all bg-white group" data-student-id="${student.id}">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="relative">
-                                ${student.profile_image ? `<img src="${student.profile_image}" class="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-50">` : `<div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">${student.student_name[0].toUpperCase()}</div>`}
+                                ${student.profile_image ? `<img src="${student.profile_image}" class="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-50">` : `<div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">${initial}</div>`}
                                 <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
                             </div>
                             <div class="flex-1 min-w-0">
@@ -304,6 +336,11 @@ searchInput.addEventListener('input', function() {
                     </div>`;
                 });
                 resultsContainer.innerHTML = html;
+            })
+            .catch(err => {
+                searchLoading.classList.add('hidden');
+                console.error(err);
+                resultsContainer.innerHTML = '<div class="col-span-full py-12 text-center text-red-500 italic"><i class="fas fa-wifi text-2xl mb-2"></i><br>Network error or server unavailable</div>';
             });
     }, 400);
 });
@@ -381,56 +418,43 @@ function applyPromotions(event) {
 
     // Disable button and show loading
     const applyBtn = document.querySelector('#bulk-mode-container button[onclick*="applyPromotions"]');
+    const originalContent = applyBtn ? applyBtn.innerHTML : '';
+    
     if (applyBtn) {
         applyBtn.disabled = true;
         applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
     }
 
-    // Process each promotion
-    let processed = 0;
-    let errors = 0;
-
-    promotions.forEach(promotion => {
-        fetch('../api/promote_student.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(promotion)
-        })
-        .then(response => response.json())
-        .then(data => {
-            processed++;
-            if (data.error) errors++;
-            
-            if (processed === promotions.length) {
-                if (errors === 0) {
-                    showModal('success', 'Success', `Successfully promoted ${promotions.length} student(s)!`);
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    showModal('error', 'Partial Success', `Processed ${processed} students with ${errors} error(s).`);
-                    if (applyBtn) {
-                        applyBtn.disabled = false;
-                        applyBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Apply Promotions';
-                    }
-                }
+    // Send single bulk request
+    fetch('../api/bulk_promote_students.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ promotions: promotions })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showModal('success', 'Success', `Successfully processed ${promotions.length} student(s)!`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showModal('error', 'Error', data.error || 'Failed to process promotions.');
+            if (applyBtn) {
+                applyBtn.disabled = false;
+                applyBtn.innerHTML = originalContent;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            processed++;
-            errors++;
-            
-            if (processed === promotions.length) {
-                showModal('error', 'Error', `Failed to process promotions. Please try again.`);
-                if (applyBtn) {
-                    applyBtn.disabled = false;
-                    applyBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Apply Promotions';
-                }
-            }
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showModal('error', 'Network Error', 'Could not connect to the server. Please check your connection.');
+        if (applyBtn) {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = originalContent;
+        }
     });
 }
 </script>

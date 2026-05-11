@@ -3,10 +3,25 @@ require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
 $month = $_GET['month'] ?? date('Y-m');
+$stage = $_GET['stage'] ?? '';
 
 $db = new Database();
 $defaulters = $db->getDefaulters($month);
 
+// Filter by stage if requested
+if (!empty($stage)) {
+    $classes = $db->getClasses();
+    $classStageMap = [];
+    foreach ($classes as $c) {
+        $classStageMap[$c['class_name']] = $c['stage'] ?? 'Elementary';
+    }
+
+    $defaulters = array_filter($defaulters, function($s) use ($stage, $classStageMap) {
+        $studentClass = $s['current_class'];
+        $studentStage = $classStageMap[$studentClass] ?? 'Elementary';
+        return $studentStage === $stage;
+    });
+}
 ?>
 <div class="overflow-x-auto">
     <table class="w-full text-left">

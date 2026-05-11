@@ -29,10 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (isset($_POST['add_class'])) {
         $name = trim($_POST['class_name']);
-        $grRequired = isset($_POST['gr_required']) ? 1 : 0;
-        $hasGroup = isset($_POST['has_group']) ? 1 : 0;
+        $grRequired = 1; // Mandatory for all classes by default
+        $stage = $_POST['stage'] ?? 'Elementary';
+        $hasGroup = ($stage === 'College' && isset($_POST['has_group'])) ? 1 : 0;
+        $sortOrder = isset($_POST['sort_order']) ? (int)$_POST['sort_order'] : null;
         if (!empty($name)) {
-            if ($db->addClass($name, $grRequired, $hasGroup)) {
+            if ($db->addClass($name, $grRequired, $hasGroup, $stage, $sortOrder)) {
                 $successMsg = "Class added successfully!";
             } else {
                 $errorMsg = "Failed to add class.";
@@ -47,18 +49,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if (!empty($name)) {
             $classes = $db->getClasses();
-            $grRequired = isset($_POST['gr_required']) ? 1 : 0;
-            $hasGroup = isset($_POST['has_group']) ? 1 : 0;
+            $grRequired = 1; // Mandatory for all classes by default
+            $stage = $_POST['stage'] ?? 'Elementary';
+            $hasGroup = ($stage === 'College' && isset($_POST['has_group'])) ? 1 : 0;
             foreach ($classes as &$c) {
                 if ($c['id'] == $id) {
                     $c['class_name'] = $name;
                     $c['sort_order'] = $sortOrder;
                     $c['is_gr_required'] = $grRequired;
                     $c['has_group'] = $hasGroup;
+                    $c['stage'] = $stage;
                     break;
                 }
             }
-            if ($db->updateClasses($classes)) {
+            if ($db->updateClasses($classes, $id, $sortOrder)) {
                 $successMsg = "Class updated successfully!";
                 echo "<script>window.location.href = 'manage_classes.php?msg=updated';</script>";
                 exit;
@@ -78,9 +82,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $classes = $db->getClasses();
 
+// Define stages
+$stages = ['Pre-Primary', 'Elementary', 'College'];
+
+// Group classes by stage and calculate next available order
+$groupedClasses = [];
+$nextOrders = [];
+foreach ($stages as $s) {
+    $groupedClasses[$s] = [];
+    $nextOrders[$s] = 1;
+}
+
+foreach ($classes as $c) {
+    $s = $c['stage'] ?? 'Elementary';
+    if (!isset($groupedClasses[$s])) $groupedClasses[$s] = [];
+    $groupedClasses[$s][] = $c;
+    
+    // Track max order for each stage
+    if ($c['sort_order'] >= $nextOrders[$s]) {
+        $nextOrders[$s] = $c['sort_order'] + 1;
+    }
+}
+
 // Handle Edit Mode
 $editMode = false;
-$editClass = ['class_name' => '', 'id' => '', 'sort_order' => ''];
+$editClass = ['class_name' => '', 'id' => '', 'sort_order' => '', 'stage' => 'Elementary'];
 
 if (isset($_GET['edit'])) {
     $editId = $_GET['edit'];
@@ -148,21 +174,27 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                                 oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase()"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">School Stage</label>
+                            <select name="stage" id="stageSelect" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <?php foreach ($stages as $s): ?>
+                                    <option value="<?php echo $s; ?>" <?php echo ($editClass['stage'] == $s) ? 'selected' : ''; ?>>
+                                        <?php echo $s; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
-                            <input type="number" name="sort_order" required value="<?php echo $editClass['sort_order'] ?: (count($classes) + 1); ?>"
+                            <input type="number" name="sort_order" id="sortOrderInput" required value="<?php echo $editClass['sort_order'] ?: ($nextOrders[$editClass['stage'] ?? 'Elementary']); ?>"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                             <small class="text-gray-500">Determines sequence in dropdowns</small>
                         </div>
 
-                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                            <input type="checkbox" name="gr_required" id="gr_required" <?php echo ($editMode ? ($editClass['is_gr_required'] ? 'checked' : '') : 'checked'); ?> 
-                                class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="gr_required" class="text-sm font-medium text-gray-700 cursor-pointer">GR Number Required?</label>
-                        </div>
 
-                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <div id="groupContainer" class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 <?php echo $editClass['stage'] === 'College' ? '' : 'hidden'; ?>">
                             <input type="checkbox" name="has_group" id="has_group" <?php echo ($editMode ? (isset($editClass['has_group']) && $editClass['has_group'] ? 'checked' : '') : ''); ?> 
                                 class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                             <label for="has_group" class="text-sm font-medium text-gray-700 cursor-pointer">Group (Pre-Med/Eng)?</label>
@@ -189,76 +221,80 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
 
             <!-- Classes List -->
             <div class="<?php echo $isTeacher ? 'md:col-span-1' : 'md:col-span-2'; ?>">
-                <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-                                    <th class="p-4 w-20">Order</th>
-                                    <th class="p-4">Class Name</th>
-                                    <th class="p-4 text-center text-[10px]">GR Required</th>
-                                    <th class="p-4 text-center text-[10px]">Has Group</th>
-                                    <?php if (!$isTeacher): ?>
-                                    <th class="p-4 text-center">Actions</th>
-                                    <?php endif; ?>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <?php if (empty($classes)): ?>
-                                    <tr>
-                                        <td colspan="3" class="p-8 text-center text-gray-500">
-                                            No classes found. Create one to get started!
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($classes as $c): ?>
-                                    <tr class="hover:bg-gray-50 transition-colors group <?php echo ($editMode && $c['id'] == $editId) ? 'bg-indigo-50' : ''; ?>">
-                                        <td class="p-4 text-gray-500 font-mono"><?php echo $c['sort_order']; ?></td>
-                                        <td class="p-4 font-semibold text-gray-800"><?php echo htmlspecialchars($c['class_name']); ?></td>
-                                        <td class="p-4 text-center">
-                                            <?php if ($c['is_gr_required']): ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800">
-                                                    Yes
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
-                                                    No
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="p-4 text-center">
-                                            <?php if (isset($c['has_group']) && $c['has_group']): ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
-                                                    Yes
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800">
-                                                    No
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
+                <div class="space-y-8">
+                    <?php foreach ($groupedClasses as $stageName => $stageClasses): ?>
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                            <h4 class="text-sm font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas <?php 
+                                    echo $stageName === 'Pre-Primary' ? 'fa-child' : 
+                                        ($stageName === 'Elementary' ? 'fa-school' : 'fa-university'); 
+                                ?>"></i>
+                                <?php echo $stageName; ?> Section
+                            </h4>
+                            <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                                <?php echo count($stageClasses); ?> Classes
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto <?php echo $stageName !== 'College' ? 'max-w-2xl' : ''; ?>">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50/50 border-b border-gray-200 text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+                                        <th class="p-4 w-20 text-center">Order</th>
+                                        <th class="p-4">Class Name</th>
+                                        <?php if ($stageName === 'College'): ?>
+                                        <th class="p-4 text-center">Group</th>
+                                        <?php endif; ?>
                                         <?php if (!$isTeacher): ?>
-                                        <td class="p-4 text-center">
-                                            <div class="flex items-center justify-center gap-2">
-                                                <a href="manage_classes.php?edit=<?php echo $c['id']; ?>" class="text-blue-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50" title="Edit Class">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form action="" method="POST" onsubmit="return confirm('Are you sure? Removing a class may affect student filtering.');" class="inline">
-                                                    <?php echo csrfInput(); ?>
-                                                    <input type="hidden" name="class_id" value="<?php echo $c['id']; ?>">
-                                                    <button type="submit" name="delete_class" class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50" title="Delete Class">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </td>
+                                        <th class="p-4 w-32 text-center">Actions</th>
                                         <?php endif; ?>
                                     </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <?php if (empty($stageClasses)): ?>
+                                        <tr>
+                                            <td colspan="5" class="p-8 text-center text-gray-400 text-sm italic">
+                                                No classes added in this section yet.
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($stageClasses as $c): ?>
+                                        <tr class="hover:bg-gray-50 transition-colors group <?php echo ($editMode && $c['id'] == $editId) ? 'bg-indigo-50' : ''; ?>">
+                                            <td class="p-4 text-center text-gray-400 font-mono text-xs"><?php echo $c['sort_order']; ?></td>
+                                            <td class="p-4 font-bold text-gray-800"><?php echo htmlspecialchars($c['class_name']); ?></td>
+                                            <?php if ($stageName === 'College'): ?>
+                                            <td class="p-4 text-center">
+                                                <?php if (isset($c['has_group']) && $c['has_group']): ?>
+                                                    <span class="text-blue-500" title="Has Group"><i class="fas fa-layer-group"></i></span>
+                                                <?php else: ?>
+                                                    <span class="text-gray-300"><i class="fas fa-minus"></i></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <?php endif; ?>
+                                            <?php if (!$isTeacher): ?>
+                                            <td class="p-4 text-center">
+                                                <div class="flex items-center justify-center gap-1">
+                                                    <a href="manage_classes.php?edit=<?php echo $c['id']; ?>" class="text-gray-400 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-indigo-50" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form action="" method="POST" onsubmit="return confirm('Are you sure? Removing a class may affect student filtering.');" class="inline">
+                                                        <?php echo csrfInput(); ?>
+                                                        <input type="hidden" name="class_id" value="<?php echo $c['id']; ?>">
+                                                        <button type="submit" name="delete_class" class="text-gray-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50" title="Delete">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                            <?php endif; ?>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
                 <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 text-blue-800 text-sm">
                     <i class="fas fa-info-circle mr-2"></i> 
@@ -268,5 +304,29 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
         </div>
     </div>
 </div>
+
+<script>
+// Stage-based field visibility and auto-sort order
+const nextOrders = <?php echo json_encode($nextOrders); ?>;
+const isEditMode = <?php echo $editMode ? 'true' : 'false'; ?>;
+
+document.getElementById('stageSelect').addEventListener('change', function() {
+    const stage = this.value;
+    const groupContainer = document.getElementById('groupContainer');
+    
+    // Toggle group visibility
+    if (stage === 'College') {
+        groupContainer.classList.remove('hidden');
+    } else {
+        groupContainer.classList.add('hidden');
+        document.getElementById('has_group').checked = false;
+    }
+
+    // Update sort order automatically if in Add Mode
+    if (!isEditMode) {
+        document.getElementById('sortOrderInput').value = nextOrders[stage] || 1;
+    }
+});
+</script>
 
 <?php include '../includes/footer.php'; ?>

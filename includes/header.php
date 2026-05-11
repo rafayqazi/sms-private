@@ -169,6 +169,7 @@ if ($currentUserId) {
     <?php endif; ?>
 
     <div class="app-container flex min-h-screen bg-gray-50 dark:bg-gray-950">
+        <?php if (isset($_SESSION['user'])): ?>
         <aside class="sidebar group w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col fixed h-full overflow-y-auto transition-all duration-300 z-50 md:translate-x-0 -translate-x-full [&.collapsed]:w-16" id="sidebar">
             <div class="brand min-h-[5rem] p-4 group-[.collapsed]:justify-center group-[.collapsed]:cursor-pointer border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 bg-gray-50/50 dark:bg-gray-900/50">
                 <?php 
@@ -404,23 +405,23 @@ if ($currentUserId) {
                 </a>
                 <?php endif; ?>
 
-                <a href="<?php echo $base_path; ?>logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 font-medium hover:bg-red-50 transition-colors mt-auto w-full group-[.collapsed]:px-2 group-[.collapsed]:justify-center" title="Logout">
-                    <i class="fas fa-sign-out-alt w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Logout</span>
                 </a>
             </nav>
         </aside>
+        <?php endif; ?>
         
         <!-- Mobile Overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
-        <main class="main-content flex-1 md:ml-64 transition-all duration-300 dark:bg-gray-950">
+        <main class="main-content flex-1 <?php echo isset($_SESSION['user']) ? 'md:ml-64' : 'md:ml-0'; ?> transition-all duration-300 dark:bg-gray-950">
             <!-- Top Navigation Bar -->
             <header class="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 px-4 py-4 mb-6 md:px-8 md:mb-8 flex justify-between items-center sticky top-0 z-30">
                 <div class="flex items-center gap-3 md:gap-4">
+                    <?php if (isset($_SESSION['user'])): ?>
                     <button id="mobile-menu-btn" class="md:hidden text-gray-600 hover:text-indigo-600 transition-colors p-1">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <!-- Breadcrumbs or Page Title could go here -->
+                    <?php endif; ?>
                 </div>
 
                 <div class="flex items-center gap-4 md:gap-6">
@@ -430,6 +431,7 @@ if ($currentUserId) {
                         <i id="theme-icon-sun" class="fas fa-sun text-lg hidden dark:block text-yellow-400"></i>
                     </button>
 
+                    <?php if (isset($_SESSION['user'])): ?>
                     <!-- Notifications -->
                     <a href="<?php echo $base_path; ?>pages/messages.php" class="relative text-gray-500 hover:text-indigo-600 transition-colors group" title="Messages">
                         <i class="fas fa-bell text-xl group-hover:animate-swing"></i>
@@ -439,7 +441,10 @@ if ($currentUserId) {
                             </span>
                         <?php endif; ?>
                     </a>
+                    <?php endif; ?>
 
+
+                    <?php if (isset($_SESSION['user'])): ?>
                     <!-- User Profile Dropdown -->
                     <div class="relative group">
                         <button id="user-menu-btn" class="flex items-center gap-2 md:gap-3 focus:outline-none">
@@ -512,6 +517,13 @@ if ($currentUserId) {
                             </a>
                         </div>
                     </div>
+                    <?php else: ?>
+                    <div class="flex items-center gap-3">
+                        <a href="<?php echo $base_path; ?>login.php" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-sign-in-alt mr-2"></i> Login
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </header>
             

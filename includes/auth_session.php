@@ -36,7 +36,11 @@ if (isset($_SESSION['login_time'])) {
     }
 }
 
-if (!isset($_SESSION['user'])) {
+// Pages that are accessible without login
+$public_pages = ['login.php', 'developer_bio.php', 'license.php'];
+$current_page = basename($_SERVER['PHP_SELF']);
+
+if (!isset($_SESSION['user']) && !in_array($current_page, $public_pages)) {
     header("Location: {$base_path}login.php");
     exit();
 }

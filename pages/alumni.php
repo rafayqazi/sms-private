@@ -50,6 +50,29 @@ $years = array_unique(array_map(function($s) {
     return $s['graduation_year'] ?? (isset($s['updated_at']) ? date('Y', strtotime($s['updated_at'])) : 'Unknown');
 }, array_filter($allStudents, fn($s) => ($s['student_status'] ?? '') === 'Alumni')));
 rsort($years);
+
+// Group alumni by section
+$allClasses = $db->getClasses();
+$classToStage = [];
+foreach ($allClasses as $c) {
+    $classToStage[$c['class_name']] = $c['stage'] ?? 'Elementary';
+}
+
+$stages = ['Pre-Primary', 'Elementary', 'College'];
+$groupedAlumni = [];
+foreach ($stages as $s) $groupedAlumni[$s] = [];
+
+foreach ($alumniStudents as $student) {
+    $lastClass = !empty($student['last_class']) && $student['last_class'] !== 'N/A' ? $student['last_class'] : 'N/A';
+    if ($lastClass === 'N/A' && isset($student['current_class'])) {
+        if (stripos($student['current_class'], 'Alumni') === false) {
+            $lastClass = $student['current_class'];
+        }
+    }
+    
+    $stage = $classToStage[$lastClass] ?? 'Elementary';
+    $groupedAlumni[$stage][] = $student;
+}
 ?>
 
 <?php include '../includes/header.php'; ?>
@@ -109,92 +132,116 @@ rsort($years);
         <?php endif; ?>
     </div>
     <?php else: ?>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-bold">
-                    <th class="p-4 w-12 text-center">
-                        <input type="checkbox" id="selectAll" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
-                    </th>
-                    <th class="p-4 w-16 text-center">S#</th>
-                    <th class="p-4">GR No</th>
-                    <th class="p-4">Student Information</th>
-                    <th class="p-4 text-center">Leaving Class</th>
-                    <th class="p-4 text-center">Graduated</th>
-                    <th class="p-4">Admission Date</th>
-                    <th class="p-4 text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <?php $i = 1; foreach ($alumniStudents as $student): 
-                    $graduationYear = $student['graduation_year'] ?? (isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : 'Unknown');
-                    $lastClass = !empty($student['last_class']) && $student['last_class'] !== 'N/A' ? $student['last_class'] : 'N/A';
-                    
-                    // Fallback for older records where last_class wasn't set
-                    if ($lastClass === 'N/A' && isset($student['current_class'])) {
-                        // If current_class is not simply "Alumni", it likely contains the last class name
-                        if (stripos($student['current_class'], 'Alumni') === false) {
-                            $lastClass = $student['current_class'];
-                        }
-                    }
-                ?>
-                <tr class="hover:bg-gray-50/50 transition-colors student-row" data-id="<?php echo $student['id']; ?>">
-                    <td class="p-4 text-center">
-                        <input type="checkbox" class="student-checkbox w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" value="<?php echo $student['id']; ?>">
-                    </td>
-                    <td class="p-4 text-gray-400 font-medium text-sm"><?php echo $i++; ?></td>
-                    <td class="p-4 text-gray-700 font-bold"><?php echo htmlspecialchars($student['gr_no']); ?></td>
-                    <td class="p-4 text-gray-800">
-                        <div class="flex items-center gap-3">
-                            <div class="relative">
-                                <?php if (!empty($student['profile_image'])): ?>
-                                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-10 h-10 rounded-lg object-cover shadow-sm">
-                                <?php else: ?>
-                                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold border border-emerald-100">
-                                        <?php echo strtoupper(substr($student['student_name'], 0, 1)); ?>
+    <div class="space-y-8">
+        <?php foreach ($groupedAlumni as $stageName => $stageStudents): 
+            if (empty($stageStudents) && ($search || $yearFilter)) continue; 
+        ?>
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h4 class="text-sm font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fas <?php 
+                        echo $stageName === 'Pre-Primary' ? 'fa-child' : 
+                            ($stageName === 'Elementary' ? 'fa-school' : 'fa-university'); 
+                    ?>"></i>
+                    <?php echo $stageName; ?> Alumni Section
+                </h4>
+                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                    <?php echo count($stageStudents); ?> Records
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50 border-b border-gray-200 text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+                            <th class="p-4 w-12 text-center">
+                                <input type="checkbox" class="selectAllSection w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                            </th>
+                            <th class="p-4">GR No</th>
+                            <th class="p-4">Student Information</th>
+                            <th class="p-4 text-center">Leaving Class</th>
+                            <th class="p-4 text-center">Graduated</th>
+                            <th class="p-4">Admission Date</th>
+                            <th class="p-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <?php if (empty($stageStudents)): ?>
+                            <tr>
+                                <td colspan="7" class="p-8 text-center text-gray-400 text-sm italic">
+                                    No records found in this section.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($stageStudents as $student): 
+                                $graduationYear = $student['graduation_year'] ?? (isset($student['updated_at']) ? date('Y', strtotime($student['updated_at'])) : 'Unknown');
+                                $lastClass = !empty($student['last_class']) && $student['last_class'] !== 'N/A' ? $student['last_class'] : 'N/A';
+                                if ($lastClass === 'N/A' && isset($student['current_class'])) {
+                                    if (stripos($student['current_class'], 'Alumni') === false) {
+                                        $lastClass = $student['current_class'];
+                                    }
+                                }
+                            ?>
+                            <tr class="hover:bg-gray-50/50 transition-colors student-row" data-id="<?php echo $student['id']; ?>">
+                                <td class="p-4 text-center">
+                                    <input type="checkbox" class="student-checkbox w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" value="<?php echo $student['id']; ?>">
+                                </td>
+                                <td class="p-4 text-gray-700 font-bold"><?php echo htmlspecialchars($student['gr_no']); ?></td>
+                                <td class="p-4 text-gray-800">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative">
+                                            <?php if (!empty($student['profile_image'])): ?>
+                                                <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="w-10 h-10 rounded-lg object-cover shadow-sm">
+                                            <?php else: ?>
+                                                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold border border-emerald-100">
+                                                    <?php echo strtoupper(substr($student['student_name'] ?? 'S', 0, 1)); ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" title="Alumni Status"></div>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-900 capitalize"><?php echo htmlspecialchars($student['student_name'] ?? ''); ?></div>
+                                            <div class="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                                                <i class="fas fa-user-friends"></i> F: <?php echo htmlspecialchars($student['father_name'] ?? ''); ?>
+                                            </div>
+                                        </div>
                                     </div>
-                                <?php endif; ?>
-                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" title="Alumni Status"></div>
-                            </div>
-                            <div>
-                                <div class="font-bold text-gray-900 capitalize"><?php echo htmlspecialchars($student['student_name']); ?></div>
-                                <div class="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                                    <i class="fas fa-user-friends"></i> F: <?php echo htmlspecialchars($student['father_name']); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="p-4 text-center">
-                        <span class="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">
-                           <?php echo htmlspecialchars($lastClass); ?>
-                        </span>
-                    </td>
-                    <td class="p-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-sm inline-flex items-center gap-1">
-                            <i class="fas fa-calendar-alt text-[9px]"></i> <?php echo $graduationYear; ?>
-                        </span>
-                    </td>
-                    <td class="p-4 text-gray-500 text-xs italic font-medium"><?php echo htmlspecialchars($student['admission_date']); ?></td>
-                    <td class="p-4 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <button onclick="restoreSingle(<?php echo $student['id']; ?>, '<?php echo addslashes($lastClass); ?>')" class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Quick Restore to <?php echo htmlspecialchars($lastClass); ?>">
-                                <i class="fas fa-undo-alt text-xs"></i>
-                            </button>
-                            <a href="student_form.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center hover:bg-yellow-600 hover:text-white transition-all shadow-sm" title="Edit Profile">
-                                <i class="fas fa-edit text-xs"></i>
-                            </a>
-                            <a href="student_profile.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Full Profile">
-                                <i class="fas fa-user-graduate text-xs"></i>
-                            </a>
-                            <a href="generate_id_card.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Print Certificate Placeholder (View ID)">
-                                <i class="fas fa-certificate text-xs"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="px-2 py-1 rounded bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100">
+                                       <?php echo htmlspecialchars($lastClass); ?>
+                                    </span>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-sm inline-flex items-center gap-1">
+                                        <i class="fas fa-calendar-alt text-[9px]"></i> <?php echo $graduationYear; ?>
+                                    </span>
+                                </td>
+                                <td class="p-4 text-gray-500 text-xs italic font-medium"><?php echo htmlspecialchars($student['admission_date'] ?? ''); ?></td>
+                                <td class="p-4 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button onclick="restoreSingle(<?php echo $student['id']; ?>, '<?php echo addslashes($lastClass); ?>')" class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Quick Restore to <?php echo htmlspecialchars($lastClass); ?>">
+                                            <i class="fas fa-undo-alt text-xs"></i>
+                                        </button>
+                                        <a href="student_form.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center hover:bg-yellow-600 hover:text-white transition-all shadow-sm" title="Edit Profile">
+                                            <i class="fas fa-edit text-xs"></i>
+                                        </a>
+                                        <a href="student_profile.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Full Profile">
+                                            <i class="fas fa-user-graduate text-xs"></i>
+                                        </a>
+                                        <a href="generate_certificate_leaving.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Leaving Certificate">
+                                            <i class="fas fa-certificate text-xs"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endforeach; ?>
     </div>
     <?php endif; ?>
 </div>
@@ -287,7 +334,7 @@ rsort($years);
 </div>
 
 <script>
-const selectAll = document.getElementById('selectAll');
+const selectAllSection = document.querySelectorAll('.selectAllSection');
 const checkboxes = document.querySelectorAll('.student-checkbox');
 const bulkBar = document.getElementById('bulkActionBar');
 const countLabel = document.getElementById('selectedCount');
@@ -306,14 +353,18 @@ function updateBulkUI() {
     }
 }
 
-selectAll.addEventListener('change', function() {
-    checkboxes.forEach(cb => {
-        cb.checked = selectAll.checked;
-        const row = cb.closest('.student-row');
-        if (selectAll.checked) row.classList.add('bg-indigo-50/50');
-        else row.classList.remove('bg-indigo-50/50');
+selectAllSection.forEach(sa => {
+    sa.addEventListener('change', function() {
+        const sectionTable = this.closest('table');
+        const sectionCheckboxes = sectionTable.querySelectorAll('.student-checkbox');
+        sectionCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+            const row = cb.closest('.student-row');
+            if (this.checked) row.classList.add('bg-indigo-50/50');
+            else row.classList.remove('bg-indigo-50/50');
+        });
+        updateBulkUI();
     });
-    updateBulkUI();
 });
 
 checkboxes.forEach(cb => {
@@ -331,7 +382,7 @@ checkboxes.forEach(cb => {
 });
 
 function deselectAll() {
-    selectAll.checked = false;
+    selectAllSection.forEach(sa => sa.checked = false);
     checkboxes.forEach(cb => {
         cb.checked = false;
         cb.closest('.student-row').classList.remove('bg-indigo-50/50');

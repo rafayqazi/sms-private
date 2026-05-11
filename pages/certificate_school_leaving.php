@@ -135,10 +135,10 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <a href="print_school_leaving.php?student_id=<?php echo $student['id']; ?>" target="_blank" 
+                                        <button onclick="promptLeavingDate({type: 'single', id: <?php echo $student['id']; ?>})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -159,7 +159,7 @@ if ($search) {
             <h3 class="text-2xl font-black text-slate-800 dark:text-white mb-4">Bulk Issue Certificates</h3>
             <p class="text-slate-500 dark:text-gray-400 mb-10 font-medium">Generate School Leaving Certificates for an entire batch. Select the graduation year below to proceed.</p>
 
-            <form action="print_school_leaving.php" method="GET" target="_blank" class="max-w-md mx-auto space-y-6">
+            <form onsubmit="event.preventDefault(); if(this.year.value) promptLeavingDate({type: 'bulk', year: this.year.value})" class="max-w-md mx-auto space-y-6">
                 <div class="text-left">
                     <label class="block text-xs font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-3 pl-1">Select Graduation Year</label>
                     <div class="relative">
@@ -180,6 +180,40 @@ if ($search) {
         </div>
     </div>
 </div>
+
+<!-- Leaving Date Modal -->
+<div id="leavingDateModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 text-left">
+    <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-[scaleIn_0.3s_ease-out]">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center text-gray-800 dark:text-gray-100">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-calendar-alt text-indigo-500"></i> School Leaving Date
+            </h3>
+            <button onclick="closeLeavingDateModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-8">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 pl-1">Date of Leaving the School</label>
+                    <input type="date" id="leavingDateInput" value="<?php echo date('Y-m-d'); ?>" 
+                        class="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-950 rounded-2xl text-slate-800 dark:text-white font-bold transition-all outline-none">
+                </div>
+            </div>
+            <button onclick="confirmLeavingDate()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
+                <i class="fas fa-print"></i> 
+                <span class="uppercase tracking-[0.2em]">Confirm & Print</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes scaleIn {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -247,10 +281,10 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <a href="print_school_leaving.php?student_id=${item.id}" target="_blank" 
+                                        <button onclick="promptLeavingDate({type: 'single', id: ${item.id}})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
-                                        </a>
+                                        </button>
                                     </td>
                                 `;
                                 searchResultsBody.appendChild(tr);
@@ -296,6 +330,43 @@ if ($search) {
             tabBulk.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 bg-white dark:bg-gray-800 text-indigo-600 shadow-sm";
             tabSingle.className = "px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200";
         }
+    }
+
+    let currentPrintTarget = null;
+
+    function promptLeavingDate(target) {
+        currentPrintTarget = target;
+        const modal = document.getElementById('leavingDateModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLeavingDateModal() {
+        const modal = document.getElementById('leavingDateModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    function confirmLeavingDate() {
+        const dateInput = document.getElementById('leavingDateInput');
+        const date = dateInput.value;
+        
+        if (!date) {
+            alert('Please select a date.');
+            return;
+        }
+        
+        let url = 'print_school_leaving.php?leaving_date=' + date;
+        if (currentPrintTarget.type === 'single') {
+            url += '&student_id=' + currentPrintTarget.id;
+        } else {
+            url += '&year=' + currentPrintTarget.year;
+        }
+        
+        window.open(url, '_blank');
+        closeLeavingDateModal();
     }
 </script>
 

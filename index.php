@@ -797,22 +797,33 @@ endforeach; ?>
 </div>
 
 <!-- Welcome Animation Overlay -->
-<?php if (isset($_SESSION['show_welcome_animation']) && $_SESSION['show_welcome_animation']): ?>
+<?php if (isset($_SESSION['show_welcome_animation']) && $_SESSION['show_welcome_animation']): 
+    $animLogoUrl = (!empty($headerSettings['school_logo']) && file_exists($headerSettings['school_logo'])) 
+                   ? $headerSettings['school_logo'] 
+                   : 'assets/branding/logo.png';
+?>
 <div id="welcome-overlay" class="fixed inset-0 z-[100] bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center transition-opacity duration-1000">
     <div class="text-center px-4 animate-[scaleIn_0.8s_ease-out]">
-        <div class="mb-6">
-            <i class="fas fa-school text-6xl text-white mb-4 animate-bounce"></i>
+        <div class="mb-6 flex justify-center">
+            <div class="p-4 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] animate-pulse relative group">
+                <!-- Subtle glow behind the logo -->
+                <div class="absolute inset-0 bg-indigo-500/10 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <img src="<?php echo $animLogoUrl; ?>?v=<?php echo time(); ?>" alt="Logo" class="w-24 h-24 md:w-32 md:h-32 object-contain relative z-10">
+            </div>
         </div>
-        <h1 class="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
-            Welcome to <br> School Management System
+        <h1 class="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight drop-shadow-2xl uppercase">
+            Welcome to <br> 
+            <span class="text-indigo-300"><?php echo htmlspecialchars($headerSettings['school_name']); ?></span>
         </h1>
-        <div class="w-24 h-1 bg-white mx-auto rounded-full mb-6"></div>
-        <p class="text-green-300 text-lg md:text-xl font-medium tracking-wide">
-            Created By AR Software Solution
-        </p>
-        <p class="text-indigo-200 text-sm md:text-base mt-2 font-light">
-            | Abdul Rafay Qazi |
-        </p>
+        <div class="w-24 h-1.5 bg-gradient-to-r from-indigo-400 to-purple-400 mx-auto rounded-full mb-8 shadow-lg"></div>
+        <div class="space-y-1">
+            <p class="text-emerald-400 text-xs md:text-sm font-black uppercase tracking-[0.3em] opacity-80">
+                School Management System
+            </p>
+            <p class="text-white/40 text-[10px] md:text-xs font-bold uppercase tracking-widest pt-4">
+                Powered By AR Software Solution
+            </p>
+        </div>
     </div>
 </div>
 

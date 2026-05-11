@@ -210,10 +210,10 @@ $settings = $db->getSchoolSettings();
                                                    ? '../' . $settings['school_logo'] 
                                                    : '../GBPS_LOGO.png'; 
                                         ?>
-                                        <img src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Current Logo" class="max-w-full max-h-full object-contain">
+                                        <img id="logo_preview" src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Current Logo" class="max-w-full max-h-full object-contain">
                                     </div>
                                     <div class="flex-1">
-                                        <input type="file" name="school_logo" accept="image/png, image/jpeg"
+                                        <input type="file" name="school_logo" id="school_logo_input" accept="image/png, image/jpeg" onchange="previewLogo(this)"
                                             class="block w-full text-sm text-gray-500
                                             file:mr-4 file:py-2 file:px-4
                                             file:rounded-full file:border-0
@@ -749,6 +749,23 @@ function confirmDeleteUser(id, username) {
     if (confirm('Are you sure you want to delete the user "' + username + '"? This action cannot be undone.')) {
         document.getElementById('delete_user_id').value = id;
         document.getElementById('deleteUserForm').submit();
+    }
+}
+
+/**
+ * LOGO PREVIEW LOGIC
+ */
+function previewLogo(input) {
+    const preview = document.getElementById('logo_preview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            // Add a small bounce effect for feedback
+            preview.classList.add('scale-110');
+            setTimeout(() => preview.classList.remove('scale-110'), 300);
+        }
+        reader.readAsDataURL(input.files[0]);
     }
 }
 </script>

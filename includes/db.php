@@ -59,6 +59,15 @@ class Database {
         return $this->headers;
     }
 
+    private function safeCombine($headers, $row) {
+        if (count($row) < count($headers)) {
+            $row = array_pad($row, count($headers), '');
+        } elseif (count($row) > count($headers)) {
+            $row = array_slice($row, 0, count($headers));
+        }
+        return array_combine($headers, $row);
+    }
+
     public function readData() {
         $data = [];
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
@@ -67,14 +76,7 @@ class Database {
                 // Trim all fields in the row
                 $row = array_map('trim', $row);
                 
-                // Adjust row to match headers length (for robustness against schema updates)
-                if (count($row) < count($this->headers)) {
-                    $row = array_pad($row, count($this->headers), '');
-                } elseif (count($row) > count($this->headers)) {
-                    $row = array_slice($row, 0, count($this->headers));
-                }
-                
-                $data[] = array_combine($this->headers, $row);
+                $data[] = $this->safeCombine($this->headers, $row);
             }
             fclose($handle);
         }
@@ -629,7 +631,7 @@ class Database {
                 } elseif (count($row) > count($headers)) {
                     $row = array_slice($row, 0, count($headers));
                 }
-                return array_combine($headers, $row);
+                return $this->safeCombine($headers, $row);
             }
         }
         fclose($handle);
@@ -652,7 +654,7 @@ class Database {
                 } elseif (count($row) > count($headers)) {
                     $row = array_slice($row, 0, count($headers));
                 }
-                $teachers[] = array_combine($headers, $row);
+                $teachers[] = $this->safeCombine($headers, $row);
             }
         }
         fclose($handle);
@@ -826,7 +828,7 @@ class Database {
         $headers = fgetcsv($handle);
         while (($row = fgetcsv($handle)) !== false) {
             if ($row[1] == $teacherId) {
-                $history[] = array_combine($headers, $row);
+                $history[] = $this->safeCombine($headers, $row);
             }
         }
         fclose($handle);
@@ -1140,54 +1142,65 @@ class Database {
     }
 
     public function promoteStudent($id, $action) {
+        return $this->bulkPromoteStudents([['id' => $id, 'action' => $action]]);
+    }
+
+    public function bulkPromoteStudents($promotions) {
         $students = $this->readData();
-        
-        // Generate dynamic class progression
         $classes = $this->getClasses();
         $classProgression = [];
-        $lastClassName = '';
-        for ($i = 0; $i < count($classes); $i++) {
-            $currentName = $classes[$i]['class_name'];
-            if ($i < count($classes) - 1) {
-                $classProgression[$currentName] = $classes[$i+1]['class_name'];
-            } else {
-                // Last class promotes to Alumni
-                $classProgression[$currentName] = 'Alumni (Passed Students)';
-                $lastClassName = $currentName;
+        
+        $stageGroups = [];
+        foreach ($classes as $c) {
+            $s = $c['stage'] ?? 'Elementary';
+            if (!isset($stageGroups[$s])) $stageGroups[$s] = [];
+            $stageGroups[$s][] = $c;
+        }
+
+        foreach ($stageGroups as $stage => $groupClasses) {
+            for ($i = 0; $i < count($groupClasses); $i++) {
+                $currentName = $groupClasses[$i]['class_name'];
+                if ($i < count($groupClasses) - 1) {
+                    $classProgression[$currentName] = $groupClasses[$i+1]['class_name'];
+                } else {
+                    $classProgression[$currentName] = 'Alumni (Passed Students)';
+                }
             }
         }
 
-        foreach ($students as &$student) {
-            if ($student['id'] == $id) {
-                // Set defaults for existing students without these fields
-                if (!isset($student['student_status'])) {
-                    $student['student_status'] = 'Active';
-                }
-                if (!isset($student['is_repeater'])) {
-                    $student['is_repeater'] = '0';
-                }
+        $promoMap = [];
+        foreach ($promotions as $p) {
+            $promoMap[$p['id']] = $p['action'];
+        }
 
-                $currentClass = $student['current_class'];
+        $modified = false;
+        foreach ($students as &$student) {
+            $sid = $student['id'];
+            if (isset($promoMap[$sid])) {
+                $action = $promoMap[$sid];
+                $currentClass = $student['current_class'] ?? '';
                 
+                if (!isset($student['student_status'])) $student['student_status'] = 'Active';
+                if (!isset($student['is_repeater'])) $student['is_repeater'] = '0';
+
                 if ($action === 'pass') {
-                    // Promote to next class
                     if (isset($classProgression[$currentClass])) {
                         $nextClass = $classProgression[$currentClass];
-                        $student['current_class'] = $nextClass;
-                        
-                        // If promoted from the last class, mark as Alumni
-                        if ($currentClass === $lastClassName) {
+                        if ($nextClass === 'Alumni (Passed Students)') {
                             $student['student_status'] = 'Alumni';
                             $student['graduation_year'] = date('Y');
                             $student['last_class'] = $currentClass;
+                            $student['current_class'] = 'Alumni';
+                        } else {
+                            $student['current_class'] = $nextClass;
                         }
                     }
                     $student['is_repeater'] = '0';
                 } elseif ($action === 'passout') {
-                    // Mark as Alumni from any class
                     $student['student_status'] = 'Alumni';
                     $student['graduation_year'] = date('Y');
                     $student['last_class'] = $currentClass;
+                    $student['current_class'] = 'Alumni';
                     $student['is_repeater'] = '0';
                 } elseif ($action === 'fail') {
                     $student['is_repeater'] = '1';
@@ -1196,10 +1209,11 @@ class Database {
                 }
                 
                 $student['updated_at'] = date('Y-m-d H:i:s');
-                break;
+                $modified = true;
             }
         }
-        return $this->writeData($students);
+        
+        return $modified ? $this->writeData($students) : true;
     }
 
     public function createUserRole($teacherId, $role, $username, $password, $classes = []) {
@@ -1270,7 +1284,7 @@ class Database {
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 6 && $row[3] == $username) {
-                $userRole = array_combine($headers, $row);
+                $userRole = $this->safeCombine($headers, $row);
                 // Decode classes JSON
                 $userRole['assigned_classes'] = json_decode($userRole['assigned_classes'], true);
                 fclose($handle);
@@ -1290,7 +1304,7 @@ class Database {
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) >= 6 && $row[1] == $teacherId) {
-                $userRole = array_combine($headers, $row);
+                $userRole = $this->safeCombine($headers, $row);
                 // Decode classes JSON
                 $userRole['assigned_classes'] = json_decode($userRole['assigned_classes'], true);
                 fclose($handle);
@@ -1498,7 +1512,7 @@ class Database {
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) > 0) {
-                $userRole = array_combine($headers, $row);
+                $userRole = $this->safeCombine($headers, $row);
                 // Decode classes JSON
                 $userRole['assigned_classes'] = json_decode($userRole['assigned_classes'], true);
                 $userRoles[] = $userRole;
@@ -1601,7 +1615,7 @@ class Database {
                             'is_read' => count($row) === 8 ? $row[7] : $row[6]
                         ];
                     } else {
-                        $msg = array_combine($headers, $row);
+                        $msg = $this->safeCombine($headers, $row);
                     }
                     $messages[] = $msg;
                 }
@@ -1640,7 +1654,7 @@ class Database {
                     'is_read' => count($row) === 8 ? $row[7] : $row[6]
                 ];
             } else {
-                $msg = array_combine($headers, $row);
+                $msg = $this->safeCombine($headers, $row);
             }
             $allMessages[] = $msg;
         }
@@ -2086,7 +2100,7 @@ class Database {
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
-                $data = array_combine($headers, $row);
+                $data = $this->safeCombine($headers, $row);
                 $rowYear = $hasYear ? $data['year'] : date('Y');
 
                 if ($data['class'] == $class && $data['exam_type'] == $examType && $rowYear == $year) {
@@ -2215,7 +2229,7 @@ class Database {
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
-                $data = array_combine($headers, $row);
+                $data = $this->safeCombine($headers, $row);
                 
                 // If old schema, treat year as current year or ignore
                 $rowYear = $hasYear ? $data['year'] : date('Y');
@@ -2239,7 +2253,7 @@ class Database {
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
-                $data = array_combine($headers, $row);
+                $data = $this->safeCombine($headers, $row);
                 $rowYear = $hasYear ? $data['year'] : date('Y');
 
                 if ($data['student_id'] == $studentId && $data['exam_type'] == $examType && $rowYear == $year) {
@@ -2828,15 +2842,20 @@ class Database {
                         'class_name' => $row[1],
                         'sort_order' => isset($row[2]) ? (int)$row[2] : 0,
                         'is_gr_required' => isset($row[3]) ? (int)$row[3] : 1,
-                        'has_group' => isset($row[4]) ? (int)$row[4] : 0
+                        'has_group' => isset($row[4]) ? (int)$row[4] : 0,
+                        'stage' => isset($row[5]) ? $row[5] : 'Elementary'
                     ];
                     }
                 }
                 fclose($handle);
                 
-                // Sort by sort_order
-                usort($classes, function($a, $b) {
-                    return $a['sort_order'] - $b['sort_order'];
+                // Sort by stage and then sort_order
+                $stageOrder = ['Pre-Primary' => 0, 'Elementary' => 1, 'College' => 2];
+                usort($classes, function($a, $b) use ($stageOrder) {
+                    $sA = $stageOrder[$a['stage'] ?? 'Elementary'] ?? 1;
+                    $sB = $stageOrder[$b['stage'] ?? 'Elementary'] ?? 1;
+                    if ($sA != $sB) return $sA - $sB;
+                    return (int)$a['sort_order'] - (int)$b['sort_order'];
                 });
             }
         }
@@ -2848,44 +2867,83 @@ class Database {
         return array_map(function($c) { return $c['class_name']; }, $classes);
     }
 
-    public function addClass($name, $isGrRequired = 1, $hasGroup = 0) {
-        $file = __DIR__ . '/../data/classes.csv';
+    public function addClass($name, $isGrRequired = 1, $hasGroup = 0, $stage = 'Elementary', $sortOrder = null) {
         $classes = $this->getClasses();
         $nextId = 1;
-        $maxSort = 0;
         foreach ($classes as $c) {
             if ((int)$c['id'] >= $nextId) $nextId = (int)$c['id'] + 1;
-            if ((int)$c['sort_order'] > $maxSort) $maxSort = (int)$c['sort_order'];
         }
         
-        $fp = fopen($file, 'a');
-        fputcsv($fp, [$nextId, $name, $maxSort + 1, $isGrRequired, $hasGroup]);
-        fclose($fp);
-        return $nextId;
+        $newClass = [
+            'id' => $nextId,
+            'class_name' => $name,
+            'sort_order' => $sortOrder ?? (count($classes) + 1),
+            'is_gr_required' => $isGrRequired,
+            'has_group' => $hasGroup,
+            'stage' => $stage
+        ];
+        
+        $classes[] = $newClass;
+        return $this->updateClasses($classes, $nextId, $newClass['sort_order']) ? $nextId : false;
     }
 
     public function deleteClass($id) {
-        $file = __DIR__ . '/../data/classes.csv';
         $classes = $this->getClasses();
         $newClasses = array_filter($classes, function($c) use ($id) {
             return $c['id'] != $id;
         });
         
-        $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group']);
-        foreach ($newClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1, isset($c['has_group']) ? $c['has_group'] : 0]);
-        }
-        fclose($fp);
-        return true;
+        return $this->updateClasses($newClasses);
     }
 
-    public function updateClasses($updatedClasses) {
+    public function updateClasses($updatedClasses, $targetId = null, $newOrder = null) {
         $file = __DIR__ . '/../data/classes.csv';
+        
+        // If a new order is specified for a target, shift others IN THE SAME STAGE
+        if ($targetId !== null && $newOrder !== null) {
+            $targetStage = '';
+            foreach ($updatedClasses as $c) {
+                if ($c['id'] == $targetId) {
+                    $targetStage = $c['stage'] ?? 'Elementary';
+                    break;
+                }
+            }
+            
+            foreach ($updatedClasses as &$c) {
+                if ($c['id'] != $targetId && ($c['stage'] ?? 'Elementary') == $targetStage && $c['sort_order'] >= $newOrder) {
+                    $c['sort_order']++;
+                }
+            }
+        }
+        
+        // Sort by stage first, then sort_order
+        $stageOrder = ['Pre-Primary' => 0, 'Elementary' => 1, 'College' => 2];
+        usort($updatedClasses, function($a, $b) use ($stageOrder) {
+            $sA = $stageOrder[$a['stage'] ?? 'Elementary'] ?? 1;
+            $sB = $stageOrder[$b['stage'] ?? 'Elementary'] ?? 1;
+            if ($sA != $sB) return $sA - $sB;
+            return (int)$a['sort_order'] - (int)$b['sort_order'];
+        });
+        
+        // Re-normalize independently for each stage to ensure 1, 2, 3... per section
+        $stageCounters = [];
+        foreach ($updatedClasses as &$c) {
+            $s = $c['stage'] ?? 'Elementary';
+            if (!isset($stageCounters[$s])) $stageCounters[$s] = 1;
+            $c['sort_order'] = $stageCounters[$s]++;
+        }
+        
         $fp = fopen($file, 'w');
-        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group']);
+        fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group', 'stage']);
         foreach ($updatedClasses as $c) {
-            fputcsv($fp, [$c['id'], $c['class_name'], $c['sort_order'], isset($c['is_gr_required']) ? $c['is_gr_required'] : 1, isset($c['has_group']) ? $c['has_group'] : 0]);
+            fputcsv($fp, [
+                $c['id'], 
+                $c['class_name'], 
+                $c['sort_order'], 
+                isset($c['is_gr_required']) ? $c['is_gr_required'] : 1, 
+                isset($c['has_group']) ? $c['has_group'] : 0, 
+                isset($c['stage']) ? $c['stage'] : 'Elementary'
+            ]);
         }
         fclose($fp);
         return true;
@@ -2912,7 +2970,7 @@ class Database {
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
              if (count($row) == count($headers)) {
-                $data = array_combine($headers, $row);
+                $data = $this->safeCombine($headers, $row);
                 if (isset($data['year'])) {
                     $year = (int)$data['year'];
                     if ($year > $latestYear) {
@@ -3168,7 +3226,7 @@ class Database {
 
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
             if (count($row) == count($headers)) {
-                $data = array_combine($headers, $row);
+                $data = $this->safeCombine($headers, $row);
                 if (isset($data['year'])) {
                     $year = (int)$data['year'];
                     if ($year > $latestYear) $latestYear = $year;
@@ -3367,11 +3425,7 @@ class Database {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle);
                 while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-                    // Ensure row matches header length for older records
-                    if (count($row) < count($headers)) {
-                        $row = array_pad($row, count($headers), '');
-                    }
-                    $item = array_combine($headers, $row);
+                    $item = $this->safeCombine($headers, $row);
                     
                     $match = true;
                     if (isset($filters['gr_no']) && $item['gr_no'] != $filters['gr_no']) $match = false;
@@ -3396,9 +3450,13 @@ class Database {
         return $this->getFeeCollections(['gr_no' => $gr_no]);
     }
 
-    public function getFeeStats() {
+    public function getFeeStats($month = null) {
         $collections = $this->getFeeCollections();
-        $thisMonth = date('Y-m');
+        if ($month) {
+            $thisMonth = $month;
+        } else {
+            $thisMonth = date('Y-m');
+        }
         $today = date('Y-m-d');
         
         $stats = [
@@ -3526,13 +3584,7 @@ class Database {
         $headers = fgetcsv($handle, 0, ",");
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-            if (count($row) < count($headers)) {
-                $row = array_pad($row, count($headers), '');
-            } elseif (count($row) > count($headers)) {
-                $row = array_slice($row, 0, count($headers));
-            }
-            
-            $teacher = array_combine($headers, $row);
+            $teacher = $this->safeCombine($headers, $row);
             $s_teacher_cnic = str_replace('-', '', $teacher['cnic'] ?? '');
             
             if ($s_teacher_cnic === $raw_cnic) {
@@ -3642,7 +3694,7 @@ class Database {
         $header = fgetcsv($handle);
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-            $data = array_combine($header, $row);
+            $data = $this->safeCombine($header, $row);
             if ($data['student_id'] == $studentId) {
                 $results[] = $data;
             }
@@ -3662,7 +3714,7 @@ class Database {
         $header = fgetcsv($handle);
         
         while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-            $data = array_combine($header, $row);
+            $data = $this->safeCombine($header, $row);
             
             // Show if target is 'ALL' or specific parent CNIC
             if ($data['target_cnic'] === 'ALL' || $data['target_cnic'] == $cnic) {

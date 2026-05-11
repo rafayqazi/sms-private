@@ -15,6 +15,11 @@ session_start();
 $db = new Database();
 $settings = $db->getSchoolSettings();
 
+// Dynamic Logo Fetching Logic
+$logoPath = (!empty($settings['school_logo']) && file_exists($settings['school_logo'])) 
+            ? $settings['school_logo'] 
+            : 'assets/branding/logo.png';
+
 if (isset($_SESSION['user'])) {
     header("Location: index.php");
     exit;
@@ -101,8 +106,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </script>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-0 overflow-hidden font-sans">
-    <div class="flex w-full h-screen overflow-hidden">
+<body class="bg-slate-50 min-h-screen font-sans antialiased text-slate-900">
+    <div class="flex flex-col lg:flex-row min-h-screen w-full">
         
         <!-- Left Side: Animation (60%) -->
         <div class="hidden lg:flex lg:w-3/5 bg-slate-900 relative items-center justify-center overflow-hidden">
@@ -112,7 +117,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="absolute bottom-12 left-12 z-20 animate-fade">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
-                        <img src="assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-12 h-12 object-contain">
+                        <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" alt="Logo" class="w-12 h-12 object-contain">
                     </div>
                     <div>
                         <h2 class="text-white text-xl font-black tracking-tight leading-none"><?php echo htmlspecialchars($settings['school_name']); ?></h2>
@@ -129,29 +134,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <!-- Right Side: Login Form (40% or 100% on mobile) -->
-        <div class="w-full lg:w-2/5 flex items-center justify-center bg-white p-8 md:p-12 relative overflow-y-auto">
-            <div class="w-full max-w-sm animate-slideUp">
+        <div class="w-full lg:w-2/5 flex flex-col items-center justify-center bg-white p-6 md:p-10 relative min-h-screen lg:min-h-0">
+            <div class="w-full max-w-md mx-auto animate-slideUp">
                 
-                <!-- School Branding (Visible on all devices) -->
-                <div class="mb-10 text-center flex flex-col items-center">
+                <div class="mb-6 text-center flex flex-col items-center">
                     <div class="mb-6 flex flex-col items-center">
-                        <div class="w-24 h-24 bg-white p-4 rounded-full shadow-lg border border-slate-100 mb-4 flex items-center justify-center">
-                            <img src="assets/branding/logo.png?v=<?php echo time(); ?>" alt="Logo" class="w-full h-full object-contain">
+                        <div class="relative group p-3 mb-4">
+                            <!-- Background card for logo -->
+                            <div class="absolute inset-0 bg-white rounded-2xl shadow-lg border border-slate-100 transition-all duration-500 group-hover:shadow-indigo-100/50"></div>
+                            <!-- Subtle Glow -->
+                            <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" alt="Logo" class="w-24 h-24 md:w-28 md:h-28 object-contain relative z-10 transition-transform duration-500 group-hover:scale-105">
                         </div>
-                        <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-tight uppercase mb-2">
-                            <?php echo htmlspecialchars($settings['school_name']); ?>
-                        </h1>
+                        
+                        <div class="space-y-0.5">
+                            <p class="text-[9px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-0.5">Welcome To</p>
+                            <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-tight uppercase">
+                                <?php echo htmlspecialchars($settings['school_name']); ?>
+                                <span class="block text-indigo-600 text-[11px] mt-0.5 normal-case font-bold tracking-normal italic opacity-80">Management System</span>
+                            </h1>
+                        </div>
+                        
                         <?php if (!empty($settings['address_tagline'])): ?>
-                            <p class="text-sm font-bold text-slate-500 uppercase tracking-widest px-8">
+                            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-3 px-4 opacity-60">
                                 <?php echo htmlspecialchars($settings['address_tagline']); ?>
                             </p>
                         <?php endif; ?>
                     </div>
 
-                    <div class="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-8"></div>
+                    <div class="w-12 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-6"></div>
 
                     <!-- Login Mode Toggle -->
-                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-8 w-full max-w-[340px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
+                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-6 w-full max-w-[320px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
                         <button type="button" id="staffModeBtn" onclick="setLoginMode('staff')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100">
                             <i class="fas fa-user-shield mr-1"></i> Admin
                         </button>
@@ -163,14 +176,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </button>
                     </div>
 
-                    <div class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2 pl-1" id="greetingText">
-                        <?php 
-                            $h = date('H');
-                            echo ($h < 12) ? 'Good Morning' : 'Good Evening';
-                        ?>
+                    <div class="text-[9px] font-black text-indigo-400 uppercase tracking-[0.25em] mb-1 flex items-center gap-2" id="greetingArea">
+                        <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                        <span id="greetingText">
+                            <?php 
+                                $h = date('H');
+                                if ($h < 12) echo 'Good Morning';
+                                elseif ($h < 18) echo 'Good Afternoon';
+                                else echo 'Good Evening';
+                            ?>
+                        </span>
                     </div>
-                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter mb-2" id="loginTitle">Secure Login</h2>
-                    <p class="text-slate-500 font-medium" id="loginSubtitle">Authorized personnel only. Please verify your identity.</p>
+                    <h2 class="text-3xl font-black text-slate-900 tracking-tighter mb-1" id="loginTitle">Secure Space</h2>
+                    <p class="text-slate-500 font-medium text-xs" id="loginSubtitle">Please verify your identity to access the portal.</p>
                 </div>
 
                 <?php if ($error): ?>
@@ -187,72 +205,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 <?php endif; ?>
 
-                <form id="loginForm" action="" method="POST" class="space-y-6">
+                <form id="loginForm" action="" method="POST" class="space-y-4">
                     <?php echo csrfInput(); ?>
                     <input type="hidden" name="login_mode" id="login_mode" value="staff">
                     
                     <div class="group">
-                        <label id="usernameLabel" class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Access Username</label>
+                        <label id="usernameLabel" class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1 group-focus-within:text-indigo-600 transition-colors">Access Username</label>
                         <div class="relative">
                             <input type="text" name="username" id="username" required 
-                                class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-2xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10" 
+                                class="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10 text-sm" 
                                 placeholder="Username">
-                            <i id="usernameIcon" class="fas fa-id-badge absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"></i>
+                            <i id="usernameIcon" class="fas fa-id-badge absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"></i>
                         </div>
                     </div>
 
                     <div class="group">
-                        <label id="passwordLabel" class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1 group-focus-within:text-indigo-600 transition-colors">Security Token</label>
+                        <label id="passwordLabel" class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1 group-focus-within:text-indigo-600 transition-colors">Security Token</label>
                         <div class="relative">
                             <input type="password" name="password" id="password" required 
-                                class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-2xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10" 
+                                class="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10 text-sm" 
                                 placeholder="••••••••">
-                            <button type="button" id="togglePassword" class="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors">
+                            <button type="button" id="togglePassword" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors">
                                 <i class="fas fa-eye-slash"></i>
                             </button>
                         </div>
                     </div>
 
 
-                    <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-5 rounded-2xl shadow-2xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-4">
-                        <!-- Liquid Gooey Container -->
-                        <div class="absolute inset-0 liquid-goo-container opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-4 rounded-xl shadow-xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-2">
+                        <!-- Liquid Gooey Component -->
+                        <div class="absolute inset-0 liquid-goo-container pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                             <div class="blob blob-1"></div>
                             <div class="blob blob-2"></div>
                             <div class="blob blob-3"></div>
-                            <div class="blob blob-4"></div>
                         </div>
                         
                         <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                         
-                        <div id="btnContent" class="relative flex items-center justify-center gap-3">
-                            <span class="uppercase tracking-[0.2em] drop-shadow-md">Authorize Access</span>
-                            <i class="fas fa-shield-alt text-xs animate-pulse"></i>
+                        <div id="btnContent" class="relative flex items-center justify-center gap-2">
+                            <span class="uppercase tracking-[0.2em] drop-shadow-sm text-xs">Authorize Access</span>
+                            <i class="fas fa-shield-alt text-[10px] animate-pulse"></i>
                         </div>
-                        <div id="btnLoading" class="relative hidden items-center justify-center gap-3">
-                            <span class="uppercase tracking-[0.2em]">Authorizing...</span>
-                            <i class="fas fa-circle-notch fa-spin text-sm"></i>
+                        <div id="btnLoading" class="relative hidden items-center justify-center gap-2">
+                            <span class="uppercase tracking-[0.2em] text-xs">Authorizing...</span>
+                            <i class="fas fa-circle-notch fa-spin text-xs"></i>
                         </div>
 
-                        <!-- Gooey Filter Definition -->
-                        <svg class="absolute w-0 h-0 pointer-events-none overflow-hidden">
+                        <svg class="absolute w-0 h-0 invisible">
                             <defs>
                                 <filter id="goo">
-                                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                                    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
                                     <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
-                                    <feBlend in="SourceGraphic" in2="goo" />
                                 </filter>
                             </defs>
                         </svg>
                     </button>
                 </form>
 
-                <div class="mt-12 text-center text-[10px] uppercase tracking-widest">
-                    <div class="font-black text-slate-900 mb-1">
+                <div class="mt-8 text-center text-[9px] uppercase tracking-widest">
+                    <div class="font-black text-slate-900 mb-0.5">
                         &copy; <?php echo date('Y'); ?> System Secure Build &bull; v2.0
                     </div>
                     <div class="font-bold text-slate-400">
-                        Developed by <span class="text-indigo-400">Rafay Qazi</span>
+                        Developed by <a href="pages/developer_bio.php" class="text-indigo-400 hover:text-indigo-600 font-black hover:underline transition-all duration-300">Rafay Qazi</a>
                     </div>
                 </div>
             </div>
@@ -329,9 +344,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             particles = [];
 
             const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2 + 50; // Lifted slightly
-            const scale = 1.35; // Reduced scale for a better fit
-            const step = 7;
+            const centerY = canvas.height / 2 + 30; // Centered vertically
+            const scale = canvas.width < 1024 ? 1 : 1.2; // Responsive scale
+            const step = 8; // Larger step for better performance
 
             function addCenteredRect(cx, cy, w, h, s, color) {
                 for (let i = cx - w/2; i < cx + w/2; i += s) {
@@ -580,7 +595,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         /* Liquid Gooey Effect Styles */
         .liquid-goo-container {
             filter: url('#goo');
-            background: linear-gradient(to right, #4f46e5, #9333ea);
+            background: #4f46e5;
         }
         .blob {
             position: absolute;
@@ -591,28 +606,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             mix-blend-mode: screen;
         }
         .blob-1 {
-            width: 100px; height: 100px;
-            left: -10%; top: -20%;
-            background: #4f46e5;
-            animation: blob-move-1 8s infinite alternate ease-in-out;
+            width: 60px; height: 60px;
+            left: 10%; top: -10%;
+            background: #6366f1;
+            animation: blob-move-1 5s infinite alternate ease-in-out;
         }
         .blob-2 {
-            width: 120px; height: 120px;
-            right: -10%; top: 30%;
-            background: #9333ea;
-            animation: blob-move-2 10s infinite alternate ease-in-out;
+            width: 80px; height: 80px;
+            right: 15%; top: 20%;
+            background: #8b5cf6;
+            animation: blob-move-2 7s infinite alternate ease-in-out;
         }
         .blob-3 {
-            width: 80px; height: 80px;
-            left: 30%; bottom: -30%;
-            background: #d946ef;
-            animation: blob-move-3 7s infinite alternate ease-in-out;
-        }
-        .blob-4 {
-            width: 140px; height: 140px;
-            right: 20%; bottom: 20%;
-            background: #6366f1;
-            animation: blob-move-1 12s infinite alternate-reverse ease-in-out;
+            width: 50px; height: 50px;
+            left: 40%; bottom: -10%;
+            background: #4f46e5;
+            animation: blob-move-3 6s infinite alternate ease-in-out;
         }
 
         @keyframes blob-move-1 {

@@ -1,6 +1,6 @@
             </div> <!-- End Page Content Wrapper -->
             <footer class="mt-8 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
-                <p>Application created by <span class="font-semibold text-indigo-600">Abdul Rafay Qazi</span> and all rights reserved 2025 &copy;</p>
+                <p>Application created by <a href="<?php echo $base_path; ?>pages/developer_bio.php" class="font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">Abdul Rafay Qazi</a> and all rights reserved 2025 &copy;</p>
                 <div class="mt-2 flex justify-center gap-4">
                     <a href="<?php echo $base_path; ?>pages/license.php" class="text-indigo-500 hover:text-indigo-700 hover:underline flex items-center gap-1">
                         <i class="fas fa-file-contract"></i> Software License

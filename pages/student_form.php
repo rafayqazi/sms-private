@@ -85,29 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     $dob = $_POST['date_of_birth'];
 
-    // Age Validation
-    if ($dob) {
-        $dobDate = new DateTime($dob);
-        $today = new DateTime();
-        $age = $today->diff($dobDate)->y;
-
-        if ($age < 5) {
-            $targetDate = clone $dobDate;
-            $targetDate->modify('+5 years');
-            $interval = $today->diff($targetDate);
-            
-            $remaining = [];
-            if ($interval->y > 0) $remaining[] = $interval->y . " year" . ($interval->y > 1 ? 's' : '');
-            if ($interval->m > 0) $remaining[] = $interval->m . " month" . ($interval->m > 1 ? 's' : '');
-            if ($interval->d > 0) $remaining[] = $interval->d . " day" . ($interval->d > 1 ? 's' : '');
-            
-            $timeString = implode(', ', $remaining);
-            $error = "Child age is not 5 years yet. Time remaining to complete 5 years: " . $timeString . ".";
-            
-            $student = $_POST;
-            if ($id) $student['id'] = $id;
-        }
-    }
 
     // Check for duplicate GR No (only if no age error and GR No is not '0'/empty)
     if (empty($error) && $grNo !== '0' && $db->isGrNoExists($grNo, $id)) {
@@ -277,6 +254,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <div class="flex flex-col space-y-2">
+                <label class="text-sm font-medium text-gray-700">School Stage</label>
+                <select id="school_stage" onchange="filterClassesByStage()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <option value="">Select Stage</option>
+                    <?php
+                    $stages = ['Pre-Primary', 'Elementary', 'College'];
+                    // Identify student's current stage if editing
+                    $currentStage = '';
+                    if ($student && !empty($student['current_class'])) {
+                        $classData = $db->getClassByName($student['current_class']);
+                        $currentStage = $classData['stage'] ?? 'Elementary';
+                    }
+                    foreach ($stages as $s) {
+                        $selected = ($currentStage == $s) ? 'selected' : '';
+                        echo "<option value=\"$s\" $selected>$s</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+
+            <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">Current Class</label>
                 <select name="current_class" id="current_class" onchange="toggleFields()" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">Select Class</option>
@@ -302,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="flex flex-col space-y-2">
                 <label class="text-sm font-medium text-gray-700">GR No</label>
                 <?php 
-                $defaultGr = ($student) ? htmlspecialchars($student['gr_no']) : $db->getNextGrNo();
+                $defaultGr = ($student) ? htmlspecialchars($student['gr_no']) : '';
                 ?>
                 <input type="text" name="gr_no" id="gr_no_input" value="<?php echo $defaultGr; ?>" placeholder="e.g. 573" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
             </div>
@@ -632,12 +629,48 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         });
     }
 
+    /**
+     * STAGE-BASED CLASS FILTERING
+     */
+    function filterClassesByStage() {
+        const stage = document.getElementById('school_stage').value;
+        const currentClassSel = document.getElementById('current_class');
+        const admissionClassSel = document.getElementById('admission_class');
+        const classList = <?php echo json_encode($db->getClasses()); ?> || [];
+        
+        const currentVal = currentClassSel.value;
+        const admissionVal = admissionClassSel.value;
+
+        // Function to update a select box
+        const updateSelect = (selectEl, selectedVal) => {
+            const currentSelected = selectedVal;
+            selectEl.innerHTML = '<option value="">Select Class</option>';
+            
+            classList.forEach(c => {
+                if (!stage || c.stage === stage) {
+                    const option = document.createElement('option');
+                    option.value = c.class_name;
+                    option.textContent = c.class_name;
+                    if (c.class_name === currentSelected) option.selected = true;
+                    selectEl.appendChild(option);
+                }
+            });
+        };
+
+        updateSelect(currentClassSel, currentVal);
+        updateSelect(admissionClassSel, admissionVal);
+        
+        // Trigger other visibility logic
+        handleStudentFormFields();
+    }
+
     // Global toggle mapping
     window.toggleFields = handleStudentFormFields;
+    window.filterClassesByStage = filterClassesByStage;
 
     document.addEventListener('DOMContentLoaded', () => {
         // Initial setup
-        handleStudentFormFields();
+        filterClassesByStage(); // This will also call handleStudentFormFields()
 
         // 3. PARENT AUTOFILL LOGIC
         const cnicInput = document.getElementById('father_cnic');

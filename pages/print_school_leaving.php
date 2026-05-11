@@ -452,8 +452,8 @@ if (count($studentsToPrint) > 1) {
                             </div>
                             
                             <div class="field-row">
-                                <span class="field-label">Date of Leaving the School</span>
-                                <div class="field-value"><?php echo !empty($student['updated_at']) ? date('d-m-Y', strtotime($student['updated_at'])) : date('d-m-Y'); ?></div>
+                                 <span class="field-label">Date of Leaving the School</span>
+                                 <div class="field-value"><?php echo !empty($_GET['leaving_date']) ? date('d-m-Y', strtotime($_GET['leaving_date'])) : (!empty($student['updated_at']) ? date('d-m-Y', strtotime($student['updated_at'])) : date('d-m-Y')); ?></div>
                             </div>
                             
                             <div class="field-row">

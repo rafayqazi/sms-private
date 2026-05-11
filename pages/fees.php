@@ -13,8 +13,9 @@ if (!canAccessPage(basename(__FILE__))) {
 $db = new Database();
 $classes = $db->getClasses();
 $feeStructure = $db->getFeeStructure();
-$feeStats = $db->getFeeStats();
-$defaulters = $db->getDefaulters();
+$selectedMonth = isset($_GET['overview_month']) ? $_GET['overview_month'] : date('Y-m');
+$feeStats = $db->getFeeStats($selectedMonth);
+$defaulters = $db->getDefaulters($selectedMonth);
 
 $success = '';
 $error = '';
@@ -96,6 +97,21 @@ include '../includes/header.php';
 
     <!-- Tab Contents -->
     <div id="content-overview" class="tab-content">
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Fee Overview</h2>
+                <p class="text-xs text-gray-500">Viewing statistics for <?php echo date('F Y', strtotime($selectedMonth)); ?></p>
+            </div>
+            <form method="GET" class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="relative flex-1 sm:flex-initial">
+                    <i class="fas fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
+                    <input type="month" name="overview_month" value="<?php echo $selectedMonth; ?>" onchange="this.form.submit()" class="w-full sm:w-auto border-2 border-gray-100 rounded-lg pl-9 pr-4 py-2 focus:border-indigo-500 outline-none font-bold text-gray-700 bg-gray-50/50 transition-all hover:border-indigo-200">
+                </div>
+                <noscript><button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Apply</button></noscript>
+            </form>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -103,9 +119,9 @@ include '../includes/header.php';
                         <i class="fas fa-calendar-alt fa-lg"></i>
                     </div>
                 </div>
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">This Month's Collections</h3>
+                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Collections (<?php echo date('M Y', strtotime($selectedMonth)); ?>)</h3>
                 <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <?php echo number_format($feeStats['this_month'], 2); ?></p>
-                <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> Up to date</p>
+                <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> For selected period</p>
             </div>
             
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -125,16 +141,16 @@ include '../includes/header.php';
                         <i class="fas fa-user-clock fa-lg"></i>
                     </div>
                 </div>
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Monthly Defaulters</h3>
+                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Defaulters (<?php echo date('M Y', strtotime($selectedMonth)); ?>)</h3>
                 <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo count($defaulters); ?></p>
-                <p class="text-xs text-amber-600 mt-2">Pending for <?php echo date('F Y'); ?></p>
+                <p class="text-xs text-amber-600 mt-2">Pending for <?php echo date('F Y', strtotime($selectedMonth)); ?></p>
             </div>
         </div>
         
         <!-- Class-wise Breakdown -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 mt-6">
             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-chart-pie text-indigo-500"></i> Monthly Collections by Class (<?php echo date('F'); ?>)
+                <i class="fas fa-chart-pie text-indigo-500"></i> Collections by Class (<?php echo date('F Y', strtotime($selectedMonth)); ?>)
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <?php foreach ($feeStats['class_breakdown'] as $cls => $amt): ?>
@@ -213,12 +229,26 @@ include '../includes/header.php';
                     <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <i class="fas fa-layer-group text-indigo-500"></i> Class View
                     </h3>
-                    <select id="class_selector" onchange="loadClassStudents()" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">-- Select Class --</option>
-                        <?php foreach ($classes as $c): ?>
-                            <option value="<?php echo $c['class_name']; ?>"><?php echo $c['class_name']; ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1.5">1. School Stage</label>
+                            <select id="stage_selector" onchange="filterClassesByStage()" class="w-full border-2 border-gray-100 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 font-bold text-gray-700 bg-gray-50/50">
+                                <option value="">-- All Stages --</option>
+                                <option value="Pre-Primary">Pre-Primary</option>
+                                <option value="Elementary">Elementary</option>
+                                <option value="College">College</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1.5">2. Select Class</label>
+                            <select id="class_selector" onchange="loadClassStudents()" class="w-full border-2 border-gray-100 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 font-bold text-gray-700 bg-gray-50/50">
+                                <option value="">-- Select Class --</option>
+                                <?php foreach ($classes as $c): ?>
+                                    <option value="<?php echo $c['class_name']; ?>" data-stage="<?php echo $c['stage'] ?? 'Elementary'; ?>"><?php echo $c['class_name']; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
 
                     <div id="class_students_list" class="mt-6 space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
                         <p class="text-xs text-gray-400 text-center py-8">Select a class to see student list.</p>
@@ -277,26 +307,44 @@ include '../includes/header.php';
                             <th class="px-6 py-4">Last Updated</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <?php foreach ($classes as $class): 
+                    <?php 
+                    $groupedClasses = [];
+                    foreach (['Pre-Primary', 'Elementary', 'College'] as $s) $groupedClasses[$s] = [];
+                    foreach ($classes as $c) {
+                        $s = $c['stage'] ?? 'Elementary';
+                        $groupedClasses[$s][] = $c;
+                    }
+                    ?>
+                    
+                    <?php foreach ($groupedClasses as $stageName => $stageClasses): if (empty($stageClasses)) continue; ?>
+                    <thead class="bg-indigo-50 text-indigo-600 text-xs uppercase font-black tracking-widest">
+                        <tr>
+                            <th colspan="5" class="px-6 py-3 border-y border-indigo-100">
+                                <i class="fas fa-layer-group mr-2"></i> <?php echo $stageName; ?> Section
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 mb-6">
+                        <?php foreach ($stageClasses as $class): 
                             $name = $class['class_name'];
                             $fees = $feeStructure[$name] ?? ['monthly_fee' => 0, 'admission_fee' => 0, 'exam_fee' => 0, 'updated_at' => '-'];
                         ?>
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 font-semibold text-gray-700"><?php echo htmlspecialchars($name); ?></td>
                             <td class="px-6 py-4">
-                                <input type="number" name="fees[<?php echo $name; ?>][monthly]" value="<?php echo $fees['monthly_fee']; ?>" class="w-32 border border-gray-300 rounded px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
+                                <input type="number" name="fees[<?php echo $name; ?>][monthly]" value="<?php echo $fees['monthly_fee']; ?>" class="w-32 border-2 border-gray-100 rounded-lg px-3 py-1.5 focus:border-indigo-500 outline-none font-bold">
                             </td>
                             <td class="px-6 py-4">
-                                <input type="number" name="fees[<?php echo $name; ?>][admission]" value="<?php echo $fees['admission_fee']; ?>" class="w-32 border border-gray-300 rounded px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
+                                <input type="number" name="fees[<?php echo $name; ?>][admission]" value="<?php echo $fees['admission_fee']; ?>" class="w-32 border-2 border-gray-100 rounded-lg px-3 py-1.5 focus:border-indigo-500 outline-none font-bold">
                             </td>
                             <td class="px-6 py-4">
-                                <input type="number" name="fees[<?php echo $name; ?>][exam]" value="<?php echo $fees['exam_fee']; ?>" class="w-32 border border-gray-300 rounded px-3 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
+                                <input type="number" name="fees[<?php echo $name; ?>][exam]" value="<?php echo $fees['exam_fee']; ?>" class="w-32 border-2 border-gray-100 rounded-lg px-3 py-1.5 focus:border-indigo-500 outline-none font-bold">
                             </td>
-                            <td class="px-6 py-4 text-xs text-gray-400"><?php echo $fees['updated_at']; ?></td>
+                            <td class="px-6 py-4 text-xs text-gray-400 font-mono"><?php echo $fees['updated_at']; ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
+                    <?php endforeach; ?>
                 </table>
             </div>
         </form>
@@ -308,10 +356,16 @@ include '../includes/header.php';
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">All Collections</h3>
                 <div class="flex items-center gap-2">
+                    <select id="history_stage" class="text-sm border rounded px-3 py-1 bg-white focus:ring-2 focus:ring-indigo-500 transition" onchange="filterHistoryClasses()">
+                        <option value="">All Stages</option>
+                        <option value="Pre-Primary">Pre-Primary</option>
+                        <option value="Elementary">Elementary</option>
+                        <option value="College">College</option>
+                    </select>
                     <select id="history_class" class="text-sm border rounded px-3 py-1 bg-white focus:ring-2 focus:ring-indigo-500 transition" onchange="loadHistory()">
                         <option value="">All Classes</option>
                         <?php foreach ($classes as $c): ?>
-                            <option value="<?php echo $c['class_name']; ?>"><?php echo $c['class_name']; ?></option>
+                            <option value="<?php echo $c['class_name']; ?>" data-stage="<?php echo $c['stage'] ?? 'Elementary'; ?>"><?php echo $c['class_name']; ?></option>
                         <?php endforeach; ?>
                     </select>
                     <div class="relative flex items-center">
@@ -335,6 +389,12 @@ include '../includes/header.php';
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800">Defaulters List</h3>
                 <div class="flex gap-2">
+                    <select id="defaulter_stage" class="text-sm border rounded px-3 py-1" onchange="loadDefaulters()">
+                        <option value="">All Stages</option>
+                        <option value="Pre-Primary">Pre-Primary</option>
+                        <option value="Elementary">Elementary</option>
+                        <option value="College">College</option>
+                    </select>
                     <input type="month" id="defaulter_month" class="text-sm border rounded px-3 py-1" value="<?php echo date('Y-m'); ?>" onchange="loadDefaulters()">
                 </div>
             </div>
@@ -379,6 +439,9 @@ include '../includes/header.php';
 
 
 <script>
+// Global filter context
+const OVERVIEW_MONTH = '<?php echo $selectedMonth; ?>';
+
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     document.getElementById('content-' + tabId).classList.remove('hidden');
@@ -557,6 +620,15 @@ function renderCollectionForm(student, feeData) {
                         </button>
                     </div>
 
+                    <!-- Quick Discount Buttons -->
+                    <div class="flex items-center gap-2 pt-2">
+                        <p class="text-[9px] font-black text-gray-400 uppercase mr-1">Apply Discount:</p>
+                        <button type="button" onclick="applyQuickDiscount(100)" class="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-colors">-100</button>
+                        <button type="button" onclick="applyQuickDiscount(200)" class="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-colors">-200</button>
+                        <button type="button" onclick="applyQuickDiscount(500)" class="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-colors">-500</button>
+                    </div>
+                    </div>
+
                     <!-- Total Display -->
                     <div class="bg-slate-900 rounded-2xl p-5 mt-6 relative overflow-hidden group shadow-2xl">
                         <div class="absolute right-[-10px] top-[-10px] text-gray-800 opacity-20 text-7xl select-none group-hover:rotate-12 transition-transform">
@@ -608,7 +680,16 @@ function renderCollectionForm(student, feeData) {
                 </div>
             </div>
 
-            <div class="pt-4">
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="fillFullPayment()" class="flex-1 bg-indigo-50 text-indigo-700 font-black py-4 rounded-2xl hover:bg-indigo-100 transition-all border-2 border-indigo-200 flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                    <i class="fas fa-check-double"></i> Received Full
+                </button>
+                <button type="button" onclick="clearAllFees()" class="flex-1 bg-slate-50 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-100 transition-all border-2 border-slate-200 flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                    <i class="fas fa-undo"></i> No Fee
+                </button>
+            </div>
+
+            <div class="pt-2">
                 <button type="submit" class="w-full group/btn relative ${isUpdate ? 'bg-indigo-600' : 'bg-emerald-600'} text-white font-black py-5 rounded-2xl hover:translate-y-[-4px] active:translate-y-0 transition-all shadow-xl ${isUpdate ? 'shadow-indigo-100' : 'shadow-emerald-100'} flex items-center justify-center gap-3 text-lg tracking-widest uppercase">
                     <i class="fas ${isUpdate ? 'fa-edit' : 'fa-hand-holding-usd'} text-xl group-hover/btn:rotate-12 transition-transform"></i>
                     ${isUpdate ? 'Update Payment Record' : 'Confirm Collection & Print'}
@@ -619,6 +700,9 @@ function renderCollectionForm(student, feeData) {
     `;
 
     document.getElementById('fee_collection_form').onsubmit = handleCollection;
+    
+    // Force immediate recalculation
+    setTimeout(recalculateTotal, 50);
 }
 
 window.checkFeeStatusForMonth = function(gr_no) {
@@ -773,11 +857,13 @@ window.showClassDetail = function(className) {
     const title = document.getElementById('modal_title');
     const subtitle = document.getElementById('modal_subtitle');
     
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date());
+    // Parse selected month for labels
+    const [year, month] = OVERVIEW_MONTH.split('-');
+    const dateObj = new Date(year, month - 1);
+    const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(dateObj);
     
     title.innerText = `Class: ${className}`;
-    subtitle.innerText = `Payment summary for ${monthName} ${new Date().getFullYear()}`;
+    subtitle.innerText = `Payment summary for ${monthName} ${year}`;
     content.innerHTML = '<div class="py-12 text-center"><i class="fas fa-circle-notch fa-spin fa-2x text-indigo-500"></i><p class="mt-2 text-gray-400">Fetching student list...</p></div>';
     
     if (modal) {
@@ -785,7 +871,7 @@ window.showClassDetail = function(className) {
         modal.classList.remove('hidden');
     }
 
-    fetch(`../api/get_class_fee_status.php?class=${encodeURIComponent(className)}&month=${currentMonth}`)
+    fetch(`../api/get_class_fee_status.php?class=${encodeURIComponent(className)}&month=${OVERVIEW_MONTH}`)
         .then(res => res.json())
         .then(response => {
             const data = response.data || [];
@@ -936,6 +1022,102 @@ document.addEventListener('DOMContentLoaded', () => {
     // Default the history month to current
     document.getElementById('history_month').value = new Date().toISOString().slice(0, 7);
 });
+// Stage-based class filtering
+function filterClassesByStage() {
+    const stage = document.getElementById('stage_selector').value;
+    const classSelector = document.getElementById('class_selector');
+    const options = classSelector.querySelectorAll('option');
+    
+    classSelector.value = '';
+    options.forEach(opt => {
+        if (!opt.value) return; // Skip -- Select Class --
+        if (!stage || opt.dataset.stage === stage) {
+            opt.classList.remove('hidden');
+        } else {
+            opt.classList.add('hidden');
+        }
+    });
+}
+
+function filterHistoryClasses() {
+    const stage = document.getElementById('history_stage').value;
+    const classSelector = document.getElementById('history_class');
+    const options = classSelector.querySelectorAll('option');
+    
+    classSelector.value = '';
+    options.forEach(opt => {
+        if (!opt.value) return;
+        if (!stage || opt.dataset.stage === stage) {
+            opt.classList.remove('hidden');
+        } else {
+            opt.classList.add('hidden');
+        }
+    });
+    loadHistory();
+}
+
+// Ensure loadDefaulters passes stage
+const originalLoadDefaulters = window.loadDefaulters;
+window.loadDefaulters = function() {
+    const month = document.getElementById('defaulter_month').value;
+    const stage = document.getElementById('defaulter_stage').value;
+    const container = document.getElementById('defaulters_table_container');
+    
+    container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading defaulters...</div>';
+    
+    fetch(`../api/get_defaulters.php?month=${month}&stage=${encodeURIComponent(stage)}`)
+        .then(res => res.text())
+        .then(html => {
+            container.innerHTML = html;
+        });
+};
+
+function fillFullPayment() {
+    // 1. Ensure Tuition is at assigned value
+    const tuitionInput = document.querySelector('input[name="tuition_fee"]');
+    if (tuitionInput) {
+        // We need to retrieve the assigned fee from the profile display
+        const assignedTxt = document.querySelector('.text-3xl.font-black.text-slate-800').innerText;
+        const assignedVal = parseInt(assignedTxt.replace(/[^\d]/g, '')) || 0;
+        tuitionInput.value = assignedVal;
+    }
+    
+    // 2. Clear discount
+    const discountInput = document.querySelector('input[name="discount"]');
+    if (discountInput) discountInput.value = 0;
+    
+    recalculateTotal();
+    
+    // Visual feedback
+    const btn = event.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Applied Full';
+    btn.classList.replace('bg-indigo-50', 'bg-indigo-600');
+    btn.classList.replace('text-indigo-700', 'text-white');
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.replace('bg-indigo-600', 'bg-indigo-50');
+        btn.classList.replace('text-white', 'text-indigo-700');
+    }, 1000);
+}
+
+function clearAllFees() {
+    document.querySelectorAll('.fee-item-input').forEach(i => i.value = 0);
+    recalculateTotal();
+}
+
+function applyQuickDiscount(amt) {
+    const input = document.querySelector('input[name="discount"]');
+    if (input) {
+        let current = parseInt(input.value) || 0;
+        input.value = current + amt;
+        recalculateTotal();
+        
+        // Flash red
+        input.classList.add('ring-2', 'ring-red-500');
+        setTimeout(() => input.classList.remove('ring-2', 'ring-red-500'), 500);
+    }
+}
 </script>
 
 <?php include '../includes/footer.php'; ?>

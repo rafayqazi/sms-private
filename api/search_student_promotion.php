@@ -16,7 +16,7 @@ try {
     $allStudents = $db->readData();
     
     $results = array_filter($allStudents, function($student) use ($query) {
-        $isActive = !isset($student['student_status']) || $student['student_status'] === 'Active';
+        $isActive = empty($student['student_status']) || $student['student_status'] === 'Active';
         if (!$isActive) return false;
 
         $nameMatch = stripos($student['student_name'] ?? '', $query) !== false;
