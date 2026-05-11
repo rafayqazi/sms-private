@@ -76,7 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (in_array($ext, $allowed)) {
                 $new_filename = 'profile_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
                 $target_rel = 'uploads/profiles/' . $new_filename;
-                $target_abs = '../' . $target_rel;
+                $target_abs = __DIR__ . '/../' . $target_rel;
+                if (!is_dir(dirname($target_abs))) {
+                    mkdir(dirname($target_abs), 0755, true);
+                }
                 if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_abs)) {
                     $profileImage = $target_rel;
                 }
@@ -103,7 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (in_array($ext, $allowed)) {
                 $new_filename = 'profile_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
                 $target_rel = 'uploads/profiles/' . $new_filename;
-                $target_abs = '../' . $target_rel;
+                $target_abs = __DIR__ . '/../' . $target_rel;
+                if (!is_dir(dirname($target_abs))) {
+                    mkdir(dirname($target_abs), 0755, true);
+                }
                 if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_abs)) {
                     $profileImage = $target_rel;
                 }
