@@ -30,8 +30,8 @@ if (!in_array($action, ['pass', 'fail', 'stay', 'passout'])) {
 try {
     $db = new Database();
     $result = $db->promoteStudent($studentId, $action);
-    
-    if ($result) {
+
+    if ($result['saved']) {
         echo json_encode([
             'success' => true,
             'message' => 'Student promoted successfully'

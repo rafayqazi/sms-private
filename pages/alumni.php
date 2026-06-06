@@ -229,7 +229,7 @@ foreach ($alumniStudents as $student) {
                                         <a href="student_profile.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Full Profile">
                                             <i class="fas fa-user-graduate text-xs"></i>
                                         </a>
-                                        <a href="generate_certificate_leaving.php?id=<?php echo $student['id']; ?>" class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Leaving Certificate">
+                                        <a href="print_school_leaving.php?student_id=<?php echo $student['id']; ?>" target="_blank" class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Leaving Certificate">
                                             <i class="fas fa-certificate text-xs"></i>
                                         </a>
                                     </div>

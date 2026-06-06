@@ -23,6 +23,8 @@ if (isEditor()) {
 // Fetch results and students
 $results = $database->getResults($class, $examType, $year);
 $resultStudentIds = array_keys($results);
+$activeSubjects = $database->getActiveSubjects($class, $examType, $year);
+$subjectMaxMarks = $database->getSubjectMaxMarks($class, $examType, $year);
 
 $allStudents = $database->readData();
 $students = array_filter($allStudents, function($student) use ($class, $resultStudentIds) {
@@ -283,7 +285,7 @@ $brandColor = "#0c0784";
                 $result = [
                     'english' => 0, 'math' => 0, 'social_studies' => 0, 'general_science' => 0, 
                     'mt' => 0, 'islamiyat' => 0, 'nmt' => 0,
-                    'total_max' => 700, 'total_obtained' => 0, 'percentage' => 0, 'grade' => '-',
+                    'total_max' => array_sum($subjectMaxMarks), 'total_obtained' => 0, 'percentage' => 0, 'grade' => '-',
                     'other_subjects' => '{}' 
                 ];
             }
@@ -362,42 +364,29 @@ $brandColor = "#0c0784";
                             </thead>
                             <tbody class="text-sm">
                                 <?php
-                                $subjects = [
-                                    'English' => 'english', 'Mathematics' => 'math',
-                                    'Social Studies' => 'social_studies', 'General Science' => 'general_science',
-                                    'Mother Tongue (MT)' => 'mt', 'Islamiyat' => 'islamiyat', 'N.M.T' => 'nmt'
-                                ];
+                                $otherSubjectsData = isset($result['other_subjects']) ? json_decode($result['other_subjects'], true) : [];
+                                if (!is_array($otherSubjectsData)) {
+                                    $otherSubjectsData = [];
+                                }
                                 $rowCount = 0;
-                                foreach ($subjects as $label => $key):
-                                    $marks = $result[$key];
-                                    $passed = ((float)$marks >= 33);
+                                foreach ($activeSubjects as $subject):
+                                    $key = $subject['key'];
+                                    $marks = ($subject['type'] === 'standard')
+                                        ? ($result[$key] ?? 0)
+                                        : ($otherSubjectsData[$key] ?? 0);
+                                    $subjectMax = (int)($subjectMaxMarks[$key] ?? 100);
+                                    $passMark = $subjectMax * 0.33;
+                                    $markVal = strtoupper(trim((string)$marks));
+                                    $passed = ($markVal !== 'A') && ((float)$marks >= $passMark);
                                     $rowBg = ($rowCount++ % 2 == 0) ? 'bg-white' : 'bg-slate-50';
                                 ?>
                                 <tr class="<?= $rowBg ?> border-b">
-                                    <td class="font-bold py-3 px-4 text-black"><?= $label ?></td>
-                                    <td class="text-center text-slate-500">100</td>
-                                    <td class="text-center font-black text-black <?= $passed ? '' : 'text-red-500' ?>"><?= $marks ?></td>
+                                    <td class="font-bold py-3 px-4 text-black"><?= htmlspecialchars($subject['print_label']) ?></td>
+                                    <td class="text-center text-slate-500"><?= $subjectMax ?></td>
+                                    <td class="text-center font-black text-black <?= $passed ? '' : 'text-red-500' ?>"><?= htmlspecialchars($marks) ?></td>
                                     <td class="font-bold italic text-xs <?= $passed ? 'text-emerald-600' : 'text-red-500' ?>"><?= $passed ? 'PASS' : 'FAIL' ?></td>
                                 </tr>
                                 <?php endforeach; ?>
-
-                                <?php 
-                                $extra = isset($result['other_subjects']) ? json_decode($result['other_subjects'], true) : [];
-                                if (is_array($extra)) {
-                                    foreach ($extra as $subject => $mark) {
-                                        $passed = ((float)$mark >= 33);
-                                        $rowBg = ($rowCount++ % 2 == 0) ? 'bg-white' : 'bg-slate-50';
-                                        ?>
-                                        <tr class="<?= $rowBg ?> border-b">
-                                            <td class="font-bold py-3 px-4 text-black"><?= ucfirst($subject) ?></td>
-                                            <td class="text-center text-slate-500">100</td>
-                                            <td class="text-center font-black text-black <?= $passed ? '' : 'text-red-500' ?>"><?= $mark ?></td>
-                                            <td class="font-bold italic text-xs <?= $passed ? 'text-emerald-600' : 'text-red-500' ?>"><?= $passed ? 'PASS' : 'FAIL' ?></td>
-                                        </tr>
-                                        <?php
-                                    }
-                                }
-                                ?>
 
                                 <tr class="brand-bg text-white font-bold h-14">
                                     <td class="text-right px-6 uppercase tracking-widest text-xs">Total Marks Obtained</td>

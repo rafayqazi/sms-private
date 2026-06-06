@@ -86,6 +86,7 @@ if (count($studentsToPrint) > 1) {
         .cert-page {
             width: 210mm;
             height: 297mm;
+            max-height: 297mm;
             background: white;
             margin: 0 auto 20px;
             padding: 6mm;
@@ -197,13 +198,23 @@ if (count($studentsToPrint) > 1) {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 3.2mm; 
+            min-height: 0;
+        }
+
+        .fields-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 4mm;
+            padding: 1.5mm 0 3.5mm;
         }
         
         .field-row {
             display: flex;
             align-items: flex-end;
             gap: 2.5mm;
+            min-height: 7.5mm;
         }
         
         .field-label {
@@ -219,9 +230,9 @@ if (count($studentsToPrint) > 1) {
             font-size: 12pt;
             font-weight: 600;
             color: #000;
-            padding: 0 2mm 0 2mm;
-            line-height: 1.2;
-            min-height: 22px;
+            padding: 0 2mm 1.2mm 2mm;
+            line-height: 1.45;
+            min-height: 7mm;
         }
         
         .field-split {
@@ -238,18 +249,20 @@ if (count($studentsToPrint) > 1) {
             color: #0c0784;
             font-style: italic;
             margin-top: 3mm;
-            margin-bottom: 4mm;
+            flex-shrink: 0;
         }
         
         .signatures {
             display: flex;
             justify-content: space-between;
             margin-top: auto;
-            padding-top: 4mm;
+            padding-top: 6mm;
+            flex-shrink: 0;
         }
         
         .signature-box {
             text-align: center;
+            padding-top: 8mm;
         }
         
         .signature-line {
@@ -263,6 +276,7 @@ if (count($studentsToPrint) > 1) {
             font-weight: 700;
             color: #0c0784;
         }
+
     </style>
 </head>
 <body>
@@ -277,6 +291,16 @@ if (count($studentsToPrint) > 1) {
     </div>
 
     <script>
+        function trimExtraBlankPages(worker, expectedPages) {
+            return worker.toPdf().get('pdf').then(function(pdf) {
+                let total = pdf.internal.getNumberOfPages();
+                while (total > expectedPages) {
+                    pdf.deletePage(total);
+                    total--;
+                }
+            });
+        }
+
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
             const btn = this;
             btn.disabled = true;
@@ -301,9 +325,9 @@ if (count($studentsToPrint) > 1) {
                 margin: 0,
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
                     letterRendering: true,
                     scrollX: 0,
                     scrollY: 0
@@ -311,42 +335,46 @@ if (count($studentsToPrint) > 1) {
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // For bulk downloads, we process each page individually to avoid canvas size limits
-            // Temporarily remove margins and page-breaks for clean capture
-            if (totalCerts > 1) {
-                certificates.forEach(cert => {
-                    cert.style.margin = '0';
-                    cert.style.marginBottom = '0';
-                    cert.classList.remove('page-break'); // Prevent CSS from triggering extra breaks during individual capture
+            window.scrollTo(0, 0);
+            certificates.forEach(cert => {
+                cert.style.margin = '0';
+                cert.style.marginBottom = '0';
+                cert.classList.remove('page-break');
+            });
+
+            const finish = () => {
+                certificates.forEach((cert, idx) => {
+                    cert.style.margin = '0 auto 20px';
+                    if (idx < totalCerts - 1) {
+                        cert.classList.add('page-break');
+                    }
                 });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+            };
+
+            const onError = (err) => {
+                console.error('PDF Generation Error:', err);
+                alert('Failed to generate PDF. Please try again.');
+                finish();
+            };
+
+            if (totalCerts === 1) {
+                trimExtraBlankPages(html2pdf().set(opt).from(certificates[0]), 1)
+                    .save()
+                    .then(finish)
+                    .catch(onError);
+                return;
             }
 
             let worker = html2pdf().set(opt).from(certificates[0]).toPdf();
-            
             for (let i = 1; i < totalCerts; i++) {
-                (function(index) {
-                    worker = worker.from(certificates[index]).toContainer().toCanvas().toPdf();
-                })(i);
+                worker = worker.from(certificates[i]).toContainer().toCanvas().toPdf();
             }
-            
-            worker.save().then(() => {
-                // Restore styles for the web view
-                if (totalCerts > 1) {
-                    certificates.forEach((cert, idx) => {
-                        cert.style.margin = '0 auto 20px';
-                        if (idx < totalCerts - 1) {
-                            cert.classList.add('page-break');
-                        }
-                    });
-                }
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-            }).catch(err => {
-                console.error('PDF Generation Error:', err);
-                alert('Failed to generate bulk PDF. Try printing smaller batches.');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-            });
+            trimExtraBlankPages(worker, totalCerts)
+                .save()
+                .then(finish)
+                .catch(onError);
         });
     </script>
 
@@ -388,6 +416,7 @@ if (count($studentsToPrint) > 1) {
                         <div class="cert-title">SCHOOL LEAVING CERTIFICATE</div>
                         
                         <div class="fields">
+                            <div class="fields-body">
                             <div class="field-row">
                                 <span class="field-label">G.R.No.</span>
                                 <div class="field-value"><?php echo htmlspecialchars(preg_replace('/[^0-9]/', '', $student['gr_no'])); ?></div>
@@ -426,7 +455,7 @@ if (count($studentsToPrint) > 1) {
                             
                             <div class="field-row">
                                 <span class="field-label">Last School Attended</span>
-                                <div class="field-value"><?php echo htmlspecialchars($student['previous_school'] ?? 'N/A'); ?></div>
+                                <div class="field-value"><?php echo htmlspecialchars(!empty(trim($student['previous_school'] ?? '')) ? $student['previous_school'] : 'New'); ?></div>
                             </div>
                             
                             <div class="field-split">
@@ -468,7 +497,8 @@ if (count($studentsToPrint) > 1) {
                             
                             <div class="field-row">
                                 <span class="field-label">Remarks</span>
-                                <div class="field-value">He/She has paid all school dues.</div>
+                                <div class="field-value">&nbsp;</div>
+                            </div>
                             </div>
                             
                             <div class="footer-text">

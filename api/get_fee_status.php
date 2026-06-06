@@ -17,7 +17,8 @@ if (!$student) {
 }
 
 $feeStructure = $db->getFeeStructure();
-$classFees = $feeStructure[$student['current_class']] ?? [
+$feeClass = $db->getStudentFeeClass($student);
+$classFees = $feeStructure[$feeClass] ?? [
     'monthly_fee' => 0,
     'admission_fee' => 0,
     'exam_fee' => 0
@@ -36,8 +37,17 @@ if ($month) {
     }
 }
 
+$previous_debt = 0;
+$previous_debt_breakdown = [];
+if ($month) {
+    $previous_debt = $db->getStudentPreviousDebt($gr_no, $month);
+    $previous_debt_breakdown = $db->getStudentPreviousDebtBreakdown($gr_no, $month);
+}
+
 echo json_encode([
     'student' => $student,
     'structure' => $classFees,
-    'existing_payment' => $existing_payment
+    'existing_payment' => $existing_payment,
+    'previous_debt' => $previous_debt,
+    'previous_debt_breakdown' => $previous_debt_breakdown
 ]);

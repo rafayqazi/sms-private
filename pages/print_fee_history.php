@@ -307,6 +307,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                     <th>Method</th>
                     <th>Receipt ID</th>
                     <th style="text-align:right">Discount</th>
+                    <th style="text-align:right">Dues/Debt</th>
                     <th style="text-align:right">Amount Paid</th>
                 </tr>
             </thead>
@@ -314,32 +315,75 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                 <?php 
                 $totalPaid = 0;
                 $totalDiscount = 0;
+                
+                $feeStructure = $db->getFeeStructure();
+                $classFees = $feeStructure[$student['current_class']] ?? ['monthly_fee' => 0];
+                $assignedMonthly = (float)$classFees['monthly_fee'];
+                
                 if (empty($collections)): ?>
-                    <tr><td colspan="6" style="text-align:center; padding: 50px; color: #94a3b8; font-style: italic;">No payment records found in the system.</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding: 50px; color: #94a3b8; font-style: italic;">No payment records found in the system.</td></tr>
                 <?php else: ?>
                     <?php foreach ($collections as $p): 
-                        $totalPaid += (float)$p['amount_paid'];
-                        $totalDiscount += (float)$p['discount'];
+                        $paid = (float)$p['amount_paid'];
+                        $disc = (float)($p['discount'] ?? 0);
+                        $adm = (float)($p['admission_fee'] ?? 0);
+                        $exm = (float)($p['exam_fee'] ?? 0);
+                        $oth = (float)($p['other_fee'] ?? 0);
+                        
+                        $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '') ? (float)$p['tuition_fee'] : $assignedMonthly;
+                        
+                        $previous_debt = $db->getStudentPreviousDebt($student['gr_no'], $p['month_for']);
+                        $expected = $due_tuition + $adm + $exm + $oth - $disc + $previous_debt;
+                        $debt = max(0.0, $expected - $paid);
+                        
+                        $totalPaid += $paid;
+                        $totalDiscount += $disc;
                     ?>
                     <tr>
                         <td><i class="far fa-calendar-check mr-1 text-slate-300"></i> <?php echo $p['payment_date']; ?></td>
                         <td class="month-highlight"><?php echo date('F Y', strtotime($p['month_for'] . "-01")); ?></td>
                         <td><span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: bold;"><?php echo $p['payment_method']; ?></span></td>
                         <td class="receipt-id">#<?php echo $p['id']; ?></td>
-                        <td class="amount text-red-500">-Rs. <?php echo number_format($totalDiscount); ?></td>
-                        <td class="amount" style="color: <?= $brandColor ?>;">Rs. <?php echo number_format($p['amount_paid']); ?></td>
+                        <td class="amount text-red-500"><?php echo $disc > 0 ? '-Rs. ' . number_format($disc) : '-'; ?></td>
+                        <td class="amount <?php echo $debt > 0 ? 'text-amber-600 font-bold' : 'text-slate-400'; ?>">
+                            <?php echo $debt > 0 ? 'Rs. ' . number_format($debt) : 'Cleared'; ?>
+                        </td>
+                        <td class="amount" style="color: <?= $brandColor ?>;">Rs. <?php echo number_format($paid); ?></td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php
+                    // Calculate overall outstanding debt up to current month
+                    $currentMonth = date('Y-m');
+                    $student_previous_debt = $db->getStudentPreviousDebt($student['gr_no'], $currentMonth);
+                    $current_collections = $db->getFeeCollections(['gr_no' => $student['gr_no'], 'month' => $currentMonth]);
+                    $current_paid = 0;
+                    $current_due = $assignedMonthly;
+                    $current_discount = 0;
+                    if (!empty($current_collections)) {
+                        $c = $current_collections[0];
+                        $current_paid = (float)$c['amount_paid'];
+                        $current_due = (isset($c['tuition_fee']) && $c['tuition_fee'] !== '') ? (float)$c['tuition_fee'] : $assignedMonthly;
+                        $current_due += (float)($c['admission_fee'] ?? 0) + (float)($c['exam_fee'] ?? 0) + (float)($c['other_fee'] ?? 0);
+                        $current_discount = (float)($c['discount'] ?? 0);
+                    }
+                    $totalDebt = max(0.0, $current_due + $student_previous_debt - $current_discount - $current_paid);
+                    ?>
                 <?php endif; ?>
             </tbody>
         </table>
 
         <?php if (!empty($collections)): ?>
-        <div class="summary-box">
-            <div class="total-row">
-                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Balance Cleared</span>
+        <div class="summary-box" style="gap: 15px; display: flex; flex-direction: column; align-items: flex-end;">
+            <div class="total-row" style="background: #0f172a;">
+                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8;">Total Received</span>
                 <span>Rs. <?php echo number_format($totalPaid); ?></span>
             </div>
+            <?php if ($totalDebt > 0): ?>
+            <div class="total-row" style="background: #b45309; box-shadow: 0 10px 15px -3px rgba(180, 83, 9, 0.3); margin-top: 10px;">
+                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #fed7aa;">Remaining Dues</span>
+                <span>Rs. <?php echo number_format($totalDebt); ?></span>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

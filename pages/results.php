@@ -30,6 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $class = $_POST['class'];
         $examType = $_POST['exam_type'];
         $year = $_POST['year'];
+
+        if (isset($_POST['max_marks']) && is_array($_POST['max_marks'])) {
+            $db->saveSubjectMaxMarks($class, $examType, $year, $_POST['max_marks']);
+        }
         
         $count = 0;
         foreach ($results as $studentId => $marks) {
@@ -43,22 +47,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             
             if ($hasMarks) {
-                // Collect extra subjects
-                $extra = isset($marks['extra']) ? $marks['extra'] : [];
-                $jsonExtra = json_encode($extra);
+                $activeKeys = $db->getActiveSubjectKeys($class, $examType, $year);
+                $extra = isset($marks['other_subjects']) && is_array($marks['other_subjects']) ? $marks['other_subjects'] : [];
+                $filteredExtra = [];
+                foreach ($extra as $subjectKey => $value) {
+                    if (in_array($subjectKey, $activeKeys, true) && !$db->isStandardSubjectKey($subjectKey)) {
+                        $filteredExtra[$subjectKey] = $value;
+                    }
+                }
+                $jsonExtra = json_encode($filteredExtra);
                 
                 $resultData = [
                     'student_id' => $studentId,
                     'class' => $class,
                     'exam_type' => $examType,
                     'year' => $year,
-                    'english' => $marks['english'],
-                    'math' => $marks['math'],
-                    'social_studies' => $marks['social_studies'],
-                    'general_science' => $marks['general_science'],
-                    'mt' => $marks['mt'],
-                    'islamiyat' => $marks['islamiyat'],
-                    'nmt' => $marks['nmt'],
+                    'english' => in_array('english', $activeKeys, true) ? ($marks['english'] ?? 0) : 0,
+                    'math' => in_array('math', $activeKeys, true) ? ($marks['math'] ?? 0) : 0,
+                    'social_studies' => in_array('social_studies', $activeKeys, true) ? ($marks['social_studies'] ?? 0) : 0,
+                    'general_science' => in_array('general_science', $activeKeys, true) ? ($marks['general_science'] ?? 0) : 0,
+                    'mt' => in_array('mt', $activeKeys, true) ? ($marks['mt'] ?? 0) : 0,
+                    'islamiyat' => in_array('islamiyat', $activeKeys, true) ? ($marks['islamiyat'] ?? 0) : 0,
+                    'nmt' => in_array('nmt', $activeKeys, true) ? ($marks['nmt'] ?? 0) : 0,
                     'other_subjects' => $jsonExtra
                 ];
                 $db->addResult($resultData);
@@ -94,9 +104,9 @@ if (isset($_POST['delete_subject'])) {
 
     if ($class && $examType && $year && $subjectToDelete) {
         if ($db->deleteSubjectConfig($class, $examType, $year, $subjectToDelete)) {
-            $message = "Subject '$subjectToDelete' deleted successfully.";
+            $message = "Subject removed successfully.";
         } else {
-            $error = "Failed to delete subject.";
+            $error = "Could not remove subject. At least one subject must remain.";
         }
     }
 }
@@ -129,12 +139,14 @@ if (isset($_POST['reset_results'])) {
 
 $students = [];
 $existingResults = [];
-$extraSubjects = [];
+$activeSubjects = [];
+$subjectMaxMarks = [];
 
 if ($selectedClass && $selectedExam && $selectedYear) {
     $students = $db->getStudentsByClass($selectedClass);
     $existingResults = $db->getResults($selectedClass, $selectedExam, $selectedYear);
-    $extraSubjects = $db->getSubjectConfig($selectedClass, $selectedExam, $selectedYear);
+    $activeSubjects = $db->getActiveSubjects($selectedClass, $selectedExam, $selectedYear);
+    $subjectMaxMarks = $db->getSubjectMaxMarks($selectedClass, $selectedExam, $selectedYear);
 }
 ?>
 
@@ -193,7 +205,7 @@ if ($selectedClass && $selectedExam && $selectedYear) {
             </button>
 
              <button type="button" onclick="document.getElementById('addSubjectModal').classList.remove('hidden')" class="<?= ($selectedClass && $selectedExam && $selectedYear) ? '' : 'hidden' ?> bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-md hover:bg-indigo-200 transition duration-200 flex items-center whitespace-nowrap text-sm">
-                <i class="fas fa-plus mr-2 text-xs"></i> Add Subject
+                <i class="fas fa-book mr-2 text-xs"></i> Manage Subjects
             </button>
         </div>
     </form>
@@ -238,7 +250,7 @@ if ($selectedClass && $selectedExam && $selectedYear) {
     </div>
 </div>
 
-<!-- Add Subject Modal -->
+<!-- Manage Subjects Modal -->
 <div id="addSubjectModal" class="hidden fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="document.getElementById('addSubjectModal').classList.add('hidden')"></div>
@@ -246,25 +258,26 @@ if ($selectedClass && $selectedExam && $selectedYear) {
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
             <form method="POST">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Add New Subject</h3>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-1" id="modal-title">Manage Subjects</h3>
+                    <p class="text-sm text-gray-500 mb-4">Add or remove subjects for this class. Each class can have different subjects.</p>
                     <input type="hidden" name="class" id="modalClass" value="<?= $selectedClass ?>">
                     <input type="hidden" name="exam_type" id="modalExam" value="<?= $selectedExam ?>">
                     <input type="hidden" name="year" id="modalYear" value="<?= $selectedYear ?>">
                     
                     <div class="mb-4">
-                        <label for="new_subject_name" class="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
-                        <input type="text" name="new_subject_name" id="new_subject_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Computer, Drawing">
+                        <label for="new_subject_name" class="block text-sm font-medium text-gray-700 mb-1">Add New Subject</label>
+                        <input type="text" name="new_subject_name" id="new_subject_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Computer, Drawing, Haqu">
                     </div>
                     
-                    <?php if (!empty($extraSubjects)): ?>
+                    <?php if (!empty($activeSubjects)): ?>
                     <div class="mt-6 border-t pt-4">
-                        <h4 class="text-sm font-medium text-gray-700 mb-2">Current Extra Subjects</h4>
-                        <div class="space-y-2">
-                            <?php foreach ($extraSubjects as $subj): ?>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Current Subjects</h4>
+                        <div class="space-y-2 max-h-56 overflow-y-auto">
+                            <?php foreach ($activeSubjects as $subject): ?>
                             <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-200">
-                                <span class="text-sm text-gray-800 font-medium"><?= htmlspecialchars($subj) ?></span>
-                                <button type="submit" name="delete_subject" value="<?= htmlspecialchars($subj) ?>" onclick="this.form.querySelector('[id=new_subject_name]').removeAttribute('required'); return confirm('Are you sure you want to delete this subject?');" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                                    <i class="fas fa-trash-alt mr-1"></i> Delete
+                                <span class="text-sm text-gray-800 font-medium"><?= htmlspecialchars($subject['label']) ?></span>
+                                <button type="submit" name="delete_subject" value="<?= htmlspecialchars($subject['key']) ?>" onclick="return confirm('Remove <?= htmlspecialchars($subject['label']) ?> from this class?');" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1 rounded hover:bg-red-50 transition-colors" <?= count($activeSubjects) <= 1 ? 'disabled title="At least one subject required"' : '' ?>>
+                                    <i class="fas fa-trash-alt mr-1"></i> Remove
                                 </button>
                             </div>
                             <?php endforeach; ?>
@@ -277,13 +290,22 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         Add Subject
                     </button>
                     <button type="button" onclick="document.getElementById('addSubjectModal').classList.add('hidden')" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Cancel
+                        Close
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<?php if ($selectedClass && $selectedExam && $selectedYear): ?>
+<form id="deleteSubjectForm" method="POST" class="hidden">
+    <input type="hidden" name="class" value="<?= htmlspecialchars($selectedClass) ?>">
+    <input type="hidden" name="exam_type" value="<?= htmlspecialchars($selectedExam) ?>">
+    <input type="hidden" name="year" value="<?= htmlspecialchars($selectedYear) ?>">
+    <input type="hidden" name="delete_subject" id="deleteSubjectInput" value="">
+</form>
+<?php endif; ?>
 
 <?php if (!empty($students)): ?>
 <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
@@ -300,20 +322,35 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20 w-12 min-w-[3rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">S#</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[3rem] bg-gray-50 z-20 w-20 min-w-[5rem] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">GR NO</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[8rem] bg-gray-50 z-20 w-48 min-w-[12rem] shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">NAME</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">ENG</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">MATH</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">Social Studies</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">G.Science</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">MT</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">Islamyat</th>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">NMT</th>
-                        <?php foreach ($extraSubjects as $subj): ?>
-                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]"><?= strtoupper($subj) ?></th>
+                        <?php foreach ($activeSubjects as $subject): ?>
+                        <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">
+                            <div class="flex items-center justify-between gap-1">
+                                <span><?= htmlspecialchars($subject['label']) ?></span>
+                                <?php if (count($activeSubjects) > 1): ?>
+                                <button type="button" onclick="deleteSubject('<?= htmlspecialchars($subject['key'], ENT_QUOTES) ?>', '<?= htmlspecialchars($subject['label'], ENT_QUOTES) ?>')" class="text-red-500 hover:text-red-700 text-sm leading-none" title="Remove subject">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <?php endif; ?>
+                            </div>
+                        </th>
                         <?php endforeach; ?>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">TOTAL</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 min-w-[6rem]">PERCENTAGE</th>
                         <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 min-w-[4rem]">GRADE</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 min-w-[5rem]">ACTION</th>
+                    </tr>
+                    <tr class="bg-indigo-50 border-t border-indigo-100">
+                        <th colspan="3" class="px-3 py-2 text-left text-[10px] font-bold text-indigo-700 uppercase tracking-wider sticky left-0 bg-indigo-50 z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)]">
+                            Max Marks
+                        </th>
+                        <?php foreach ($activeSubjects as $subject): ?>
+                        <th class="px-2 py-2">
+                            <input type="number" name="max_marks[<?= htmlspecialchars($subject['key']) ?>]" value="<?= (int)($subjectMaxMarks[$subject['key']] ?? 100) ?>" min="1" max="500" class="max-marks-input w-16 px-1 py-1 border border-indigo-200 rounded text-xs text-center font-semibold text-indigo-800 bg-white focus:ring-indigo-500 focus:border-indigo-500" data-subject="<?= htmlspecialchars($subject['key']) ?>">
+                        </th>
+                        <?php endforeach; ?>
+                        <th colspan="4" class="px-2 py-2 text-[10px] text-indigo-600 italic font-medium">
+                            Set per subject, then save results
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -325,70 +362,22 @@ if ($selectedClass && $selectedExam && $selectedYear) {
                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 font-medium sticky left-0 bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-12 min-w-[3rem]"><?= $i++ ?></td>
                         <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-[3rem] bg-white z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-20 min-w-[5rem]"><?= $student['gr_no'] ?></td>
                         <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 sticky left-[8rem] bg-white z-20 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.1)] w-48 min-w-[12rem]"><?= $student['student_name'] ?></td>
-                        
+
+                        <?php foreach ($activeSubjects as $subject):
+                            if ($subject['type'] === 'standard') {
+                                $markValue = $result ? $result[$subject['key']] : '0';
+                                $inputName = 'results[' . $student['id'] . '][' . $subject['key'] . ']';
+                            } else {
+                                $markValue = isset($otherSubjects[$subject['key']]) ? $otherSubjects[$subject['key']] : '0';
+                                $inputName = 'results[' . $student['id'] . '][other_subjects][' . $subject['key'] . ']';
+                            }
+                            $isAbsent = strtoupper((string)$markValue) === 'A';
+                        ?>
                         <td class="px-2 py-2">
                             <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][english]" value="<?= $result ? $result['english'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['english']) === 'A') ? 'readonly' : '' ?>>
+                                <input type="text" name="<?= $inputName ?>" value="<?= htmlspecialchars($markValue) ?>" data-subject="<?= htmlspecialchars($subject['key']) ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= $isAbsent ? 'readonly' : '' ?>>
                                 <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['english']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][math]" value="<?= $result ? $result['math'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['math']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['math']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][social_studies]" value="<?= $result ? $result['social_studies'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['social_studies']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['social_studies']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][general_science]" value="<?= $result ? $result['general_science'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['general_science']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['general_science']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][mt]" value="<?= $result ? $result['mt'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['mt']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['mt']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][islamiyat]" value="<?= $result ? $result['islamiyat'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['islamiyat']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['islamiyat']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        <td class="px-2 py-2">
-                            <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][nmt]" value="<?= $result ? $result['nmt'] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= ($result && strtoupper($result['nmt']) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= ($result && strtoupper($result['nmt']) === 'A') ? 'checked' : '' ?>> A
-                                </label>
-                            </div>
-                        </td>
-                        
-                        <?php foreach ($extraSubjects as $subj): ?>
-                        <td class="px-2 py-2">
-                             <div class="flex items-center gap-1">
-                                <input type="text" name="results[<?= $student['id'] ?>][other_subjects][<?= htmlspecialchars($subj) ?>]" value="<?= isset($otherSubjects[$subj]) ? $otherSubjects[$subj] : '0' ?>" class="mark-input w-16 px-1 py-1 border rounded text-xs focus:ring-blue-500 focus:border-blue-500 text-center" placeholder="0" <?= (isset($otherSubjects[$subj]) && strtoupper($otherSubjects[$subj]) === 'A') ? 'readonly' : '' ?>>
-                                <label class="flex items-center text-[10px] text-gray-500 cursor-pointer hover:text-blue-600" title="Absent">
-                                    <input type="checkbox" class="absent-check scale-75" <?= (isset($otherSubjects[$subj]) && strtoupper($otherSubjects[$subj]) === 'A') ? 'checked' : '' ?>> A
+                                    <input type="checkbox" class="absent-check scale-75" <?= $isAbsent ? 'checked' : '' ?>> A
                                 </label>
                             </div>
                         </td>
@@ -437,16 +426,37 @@ if ($selectedClass && $selectedExam && $selectedYear) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('.mark-input');
+    const maxMarksInputs = document.querySelectorAll('.max-marks-input');
+
+    function getMaxMarksMap() {
+        const map = {};
+        document.querySelectorAll('.max-marks-input').forEach(input => {
+            const subject = input.dataset.subject;
+            const max = parseInt(input.value, 10);
+            map[subject] = (!isNaN(max) && max > 0) ? max : 100;
+        });
+        return map;
+    }
+
+    function getSubjectMax(subject) {
+        const map = getMaxMarksMap();
+        return map[subject] || 100;
+    }
     
     function calculateResults(row) {
         let total = 0;
-        let count = 0;
+        let totalMax = 0;
         let failedSubject = false;
         const rowInputs = row.querySelectorAll('.mark-input');
         
         rowInputs.forEach(input => {
+            const subject = input.dataset.subject;
+            const subjectMax = getSubjectMax(subject);
+            const passMark = subjectMax * 0.33;
             let rawVal = input.value.trim().toUpperCase();
             let val = 0;
+
+            totalMax += subjectMax;
 
             if (rawVal === 'A') {
                 failedSubject = true;
@@ -455,22 +465,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 val = parseFloat(rawVal);
                 if (isNaN(val)) val = 0;
                 
-                // Validate max 100
-                if (val > 100) {
-                    val = 100;
-                    input.value = 100;
+                if (val > subjectMax) {
+                    val = subjectMax;
+                    input.value = subjectMax;
                 } else if (val < 0) {
                     val = 0;
                     input.value = 0;
                 }
 
-                if (val < 33) {
+                if (val < passMark) {
                     failedSubject = true;
                 }
             }
             
             total += val;
-            count++;
         });
         
         // Update Total
@@ -479,9 +487,6 @@ document.addEventListener('DOMContentLoaded', function() {
             totalCell.textContent = total;
         }
 
-        // Calculate Grade
-        // Assuming 100 marks per subject
-        const totalMax = count * 100;
         const percentage = totalMax > 0 ? (total / totalMax) * 100 : 0;
         
         // Update Percentage Cell
@@ -507,6 +512,15 @@ document.addEventListener('DOMContentLoaded', function() {
             gradeCell.innerHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${grade}</span>`;
         }
     }
+
+    maxMarksInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const max = parseInt(this.value, 10);
+            if (!isNaN(max) && max < 1) this.value = 1;
+            if (!isNaN(max) && max > 500) this.value = 500;
+            document.querySelectorAll('tbody tr').forEach(row => calculateResults(row));
+        });
+    });
 
     inputs.forEach(input => {
         // Enforce basic validation
@@ -587,6 +601,21 @@ document.addEventListener('DOMContentLoaded', function() {
     classSelect.addEventListener('change', checkAndSubmit);
     examSelect.addEventListener('change', checkAndSubmit);
     yearSelect.addEventListener('change', checkAndSubmit);
+
+    document.querySelectorAll('tbody tr').forEach(row => calculateResults(row));
+
+    window.deleteSubject = function(subjectKey, subjectLabel) {
+        if (!confirm('Remove ' + subjectLabel + ' from this class?')) {
+            return;
+        }
+        const form = document.getElementById('deleteSubjectForm');
+        const input = document.getElementById('deleteSubjectInput');
+        if (!form || !input) {
+            return;
+        }
+        input.value = subjectKey;
+        form.submit();
+    };
 });
 </script>
 

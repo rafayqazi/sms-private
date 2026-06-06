@@ -71,9 +71,21 @@ if (!empty($stage)) {
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600"><?php echo htmlspecialchars($s['father_contact']); ?></td>
                     <td class="px-6 py-4">
-                        <span class="text-red-500 text-xs font-bold flex items-center gap-1">
-                            <i class="fas fa-exclamation-circle"></i> UNPAID
-                        </span>
+                        <?php if (($s['payment_status'] ?? 'Unpaid') === 'Partial'): ?>
+                            <span class="text-amber-600 text-xs font-bold flex flex-col gap-0.5">
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-exclamation-triangle"></i> PARTIAL
+                                </span>
+                                <span class="text-[10px] text-gray-500 font-medium font-mono">Dues: Rs. <?php echo number_format($s['debt']); ?></span>
+                            </span>
+                        <?php else: ?>
+                            <span class="text-red-500 text-xs font-bold flex flex-col gap-0.5">
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-exclamation-circle"></i> UNPAID
+                                </span>
+                                <span class="text-[10px] text-gray-500 font-medium font-mono">Dues: Rs. <?php echo number_format($s['debt']); ?></span>
+                            </span>
+                        <?php endif; ?>
                     </td>
                     <td class="px-6 py-4">
                         <button onclick="pickStudent('<?php echo $s['gr_no']; ?>', '<?php echo addslashes($s['student_name']); ?>')" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-700">

@@ -21,11 +21,11 @@ if (!isset($data['promotions']) || !is_array($data['promotions'])) {
 try {
     $db = new Database();
     $result = $db->bulkPromoteStudents($data['promotions']);
-    
-    if ($result) {
+
+    if ($result['saved'] || $result['promoted'] > 0) {
         echo json_encode([
             'success' => true,
-            'message' => count($data['promotions']) . ' students processed successfully'
+            'message' => $result['promoted'] . ' student(s) processed successfully'
         ]);
     } else {
         echo json_encode(['error' => 'Failed to process promotions']);

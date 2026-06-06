@@ -51,10 +51,33 @@ $unpaid_count = 0;
 $current_month = date('Y-m');
 $current_month_name = date('M Y'); // e.g. Mar 2026
 foreach ($children as $child) {
+    // Check if they have previous debt, or if they haven't paid for current month
+    $previous_debt = $db->getStudentPreviousDebt($child['gr_no'], $current_month);
+    if ($previous_debt > 0) {
+        $unpaid_count++;
+        continue;
+    }
+    
     $fee_history = $db->getStudentFeeHistory($child['gr_no']);
     $paid_months = array_column($fee_history, 'month_for');
     if (!in_array($current_month, $paid_months)) {
         $unpaid_count++;
+    } else {
+        // If they did pay for current month, check if they paid less than due
+        foreach ($fee_history as $h) {
+            if ($h['month_for'] === $current_month) {
+                $feeStructure = $db->getFeeStructure();
+                $classFees = $feeStructure[$child['current_class']] ?? ['monthly_fee' => 0];
+                $standardMonthly = (float)$classFees['monthly_fee'];
+                $due_tuition = (isset($h['tuition_fee']) && $h['tuition_fee'] !== '') ? (float)$h['tuition_fee'] : $standardMonthly;
+                
+                $expected = $due_tuition + (float)($h['admission_fee'] ?? 0) + (float)($h['exam_fee'] ?? 0) + (float)($h['other_fee'] ?? 0) - (float)($h['discount'] ?? 0);
+                if ((float)$h['amount_paid'] < $expected) {
+                    $unpaid_count++;
+                }
+                break;
+            }
+        }
     }
 }
 ?>

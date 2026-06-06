@@ -2,76 +2,68 @@
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
+require_once '../includes/fee_history_report.php';
+
 $month = $_GET['month'] ?? '';
 $gr_no = $_GET['gr_no'] ?? '';
 $class_filter = $_GET['class'] ?? '';
+$stage_filter = $_GET['stage'] ?? '';
+$search = trim($_GET['search'] ?? '');
+$sort = $_GET['sort'] ?? 'paid_first';
 
 $db = new Database();
-$filters = [];
-if ($month) $filters['month'] = $month;
-if ($gr_no) $filters['gr_no'] = $gr_no;
+$is_student_history = $gr_no && !$month && !$class_filter && !$stage_filter;
 
-$history = $db->getFeeCollections($filters);
+$reportRows = buildFeeHistoryReport($db, [
+    'month' => $month,
+    'class' => $class_filter,
+    'stage' => $stage_filter,
+    'search' => $search,
+    'gr_no' => $gr_no
+]);
 
-// Fetch all students
-$all_students = $db->readData();
+$display_list = array_map(function ($r) {
+    return [
+        'gr_no' => $r['gr_no'],
+        'student_name' => $r['student_name'],
+        'class' => $r['class'],
+        'payment' => $r['payment'] ?? null,
+        '_report' => $r
+    ];
+}, $reportRows);
 
-// Build display list
-$display_list = [];
-$is_student_history = $gr_no && !$month && !$class_filter;
+if (!$is_student_history && count($display_list) > 1) {
+    $feeStructure = $db->getFeeStructure();
+    $getSortTier = function($row) use ($feeStructure) {
+        $p = $row['payment'];
+        if (empty($p)) return 0;
 
-if ($month && !$gr_no) {
-    // Status View: Show all students in the filtered scope and their status for that specific month
-    foreach ($all_students as $s) {
-        $student_gr = $s['gr_no'];
-        $student_class = $s['current_class'];
-        
-        // Apply class filters
-        if ($class_filter && $student_class !== $class_filter) continue;
-        if (isset($s['student_status']) && $s['student_status'] === 'Alumni') continue;
+        $classFees = $feeStructure[$row['class']] ?? ['monthly_fee' => 0];
+        $assignedMonthly = (float)$classFees['monthly_fee'];
+        $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '' && (float)$p['tuition_fee'] > 0)
+            ? (float)$p['tuition_fee'] : $assignedMonthly;
+        $expected = $due_tuition
+            + (float)($p['admission_fee'] ?? 0)
+            + (float)($p['exam_fee'] ?? 0)
+            + (float)($p['other_fee'] ?? 0)
+            - (float)($p['discount'] ?? 0);
+        $debt = max(0.0, $expected - (float)$p['amount_paid']);
 
-        // Find payment for this month (if month provided)
-        $payment = null;
-        foreach ($history as $h) {
-            if ($h['gr_no'] == $student_gr) {
-                if (!$month || $h['month_for'] == $month) {
-                    $payment = $h;
-                    break;
-                }
-            }
+        return $debt > 0 ? 1 : 2;
+    };
+
+    usort($display_list, function($a, $b) use ($sort, $getSortTier) {
+        $tierA = $getSortTier($a);
+        $tierB = $getSortTier($b);
+
+        if ($sort === 'unpaid_first') {
+            if ($tierA !== $tierB) return $tierA - $tierB;
+        } else {
+            if ($tierA !== $tierB) return $tierB - $tierA;
         }
 
-        $display_list[] = [
-            'gr_no' => $student_gr,
-            'student_name' => $s['student_name'],
-            'class' => $student_class,
-            'payment' => $payment
-        ];
-    }
-} else {
-    // Transaction Mode: Show specific transactions (useful for full student history)
-    foreach ($history as $h) {
-        // Find student details
-        $s_name = 'Unknown';
-        $s_class = 'N/A';
-        foreach($all_students as $s) {
-            if ($s['gr_no'] == $h['gr_no']) { 
-                $s_name = $s['student_name']; 
-                $s_class = $s['current_class']; 
-                break; 
-            }
-        }
-        
-        // Apply class filter if present
-        if ($class_filter && $s_class !== $class_filter) continue;
-
-        $display_list[] = [
-            'gr_no' => $h['gr_no'],
-            'student_name' => $s_name,
-            'class' => $s_class,
-            'payment' => $h
-        ];
-    }
+        return strcasecmp($a['student_name'], $b['student_name']);
+    });
 }
 
 ?>
@@ -95,22 +87,43 @@ if ($month && !$gr_no) {
                 <th class="px-6 py-4">Student</th>
                 <th class="px-6 py-4">For Month</th>
                 <th class="px-6 py-4">Amount</th>
+                <th class="px-6 py-4">Remarks</th>
                 <th class="px-6 py-4">Method/Date</th>
                 <th class="px-6 py-4 text-right">Actions</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 bg-white">
             <?php if (empty($display_list)): ?>
-                <tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">No matching records found.</td></tr>
+                <tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 italic">No matching records found.</td></tr>
             <?php else: ?>
                 <?php foreach ($display_list as $row): ?>
-                <?php $p = $row['payment']; $isPaid = !empty($p); ?>
+                <?php 
+                $p = $row['payment']; 
+                $isPaid = !empty($p); 
+                $debt = (float)($row['_report']['remaining_debt'] ?? 0);
+                if ($isPaid && $debt <= 0) {
+                    $feeStructure = $db->getFeeStructure();
+                    $classFees = $feeStructure[$row['class']] ?? ['monthly_fee' => 0];
+                    $assignedMonthly = (float)$classFees['monthly_fee'];
+                    $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '' && (float)$p['tuition_fee'] > 0)
+                                   ? (float)$p['tuition_fee']
+                                   : $assignedMonthly;
+                    $expected = $due_tuition + (float)($p['admission_fee'] ?? 0) + (float)($p['exam_fee'] ?? 0) + (float)($p['other_fee'] ?? 0) - (float)($p['discount'] ?? 0);
+                    $debt = max(0.0, $expected - (float)$p['amount_paid']);
+                }
+                ?>
                 <tr class="hover:bg-gray-50 transition group">
                     <td class="px-6 py-4">
                         <?php if ($isPaid): ?>
-                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
-                                <i class="fas fa-check-circle"></i> Paid
-                            </span>
+                            <?php if ($debt > 0): ?>
+                                <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
+                                    <i class="fas fa-exclamation-triangle"></i> Partial
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
+                                    <i class="fas fa-check-circle"></i> Paid
+                                </span>
+                            <?php endif; ?>
                         <?php else: ?>
                             <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 w-fit">
                                 <i class="fas fa-clock"></i> Unpaid
@@ -137,8 +150,18 @@ if ($month && !$gr_no) {
                             <?php if($p['discount'] > 0): ?>
                                 <div class="text-[10px] text-red-500 font-medium">Disc: Rs. <?php echo number_format($p['discount']); ?></div>
                             <?php endif; ?>
+                            <?php if($debt > 0): ?>
+                                <div class="text-[10px] text-amber-600 font-bold font-mono">Dues: Rs. <?php echo number_format($debt); ?></div>
+                            <?php endif; ?>
                         <?php else: ?>
                             <span class="text-gray-300 italic text-sm">Pending</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500 max-w-[220px]">
+                        <?php if ($isPaid && !empty($p['notes'])): ?>
+                            <span class="italic leading-relaxed block whitespace-pre-line"><?php echo htmlspecialchars($p['notes']); ?></span>
+                        <?php else: ?>
+                            <span class="text-gray-300">—</span>
                         <?php endif; ?>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600">
@@ -152,10 +175,13 @@ if ($month && !$gr_no) {
                     <td class="px-6 py-4 text-right">
                         <?php if ($isPaid): ?>
                             <div class="flex items-center gap-2 justify-end">
+                                <button onclick="window.showStudentHistory('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="p-2 inline-flex items-center justify-center bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition shadow-sm" title="View Full History">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                                 <a href="print_receipt.php?id=<?php echo $p['id']; ?>" target="_blank" class="p-2 inline-flex items-center justify-center bg-gray-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition shadow-sm" title="Print Receipt">
                                     <i class="fas fa-print"></i>
                                 </a>
-                                <button onclick="window.selectStudentWithMonth('<?php echo $p['gr_no']; ?>', '<?php echo $p['month_for']; ?>')" class="p-2 inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm" title="Modify Entry">
+                                <button onclick="window.selectStudentWithMonth('<?php echo $p['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>', '<?php echo $p['month_for']; ?>')" class="p-2 inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm" title="Modify Entry">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button onclick="window.confirmDeletion('<?php echo $p['id']; ?>', '<?php echo date('F Y', strtotime($p['month_for'] . '-01')); ?>')" class="p-2 inline-flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm" title="Delete Entry">
@@ -163,9 +189,14 @@ if ($month && !$gr_no) {
                                 </button>
                             </div>
                         <?php else: ?>
-                            <button onclick="pickStudent('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5 ml-auto">
-                                <i class="fas fa-hand-holding-usd"></i> Collect
-                            </button>
+                            <div class="flex items-center gap-2 justify-end">
+                                <button onclick="window.showStudentHistory('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="p-2 inline-flex items-center justify-center bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition shadow-sm" title="View Full History">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="pickStudent('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5">
+                                    <i class="fas fa-hand-holding-usd"></i> Collect
+                                </button>
+                            </div>
                         <?php endif; ?>
                     </td>
                 </tr>

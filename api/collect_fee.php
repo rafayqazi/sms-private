@@ -21,17 +21,40 @@ if (!$gr_no || !$amount || !$month) {
 $db = new Database();
 $transaction_id = $_POST['transaction_id'] ?? '';
 
+// Overpayment validation
+$student = $db->getStudentByGrNo($gr_no);
+if (!$student) {
+    echo json_encode(['error' => 'Student not found']);
+    exit;
+}
+
+$previous_debt = $db->getStudentPreviousDebt($gr_no, $month);
+
+$tuition_fee = (float)($_POST['tuition_fee'] ?? 0);
+$admission_fee = (float)($_POST['admission_fee'] ?? 0);
+$exam_fee = (float)($_POST['exam_fee'] ?? 0);
+$other_fee = (float)($_POST['other_fee'] ?? 0);
+$discount = (float)($_POST['discount'] ?? 0);
+
+$total_due = $tuition_fee + $admission_fee + $exam_fee + $other_fee - $discount + $previous_debt;
+
+if ($amount > $total_due + 0.01) {
+    echo json_encode(['error' => 'Paid amount cannot exceed total dues (Rs. ' . $total_due . ')']);
+    exit;
+}
+
 $data = [
     'gr_no' => $gr_no,
     'month_for' => $month,
     'amount_paid' => $amount,
-    'discount' => $_POST['discount'] ?? 0,
+    'discount' => $discount,
     'payment_method' => $_POST['payment_method'] ?? 'Cash',
     'notes' => $_POST['notes'] ?? '',
-    'admission_fee' => $_POST['admission_fee'] ?? 0,
-    'exam_fee' => $_POST['exam_fee'] ?? 0,
-    'other_fee' => $_POST['other_fee'] ?? 0,
-    'other_label' => $_POST['other_label'] ?? ''
+    'admission_fee' => $admission_fee,
+    'exam_fee' => $exam_fee,
+    'other_fee' => $other_fee,
+    'other_label' => $_POST['other_label'] ?? '',
+    'tuition_fee' => $tuition_fee
 ];
 
 if ($transaction_id) {

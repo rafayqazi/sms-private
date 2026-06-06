@@ -17,7 +17,8 @@ $filters = [
     'gender' => $genderFilter,
     'religion' => $religionFilter,
     'sort_by' => $sortBy,
-    'order' => $order
+    'order' => $order,
+    'include_alumni' => isset($_GET['include_alumni']) && $_GET['include_alumni'] == '1'
 ];
 
 $students = $db->filterStudents($filters);

@@ -19,7 +19,7 @@ if (!$class || !$examType || !$year) {
 $db = new Database();
 $students = $db->getStudentsByClass($class);
 $existingResults = $db->getResults($class, $examType, $year);
-$extraSubjects = $db->getSubjectConfig($class, $examType, $year);
+$activeSubjects = $db->getActiveSubjects($class, $examType, $year);
 
 if (empty($students)) {
     echo '<tr><td colspan="12" class="px-6 py-4 text-center text-gray-500">No students found in this class.</td></tr>';
@@ -38,30 +38,27 @@ foreach ($students as $student) {
     // Name
     echo '<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 capitalize">' . htmlspecialchars($student['student_name']) . '</td>';
     
-    // Subjects
-    $subjects = ['english', 'math', 'social_studies', 'general_science', 'mt', 'islamiyat', 'nmt'];
-    foreach ($subjects as $subject) {
-        $val = $result ? $result[$subject] : '';
+    $otherSubjectsData = ($result && isset($result['other_subjects'])) ? json_decode($result['other_subjects'], true) : [];
+    if (!is_array($otherSubjectsData)) {
+        $otherSubjectsData = [];
+    }
+
+    foreach ($activeSubjects as $subject) {
+        if ($subject['type'] === 'standard') {
+            $val = $result ? $result[$subject['key']] : '';
+            $inputName = 'results[' . $studentId . '][' . $subject['key'] . ']';
+        } else {
+            $val = isset($otherSubjectsData[$subject['key']]) ? $otherSubjectsData[$subject['key']] : '';
+            $inputName = 'results[' . $studentId . '][other_subjects][' . htmlspecialchars($subject['key']) . ']';
+        }
+
         echo '<td class="px-2 py-3 whitespace-nowrap text-center">';
         echo '<input type="number" 
-               name="results[' . $studentId . '][' . $subject . ']" 
-               value="' . $val . '" 
+               name="' . $inputName . '" 
+               value="' . htmlspecialchars($val) . '" 
                class="mark-input w-16 text-center rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-1" 
                data-student-id="' . $studentId . '"
-               min="0" max="100">';
-        echo '</td>';
-    }
-    
-    // Dynamic Extra Subjects
-    $otherSubjectsData = ($result && isset($result['other_subjects'])) ? json_decode($result['other_subjects'], true) : [];
-    foreach ($extraSubjects as $subject) {
-        $val = isset($otherSubjectsData[$subject]) ? $otherSubjectsData[$subject] : '';
-        echo '<td class="px-2 py-3 whitespace-nowrap text-center bg-indigo-50/30">';
-        echo '<input type="number" 
-               name="results[' . $studentId . '][extra][' . htmlspecialchars($subject) . ']" 
-               value="' . $val . '" 
-               class="mark-input w-20 text-center rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-1" 
-               data-student-id="' . $studentId . '"
+               data-subject="' . htmlspecialchars($subject['key']) . '"
                min="0" max="100">';
         echo '</td>';
     }

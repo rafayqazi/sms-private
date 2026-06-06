@@ -24,6 +24,9 @@ if (file_exists($settingsFile)) {
 class Database {
     private $csvFile;
     public $headers;
+    private static $students_cache = null;
+    private static $fee_collections_cache = null;
+    private static $fee_structure_cache = null;
 
     public function __construct($file = null) {
         if ($file === null) {
@@ -69,6 +72,9 @@ class Database {
     }
 
     public function readData() {
+        if (self::$students_cache !== null) {
+            return self::$students_cache;
+        }
         $data = [];
         if (file_exists($this->csvFile) && ($handle = fopen($this->csvFile, "r")) !== FALSE) {
             $fileHeaders = fgetcsv($handle, 0, ","); // Skip headers
@@ -80,10 +86,12 @@ class Database {
             }
             fclose($handle);
         }
+        self::$students_cache = $data;
         return $data;
     }
 
     public function writeData($data) {
+        self::$students_cache = $data;
         $fp = @fopen($this->csvFile, 'w');
         if ($fp === false) {
             error_log("Failed to open CSV file for writing: " . $this->csvFile);
@@ -1141,6 +1149,54 @@ class Database {
         });
     }
 
+    public function getStudentFeeClass($student) {
+        if (!$student) return '';
+        $status = $student['student_status'] ?? 'Active';
+        if ($status === 'Alumni') {
+            return $student['last_class'] ?? $student['current_class'] ?? '';
+        }
+        return $student['current_class'] ?? '';
+    }
+
+    private function getStudentFeeCalcTargetMonth($student) {
+        $status = $student['student_status'] ?? 'Active';
+        if ($status === 'Alumni') {
+            $leaveMonth = !empty($student['updated_at'])
+                ? date('Y-m', strtotime($student['updated_at']))
+                : date('Y-m');
+            return date('Y-m', strtotime($leaveMonth . '-01 +1 month'));
+        }
+        return date('Y-m', strtotime(date('Y-m') . '-01 +1 month'));
+    }
+
+    public function getStudentTotalOutstandingFees($gr_no) {
+        $student = $this->getStudentByGrNo($gr_no);
+        if (!$student) return 0.0;
+
+        $feeStructure = $this->getFeeStructure();
+        $feeClass = $this->getStudentFeeClass($student);
+        $classFees = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
+        $standardMonthly = (float)$classFees['monthly_fee'];
+
+        $historyMap = [];
+        foreach ($this->getStudentFeeHistory($gr_no) as $h) {
+            $historyMap[$h['month_for']] = $h;
+        }
+
+        $targetMonth = $this->getStudentFeeCalcTargetMonth($student);
+
+        if (empty($historyMap)) {
+            if (($student['student_status'] ?? '') === 'Alumni') return 0.0;
+            return max(0.0, $standardMonthly);
+        }
+
+        return $this->calcDebtForStudent($student, $historyMap, $targetMonth, $standardMonthly);
+    }
+
+    public function hasClearedAllFees($gr_no) {
+        return $this->getStudentTotalOutstandingFees($gr_no) < 0.01;
+    }
+
     public function promoteStudent($id, $action) {
         return $this->bulkPromoteStudents([['id' => $id, 'action' => $action]]);
     }
@@ -1174,12 +1230,14 @@ class Database {
         }
 
         $modified = false;
+        $promoted = 0;
+
         foreach ($students as &$student) {
             $sid = $student['id'];
             if (isset($promoMap[$sid])) {
                 $action = $promoMap[$sid];
                 $currentClass = $student['current_class'] ?? '';
-                
+
                 if (!isset($student['student_status'])) $student['student_status'] = 'Active';
                 if (!isset($student['is_repeater'])) $student['is_repeater'] = '0';
 
@@ -1210,10 +1268,16 @@ class Database {
                 
                 $student['updated_at'] = date('Y-m-d H:i:s');
                 $modified = true;
+                $promoted++;
             }
         }
-        
-        return $modified ? $this->writeData($students) : true;
+
+        $saved = $modified ? $this->writeData($students) : false;
+
+        return [
+            'saved' => $saved,
+            'promoted' => $promoted
+        ];
     }
 
     public function createUserRole($teacherId, $role, $username, $password, $classes = [], $profileImage = '') {
@@ -1877,43 +1941,12 @@ class Database {
             }
         }
 
-        // Calculate Totals and Grade
-        $marks = [
-            $resultData['english'], $resultData['math'], $resultData['social_studies'], 
-            $resultData['general_science'], $resultData['mt'], $resultData['islamiyat'], $resultData['nmt']
-        ];
-        
-        // Add extra subjects to marks
-        $otherSubjects = isset($resultData['other_subjects']) ? json_decode($resultData['other_subjects'], true) : [];
-        if (!is_array($otherSubjects)) $otherSubjects = [];
-        foreach ($otherSubjects as $subject => $mark) {
-            $marks[] = $mark;
-        }
-
-        $failedSubject = false;
-        $totalObtained = 0;
-        foreach ($marks as $mark) {
-            $m = strtolower(trim($mark));
-            if ($m === 'a') {
-                $failedSubject = true;
-                $totalObtained += 0;
-            } else {
-                $val = (float)$mark;
-                if ($val < 33) $failedSubject = true;
-                $totalObtained += $val;
-            }
-        }
-
-        $totalMax = isset($resultData['total_max']) ? $resultData['total_max'] : (count($marks) * 100);
-        $percentage = ($totalMax > 0) ? ($totalObtained / $totalMax) * 100 : 0;
-        
-        if ($failedSubject) {
-            $grade = 'F';
-            $remarks = 'Fail';
-        } else {
-            $grade = $this->calculateGrade($percentage);
-            $remarks = $this->calculateRemarks($percentage);
-        }
+        $totals = $this->computeResultTotals($resultData);
+        $totalObtained = $totals['total_obtained'];
+        $totalMax = $totals['total_max'];
+        $percentage = $totals['percentage'];
+        $grade = $totals['grade'];
+        $remarks = $totals['remarks'];
 
         $record = [
             $id,
@@ -1974,42 +2007,12 @@ class Database {
             // New schema: id, student_id, class, exam_type, year, english...
             
             if ($row[0] == $id) {
-                // Recalculate
-                $marks = [
-                    $resultData['english'], $resultData['math'], $resultData['social_studies'], 
-                    $resultData['general_science'], $resultData['mt'], $resultData['islamiyat'], $resultData['nmt']
-                ];
-                
-                $otherSubjects = isset($resultData['other_subjects']) ? json_decode($resultData['other_subjects'], true) : [];
-                if (!is_array($otherSubjects)) $otherSubjects = [];
-                foreach ($otherSubjects as $subject => $mark) {
-                    $marks[] = $mark;
-                }
-                
-                $failedSubject = false;
-                $totalObtained = 0;
-                foreach ($marks as $mark) {
-                    $m = strtolower(trim($mark));
-                    if ($m === 'a') {
-                        $failedSubject = true;
-                        $totalObtained += 0;
-                    } else {
-                        $val = (float)$mark;
-                        if ($val < 33) $failedSubject = true;
-                        $totalObtained += $val;
-                    }
-                }
-
-                $totalMax = isset($resultData['total_max']) ? $resultData['total_max'] : (count($marks) * 100);
-                $percentage = ($totalMax > 0) ? ($totalObtained / $totalMax) * 100 : 0;
-                
-                if ($failedSubject) {
-                    $grade = 'F';
-                    $remarks = 'Fail';
-                } else {
-                    $grade = $this->calculateGrade($percentage);
-                    $remarks = $this->calculateRemarks($percentage);
-                }
+                $totals = $this->computeResultTotals($resultData);
+                $totalObtained = $totals['total_obtained'];
+                $totalMax = $totals['total_max'];
+                $percentage = $totals['percentage'];
+                $grade = $totals['grade'];
+                $remarks = $totals['remarks'];
 
                 $updatedRow = [
                     $id,
@@ -2289,66 +2292,292 @@ class Database {
         return 'Fail';
     }
 
-    // Dynamic Subject Configuration
-    public function getSubjectConfig($class, $examType, $year) {
-        $file = __DIR__ . '/../data/subject_config.json';
-        if (!file_exists($file)) return [];
-        
-        $config = json_decode(file_get_contents($file), true);
-        $key = "{$class}_{$examType}_{$year}";
-        
-        return isset($config[$key]) ? $config[$key] : [];
+    public function getStandardSubjectKeys() {
+        return ['english', 'math', 'social_studies', 'general_science', 'mt', 'islamiyat', 'nmt'];
     }
 
-    public function addSubjectConfig($class, $examType, $year, $subjectName) {
+    public function getStandardSubjectLabels() {
+        return [
+            'english' => 'ENG',
+            'math' => 'MATH',
+            'social_studies' => 'Social Studies',
+            'general_science' => 'G.Science',
+            'mt' => 'MT',
+            'islamiyat' => 'Islamyat',
+            'nmt' => 'NMT',
+        ];
+    }
+
+    public function getStandardSubjectPrintLabels() {
+        return [
+            'english' => 'English',
+            'math' => 'Mathematics',
+            'social_studies' => 'Social Studies',
+            'general_science' => 'General Science',
+            'mt' => 'Mother Tongue (MT)',
+            'islamiyat' => 'Islamiyat',
+            'nmt' => 'N.M.T',
+        ];
+    }
+
+    public function isStandardSubjectKey($subjectKey) {
+        return in_array($subjectKey, $this->getStandardSubjectKeys(), true);
+    }
+
+    private function getSubjectConfigStorageKey($class, $examType, $year) {
+        return "{$class}_{$examType}_{$year}";
+    }
+
+    private function readSubjectConfigFile() {
         $file = __DIR__ . '/../data/subject_config.json';
+        if (!file_exists($file)) {
+            return [];
+        }
+        $config = json_decode(file_get_contents($file), true);
+        return is_array($config) ? $config : [];
+    }
+
+    private function writeSubjectConfigFile($config) {
+        $file = __DIR__ . '/../data/subject_config.json';
+        file_put_contents($file, json_encode($config, JSON_PRETTY_PRINT));
+    }
+
+    public function getActiveSubjectKeys($class, $examType, $year) {
+        $config = $this->readSubjectConfigFile();
+        $storageKey = $this->getSubjectConfigStorageKey($class, $examType, $year);
+
+        if (!isset($config[$storageKey])) {
+            return $this->getStandardSubjectKeys();
+        }
+
+        $entry = $config[$storageKey];
+
+        if (is_array($entry) && isset($entry['active']) && is_array($entry['active'])) {
+            return array_values($entry['active']);
+        }
+
+        if (is_array($entry)) {
+            $hasStandardKey = false;
+            foreach ($entry as $item) {
+                if ($this->isStandardSubjectKey($item)) {
+                    $hasStandardKey = true;
+                    break;
+                }
+            }
+
+            if (!$hasStandardKey) {
+                return array_merge($this->getStandardSubjectKeys(), $entry);
+            }
+
+            return array_values($entry);
+        }
+
+        return $this->getStandardSubjectKeys();
+    }
+
+    private function saveActiveSubjectKeys($class, $examType, $year, $activeKeys) {
+        $config = $this->readSubjectConfigFile();
+        $storageKey = $this->getSubjectConfigStorageKey($class, $examType, $year);
+        $config[$storageKey] = ['active' => array_values(array_unique($activeKeys))];
+        $this->writeSubjectConfigFile($config);
+        return true;
+    }
+
+    public function getActiveSubjects($class, $examType, $year) {
+        $labels = $this->getStandardSubjectLabels();
+        $printLabels = $this->getStandardSubjectPrintLabels();
+        $subjects = [];
+
+        foreach ($this->getActiveSubjectKeys($class, $examType, $year) as $subjectKey) {
+            if ($this->isStandardSubjectKey($subjectKey)) {
+                $subjects[] = [
+                    'key' => $subjectKey,
+                    'label' => $labels[$subjectKey],
+                    'print_label' => $printLabels[$subjectKey],
+                    'type' => 'standard',
+                ];
+            } else {
+                $subjects[] = [
+                    'key' => $subjectKey,
+                    'label' => strtoupper($subjectKey),
+                    'print_label' => ucfirst($subjectKey),
+                    'type' => 'extra',
+                ];
+            }
+        }
+
+        return $subjects;
+    }
+
+    public function removeSubjectMaxMark($class, $examType, $year, $subjectKey) {
+        $file = __DIR__ . '/../data/subject_max_marks.json';
+        if (!file_exists($file)) {
+            return;
+        }
+
+        $config = json_decode(file_get_contents($file), true);
+        if (!is_array($config)) {
+            return;
+        }
+
+        $storageKey = $this->getSubjectConfigStorageKey($class, $examType, $year);
+        if (isset($config[$storageKey][$subjectKey])) {
+            unset($config[$storageKey][$subjectKey]);
+            file_put_contents($file, json_encode($config, JSON_PRETTY_PRINT));
+        }
+    }
+
+    public function getSubjectMaxMarks($class, $examType, $year) {
+        $defaults = [];
+        foreach ($this->getActiveSubjectKeys($class, $examType, $year) as $key) {
+            $defaults[$key] = 100;
+        }
+
+        $file = __DIR__ . '/../data/subject_max_marks.json';
+        if (!file_exists($file)) {
+            return $defaults;
+        }
+
+        $config = json_decode(file_get_contents($file), true);
+        if (!is_array($config)) {
+            return $defaults;
+        }
+
+        $key = "{$class}_{$examType}_{$year}";
+        if (!isset($config[$key]) || !is_array($config[$key])) {
+            return $defaults;
+        }
+
+        return array_merge($defaults, $config[$key]);
+    }
+
+    public function saveSubjectMaxMarks($class, $examType, $year, $marks) {
+        $file = __DIR__ . '/../data/subject_max_marks.json';
         $config = [];
         if (file_exists($file)) {
-            $content = file_get_contents($file);
-            $decoded = json_decode($content, true);
+            $decoded = json_decode(file_get_contents($file), true);
             if (is_array($decoded)) {
                 $config = $decoded;
             }
         }
-        
+
         $key = "{$class}_{$examType}_{$year}";
-        if (!isset($config[$key])) {
-            $config[$key] = [];
+        $cleaned = [];
+        foreach ($marks as $subject => $value) {
+            $max = (int)$value;
+            if ($max > 0) {
+                $cleaned[$subject] = $max;
+            }
         }
-        
-        // Avoid duplicates
-        if (!in_array($subjectName, $config[$key])) {
-            $config[$key][] = $subjectName;
-            file_put_contents($file, json_encode($config, JSON_PRETTY_PRINT));
-            return true;
+
+        $config[$key] = $cleaned;
+        file_put_contents($file, json_encode($config, JSON_PRETTY_PRINT));
+        return true;
+    }
+
+    private function computeResultTotals($resultData) {
+        $otherSubjects = isset($resultData['other_subjects']) ? json_decode($resultData['other_subjects'], true) : [];
+        if (!is_array($otherSubjects)) {
+            $otherSubjects = [];
         }
-        return false;
+
+        $activeKeys = $this->getActiveSubjectKeys(
+            $resultData['class'],
+            $resultData['exam_type'],
+            $resultData['year']
+        );
+        $maxMarksConfig = $this->getSubjectMaxMarks(
+            $resultData['class'],
+            $resultData['exam_type'],
+            $resultData['year']
+        );
+
+        $failedSubject = false;
+        $totalObtained = 0;
+        $totalMax = 0;
+
+        foreach ($activeKeys as $subjectKey) {
+            if ($this->isStandardSubjectKey($subjectKey)) {
+                $mark = $resultData[$subjectKey] ?? 0;
+            } else {
+                $mark = $otherSubjects[$subjectKey] ?? 0;
+            }
+
+            $max = (int)($maxMarksConfig[$subjectKey] ?? 100);
+            $totalMax += $max;
+            $passMark = $max * 0.33;
+
+            $m = strtolower(trim((string)$mark));
+            if ($m === 'a') {
+                $failedSubject = true;
+            } else {
+                $val = (float)$mark;
+                if ($val < $passMark) {
+                    $failedSubject = true;
+                }
+                $totalObtained += $val;
+            }
+        }
+
+        $percentage = ($totalMax > 0) ? ($totalObtained / $totalMax) * 100 : 0;
+
+        if ($failedSubject) {
+            $grade = 'F';
+            $remarks = 'Fail';
+        } else {
+            $grade = $this->calculateGrade($percentage);
+            $remarks = $this->calculateRemarks($percentage);
+        }
+
+        return [
+            'total_obtained' => $totalObtained,
+            'total_max' => $totalMax,
+            'percentage' => round($percentage, 2),
+            'grade' => $grade,
+            'remarks' => $remarks
+        ];
+    }
+
+    // Dynamic Subject Configuration
+    public function getSubjectConfig($class, $examType, $year) {
+        return array_values(array_filter(
+            $this->getActiveSubjectKeys($class, $examType, $year),
+            function ($key) {
+                return !$this->isStandardSubjectKey($key);
+            }
+        ));
+    }
+
+    public function addSubjectConfig($class, $examType, $year, $subjectName) {
+        $subjectName = trim($subjectName);
+        if ($subjectName === '') {
+            return false;
+        }
+
+        $activeKeys = $this->getActiveSubjectKeys($class, $examType, $year);
+        if (in_array($subjectName, $activeKeys, true)) {
+            return false;
+        }
+
+        $activeKeys[] = $subjectName;
+        return $this->saveActiveSubjectKeys($class, $examType, $year, $activeKeys);
     }
 
     public function deleteSubjectConfig($class, $examType, $year, $subjectName) {
-        $file = __DIR__ . '/../data/subject_config.json';
-        if (!file_exists($file)) return false;
-        
-        $config = json_decode(file_get_contents($file), true);
-        if (!is_array($config)) return false;
-        
-        $key = "{$class}_{$examType}_{$year}";
-        if (isset($config[$key])) {
-            $index = array_search($subjectName, $config[$key]);
-            if ($index !== false) {
-                // Remove subject
-                array_splice($config[$key], $index, 1);
-                
-                // If empty, removing the key is cleaner but keeping it empty is fine too
-                if (empty($config[$key])) {
-                    unset($config[$key]);
-                }
-                
-                file_put_contents($file, json_encode($config, JSON_PRETTY_PRINT));
-                return true;
-            }
+        $activeKeys = $this->getActiveSubjectKeys($class, $examType, $year);
+        $index = array_search($subjectName, $activeKeys, true);
+        if ($index === false) {
+            return false;
         }
-        return false;
+
+        if (count($activeKeys) <= 1) {
+            return false;
+        }
+
+        array_splice($activeKeys, $index, 1);
+        $this->saveActiveSubjectKeys($class, $examType, $year, $activeKeys);
+        $this->removeSubjectMaxMark($class, $examType, $year, $subjectName);
+        return true;
     }
 
     public function saveExamAttendance($examName, $class, $subject, $date, $attendanceData, $time = '') {
@@ -3287,6 +3516,9 @@ class Database {
     // --- Fee Management Methods ---
 
     public function getFeeStructure() {
+        if (self::$fee_structure_cache !== null) {
+            return self::$fee_structure_cache;
+        }
         $file = __DIR__ . '/../data/fee_structure.csv';
         $structure = [];
         if (file_exists($file)) {
@@ -3306,10 +3538,12 @@ class Database {
                 fclose($handle);
             }
         }
+        self::$fee_structure_cache = $structure;
         return $structure;
     }
 
     public function updateFeeStructure($data) {
+        self::$fee_structure_cache = null;
         $file = __DIR__ . '/../data/fee_structure.csv';
         $fp = fopen($file, 'w');
         fputcsv($fp, ['class_name', 'monthly_fee', 'admission_fee', 'exam_fee', 'updated_at']);
@@ -3327,8 +3561,9 @@ class Database {
     }
 
     public function recordFeePayment($data) {
+        self::$fee_collections_cache = null;
         $file = __DIR__ . '/../data/fee_collections.csv';
-        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label'];
+        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee'];
         
         $id = time() . rand(100, 999);
         $row = [
@@ -3344,7 +3579,8 @@ class Database {
             $data['admission_fee'] ?? 0,
             $data['exam_fee'] ?? 0,
             $data['other_fee'] ?? 0,
-            $data['other_label'] ?? ''
+            $data['other_label'] ?? '',
+            $data['tuition_fee'] ?? 0
         ];
 
         $fp = fopen($file, 'a');
@@ -3354,8 +3590,9 @@ class Database {
     }
 
     public function updateFeePayment($id, $data) {
+        self::$fee_collections_cache = null;
         $file = __DIR__ . '/../data/fee_collections.csv';
-        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label'];
+        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee'];
         
         $collections = [];
         if (($handle = fopen($file, "r")) !== FALSE) {
@@ -3378,6 +3615,7 @@ class Database {
                     $row[10] = $data['exam_fee'] ?? ($row[10] ?? 0);
                     $row[11] = $data['other_fee'] ?? ($row[11] ?? 0);
                     $row[12] = $data['other_label'] ?? ($row[12] ?? '');
+                    $row[13] = $data['tuition_fee'] ?? ($row[13] ?? 0);
                 }
                 $collections[] = $row;
             }
@@ -3393,7 +3631,62 @@ class Database {
         return true;
     }
 
+    public function addStudentFeeArrears($gr_no, $month_for, $amount, $remarks) {
+        $amount = (float)$amount;
+        if ($amount <= 0) return false;
+
+        $student = $this->getStudentByGrNo($gr_no);
+        if (!$student) return false;
+
+        $feeStructure = $this->getFeeStructure();
+        $classFees = $feeStructure[$student['current_class']] ?? ['monthly_fee' => 0];
+        $standardMonthly = (float)$classFees['monthly_fee'];
+
+        $noteEntry = '[Arrears +Rs.' . number_format($amount, 0) . '] ' . trim($remarks);
+        $existing = null;
+        foreach ($this->getStudentFeeHistory($gr_no) as $h) {
+            if ($h['month_for'] === $month_for) {
+                $existing = $h;
+                break;
+            }
+        }
+
+        if ($existing) {
+            $currentTuition = (isset($existing['tuition_fee']) && $existing['tuition_fee'] !== '' && (float)$existing['tuition_fee'] > 0)
+                ? (float)$existing['tuition_fee'] : $standardMonthly;
+            $newNotes = trim(($existing['notes'] ?? ''));
+            $newNotes = $newNotes !== '' ? $newNotes . "\n" . $noteEntry : $noteEntry;
+
+            return $this->updateFeePayment($existing['id'], [
+                'month_for' => $month_for,
+                'amount_paid' => (float)$existing['amount_paid'],
+                'discount' => (float)($existing['discount'] ?? 0),
+                'payment_method' => $existing['payment_method'] ?? 'Arrears',
+                'notes' => $newNotes,
+                'admission_fee' => (float)($existing['admission_fee'] ?? 0),
+                'exam_fee' => (float)($existing['exam_fee'] ?? 0),
+                'other_fee' => (float)($existing['other_fee'] ?? 0),
+                'other_label' => $existing['other_label'] ?? '',
+                'tuition_fee' => $currentTuition + $amount
+            ]);
+        }
+
+        $id = $this->recordFeePayment([
+            'gr_no' => $gr_no,
+            'month_for' => $month_for,
+            'amount_paid' => 0,
+            'tuition_fee' => $amount,
+            'discount' => 0,
+            'payment_method' => 'Arrears',
+            'notes' => $noteEntry,
+            'payment_date' => date('Y-m-d')
+        ]);
+
+        return (bool)$id;
+    }
+
     public function deleteFeePayment($id) {
+        self::$fee_collections_cache = null;
         $file = __DIR__ . '/../data/fee_collections.csv';
         if (!file_exists($file)) return false;
 
@@ -3424,31 +3717,38 @@ class Database {
     }
 
     public function getFeeCollections($filters = []) {
-        $file = __DIR__ . '/../data/fee_collections.csv';
-        $collections = [];
-        if (file_exists($file)) {
-            if (($handle = fopen($file, "r")) !== FALSE) {
-                $headers = fgetcsv($handle);
-                while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-                    $item = $this->safeCombine($headers, $row);
-                    
-                    $match = true;
-                    if (isset($filters['gr_no']) && $item['gr_no'] != $filters['gr_no']) $match = false;
-                    if (isset($filters['month']) && $item['month_for'] != $filters['month']) $match = false;
-                    if (isset($filters['id']) && $item['id'] != $filters['id']) $match = false;
-                    
-                    if ($match) {
+        if (self::$fee_collections_cache === null) {
+            $file = __DIR__ . '/../data/fee_collections.csv';
+            $collections = [];
+            if (file_exists($file)) {
+                if (($handle = fopen($file, "r")) !== FALSE) {
+                    $headers = fgetcsv($handle);
+                    while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                        $item = $this->safeCombine($headers, $row);
                         $collections[] = $item;
                     }
+                    fclose($handle);
                 }
-                fclose($handle);
+            }
+            // Latest first
+            usort($collections, function($a, $b) {
+                return strcmp($b['payment_date'], $a['payment_date']);
+            });
+            self::$fee_collections_cache = $collections;
+        }
+        
+        $filtered = [];
+        foreach (self::$fee_collections_cache as $item) {
+            $match = true;
+            if (isset($filters['gr_no']) && $item['gr_no'] != $filters['gr_no']) $match = false;
+            if (isset($filters['month']) && $item['month_for'] != $filters['month']) $match = false;
+            if (isset($filters['id']) && $item['id'] != $filters['id']) $match = false;
+            
+            if ($match) {
+                $filtered[] = $item;
             }
         }
-        // Latest first
-        usort($collections, function($a, $b) {
-            return strcmp($b['payment_date'], $a['payment_date']);
-        });
-        return $collections;
+        return $filtered;
     }
 
     public function getStudentFeeHistory($gr_no) {
@@ -3490,17 +3790,196 @@ class Database {
         return $stats;
     }
 
+    /**
+     * Internal helper: calculates previous debt for one student.
+     * Accepts pre-fetched data to avoid repeated DB scans.
+     *
+     * Debt is counted from the FIRST MONTH the student ever had a fee record,
+     * NOT from their admission_date. This prevents phantom arrears from months
+     * before the fee system was in use for that student.
+     *
+     * @param array  $student              Student record array.
+     * @param array  $studentHistoryMap    Map of month_for => payment record for this student.
+     * @param string $target_month         YYYY-MM format (exclusive upper bound).
+     * @param float  $standard_monthly_fee The class's monthly fee.
+     * @return float
+     */
+    private function calcDebtBreakdownForStudent($student, $studentHistoryMap, $target_month, $standard_monthly_fee) {
+        if (empty($studentHistoryMap)) {
+            return [];
+        }
+
+        $fee_start_month = null;
+        foreach ($studentHistoryMap as $m => $h) {
+            if ($fee_start_month === null || $m < $fee_start_month) {
+                $fee_start_month = $m;
+            }
+        }
+
+        if ($fee_start_month >= $target_month) {
+            return [];
+        }
+
+        $start = new DateTime($fee_start_month . '-01');
+        $end   = new DateTime($target_month    . '-01');
+        $breakdown = [];
+
+        while ($start < $end) {
+            $m = $start->format('Y-m');
+            if (isset($studentHistoryMap[$m])) {
+                $h = $studentHistoryMap[$m];
+                $due_tuition = (isset($h['tuition_fee']) && $h['tuition_fee'] !== '') ? (float)$h['tuition_fee'] : $standard_monthly_fee;
+                $month_dues  = $due_tuition
+                             + (float)($h['admission_fee'] ?? 0)
+                             + (float)($h['exam_fee']     ?? 0)
+                             + (float)($h['other_fee']    ?? 0)
+                             - (float)($h['discount']     ?? 0);
+                $paid = (float)$h['amount_paid'];
+                $balance = $month_dues - $paid;
+                if ($balance > 0) {
+                    $breakdown[] = [
+                        'month' => $m,
+                        'due' => $month_dues,
+                        'paid' => $paid,
+                        'balance' => $balance,
+                        'status' => 'partial'
+                    ];
+                }
+            } else {
+                $breakdown[] = [
+                    'month' => $m,
+                    'due' => $standard_monthly_fee,
+                    'paid' => 0.0,
+                    'balance' => $standard_monthly_fee,
+                    'status' => 'unpaid'
+                ];
+            }
+            $start->modify('+1 month');
+        }
+
+        return $breakdown;
+    }
+
+    private function calcDebtForStudent($student, $studentHistoryMap, $target_month, $standard_monthly_fee) {
+        $breakdown = $this->calcDebtBreakdownForStudent($student, $studentHistoryMap, $target_month, $standard_monthly_fee);
+        $total = 0.0;
+        foreach ($breakdown as $row) {
+            $total += $row['balance'];
+        }
+        return max(0.0, $total);
+    }
+
+    public function getStudentPreviousDebtBreakdown($gr_no, $target_month) {
+        $student = $this->getStudentByGrNo($gr_no);
+        if (!$student) return [];
+
+        $feeStructure = $this->getFeeStructure();
+        $feeClass = $this->getStudentFeeClass($student);
+        $classFees = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
+        $standard_monthly_fee = (float)$classFees['monthly_fee'];
+
+        $history = $this->getStudentFeeHistory($gr_no);
+        $historyMap = [];
+        foreach ($history as $h) {
+            $historyMap[$h['month_for']] = $h;
+        }
+
+        return $this->calcDebtBreakdownForStudent($student, $historyMap, $target_month, $standard_monthly_fee);
+    }
+
+
+    /**
+     * Returns cumulative unpaid debt for a student up to (but not including) $target_month.
+     * Used by the single-student API path (get_fee_status.php).
+     */
+    public function getStudentPreviousDebt($gr_no, $target_month) {
+        $student = $this->getStudentByGrNo($gr_no);
+        if (!$student) return 0;
+
+        $feeStructure = $this->getFeeStructure();
+        $feeClass = $this->getStudentFeeClass($student);
+        $classFees    = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
+        $standard_monthly_fee = (float)$classFees['monthly_fee'];
+
+        $history = $this->getStudentFeeHistory($gr_no);
+        $historyMap = [];
+        foreach ($history as $h) {
+            $historyMap[$h['month_for']] = $h;
+        }
+
+        return $this->calcDebtForStudent($student, $historyMap, $target_month, $standard_monthly_fee);
+    }
+
+    /**
+     * Returns all students who have not fully paid for $month.
+     * Optimized: builds all lookup maps once outside the per-student loop
+     * so complexity is O(N + M) instead of O(N * (N + M)).
+     */
     public function getDefaulters($month = null) {
         if (!$month) $month = date('Y-m');
-        
-        $students = $this->readData(); // All active students
-        $collections = $this->getFeeCollections(['month' => $month]);
-        $paid_gr_nos = array_column($collections, 'gr_no');
-        
+
+        $students      = $this->readData();
+        $feeStructure  = $this->getFeeStructure();
+        $allCollections = $this->getFeeCollections(); // all records (cached)
+
+        // --- Build maps ---
+
+        // 1. Collections for the target month, keyed by gr_no
+        $monthCollectionsMap = [];
+        foreach ($allCollections as $c) {
+            if ($c['month_for'] === $month) {
+                $monthCollectionsMap[$c['gr_no']] = $c;
+            }
+        }
+
+        // 2. All historical collections grouped by gr_no, then by month_for
+        //    [ gr_no => [ month_for => record ] ]
+        $allHistoryByGrNo = [];
+        foreach ($allCollections as $c) {
+            $allHistoryByGrNo[$c['gr_no']][$c['month_for']] = $c;
+        }
+
+        // --- Identify defaulters ---
         $defaulters = [];
         foreach ($students as $s) {
-            if ($s['student_status'] === 'Active' && !in_array($s['gr_no'], $paid_gr_nos)) {
-                $defaulters[] = $s;
+            $status = $s['student_status'] ?? '';
+            if ($status !== 'Active' && $status !== '0' && $status !== '') continue;
+
+            $gr    = $s['gr_no'];
+            $class = $s['current_class'];
+            $classFees      = $feeStructure[$class] ?? ['monthly_fee' => 0];
+            $assignedMonthly = (float)$classFees['monthly_fee'];
+
+            $studentHistoryMap = $allHistoryByGrNo[$gr] ?? [];
+            $previous_debt = $this->calcDebtForStudent($s, $studentHistoryMap, $month, $assignedMonthly);
+
+            if (!isset($monthCollectionsMap[$gr])) {
+                // Fully unpaid for this month
+                $total_due = $assignedMonthly + $previous_debt;
+                if ($total_due > 0) {
+                    $s['payment_status'] = 'Unpaid';
+                    $s['debt']           = $total_due;
+                    $defaulters[]        = $s;
+                }
+            } else {
+                // Check if only partially paid
+                $p        = $monthCollectionsMap[$gr];
+                $paid     = (float)$p['amount_paid'];
+                $discount = (float)($p['discount']     ?? 0);
+                $admFee   = (float)($p['admission_fee'] ?? 0);
+                $examFee  = (float)($p['exam_fee']      ?? 0);
+                $otherFee = (float)($p['other_fee']     ?? 0);
+
+                $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '')
+                               ? (float)$p['tuition_fee']
+                               : $assignedMonthly;
+
+                $expected = $due_tuition + $admFee + $examFee + $otherFee - $discount + $previous_debt;
+                if ($paid < $expected - 0.01) {
+                    $s['payment_status'] = $paid > 0 ? 'Partial' : 'Unpaid';
+                    $s['debt']           = $expected - $paid;
+                    $defaulters[]        = $s;
+                }
             }
         }
         return $defaulters;

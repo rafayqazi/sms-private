@@ -55,6 +55,11 @@ $suggestedNextClass = $progressionMap[$selectedClass] ?? 'Next Class';
     </div>
 </div>
 
+<div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg flex items-start gap-3">
+    <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+    <p class="text-sm text-blue-800"><strong>Note:</strong> Students can be promoted or passed out even with pending dues. Fee records remain in the Fees section — search by name or GR No to collect or view history later.</p>
+</div>
+
 <div id="bulk-mode-container" class="mode-container">
     <div class="bg-white rounded-lg shadow-lg p-6">
     <div class="mb-6 flex flex-col md:flex-row gap-4 items-end border-b border-gray-100 pb-6">
@@ -106,7 +111,10 @@ $suggestedNextClass = $progressionMap[$selectedClass] ?? 'Next Class';
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="studentsGrid">
-            <?php foreach ($students as $student): ?>
+            <?php foreach ($students as $student):
+                $outstanding = $db->getStudentTotalOutstandingFees($student['gr_no']);
+                $feesCleared = $outstanding < 0.01;
+            ?>
             <div class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all bg-white group" data-student-id="<?php echo $student['id']; ?>">
                 <div class="flex items-center gap-4 mb-4">
                     <div class="relative">
@@ -129,14 +137,25 @@ $suggestedNextClass = $progressionMap[$selectedClass] ?? 'Next Class';
                     <div><span class="block font-bold text-[10px] text-gray-400 uppercase">Current Class</span> <?php echo htmlspecialchars($student['current_class']); ?></div>
                 </div>
 
+                <?php if ($feesCleared): ?>
+                <div class="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-bold flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i> Fees Cleared
+                </div>
+                <?php else: ?>
+                <div class="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-bold">
+                    <div class="flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> Fees Pending: Rs. <?php echo number_format($outstanding); ?></div>
+                    <div class="text-[10px] font-medium text-amber-600 mt-1">Can collect later from Fees page</div>
+                </div>
+                <?php endif; ?>
+
                 <div class="border-t pt-3">
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Decision</label>
                     <div class="space-y-2">
-                        <label class="flex items-center p-2 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors border border-transparent hover:border-emerald-100 group/option">
+                        <label class="flex items-center p-2 rounded-lg hover:bg-emerald-50 cursor-pointer hover:border-emerald-100 transition-colors border border-transparent group/option">
                             <input type="radio" name="promotion_<?php echo $student['id']; ?>" value="pass" class="mr-3 text-emerald-600 focus:ring-emerald-500" checked>
                             <span class="text-sm font-bold text-gray-600 group-hover/option:text-emerald-700">Promote to <?php echo htmlspecialchars($suggestedNextClass); ?></span>
                         </label>
-                        <label class="flex items-center p-2 rounded-lg hover:bg-amber-50 cursor-pointer transition-colors border border-transparent hover:border-amber-100 group/option">
+                        <label class="flex items-center p-2 rounded-lg hover:bg-amber-50 cursor-pointer hover:border-amber-100 transition-colors border border-transparent group/option">
                             <input type="radio" name="promotion_<?php echo $student['id']; ?>" value="passout" class="mr-3 text-amber-600 focus:ring-amber-500">
                             <span class="text-sm font-bold text-gray-600 group-hover/option:text-amber-700">Pass Out (Alumni)</span>
                         </label>
@@ -294,12 +313,18 @@ searchInput.addEventListener('input', function() {
                 let html = '';
                 data.forEach(student => {
                     const initial = student.student_name ? student.student_name[0].toUpperCase() : '?';
+                    const feesCleared = student.fees_cleared;
+                    const outstanding = Number(student.outstanding_fees || 0);
+                    const feeBadge = feesCleared
+                        ? `<div class="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 font-bold"><i class="fas fa-check-circle mr-1"></i> Fees Cleared</div>`
+                        : `<div class="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Fees Pending: Rs. ${outstanding.toLocaleString()}<div class="text-[10px] font-medium text-amber-600 mt-1">Can collect later from Fees page</div></div>`;
+
                     html += `
                     <div class="border border-indigo-100 rounded-xl p-5 hover:shadow-xl transition-all bg-white group" data-student-id="${student.id}">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="relative">
                                 ${student.profile_image ? `<img src="${student.profile_image}" class="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-50">` : `<div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">${initial}</div>`}
-                                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 ${feesCleared ? 'bg-green-500' : 'bg-amber-500'} border-2 border-white rounded-full"></div>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-bold text-gray-900 group-hover:text-primary transition-colors truncate">${student.student_name}</h3>
@@ -312,14 +337,16 @@ searchInput.addEventListener('input', function() {
                              <div><span class="opacity-60 block uppercase text-[9px] font-bold">Class</span> ${student.current_class}</div>
                         </div>
 
+                        ${feeBadge}
+
                         <div class="border-t pt-4">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Promotion Decision</label>
                             <div class="space-y-3">
-                                <label class="flex items-center p-2 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors border border-transparent hover:border-emerald-100">
-                                    <input type="radio" name="promotion_${student.id}" value="pass" class="mr-3 text-emerald-600 focus:ring-emerald-500">
+                                <label class="flex items-center p-2 rounded-lg hover:bg-emerald-50 cursor-pointer hover:border-emerald-100 transition-colors border border-transparent">
+                                    <input type="radio" name="promotion_${student.id}" value="pass" class="mr-3 text-emerald-600 focus:ring-emerald-500" checked>
                                     <span class="text-sm font-semibold text-emerald-800">✓ Promote to Next</span>
                                 </label>
-                                <label class="flex items-center p-2 rounded-lg hover:bg-amber-50 cursor-pointer transition-colors border border-transparent hover:border-amber-100">
+                                <label class="flex items-center p-2 rounded-lg hover:bg-amber-50 cursor-pointer hover:border-amber-100 transition-colors border border-transparent">
                                     <input type="radio" name="promotion_${student.id}" value="passout" class="mr-3 text-amber-600 focus:ring-amber-500">
                                     <span class="text-sm font-bold text-amber-700">🎓 Mark as Pass Out</span>
                                 </label>
@@ -436,7 +463,7 @@ function applyPromotions(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showModal('success', 'Success', `Successfully processed ${promotions.length} student(s)!`);
+            showModal('success', 'Success', data.message || `Successfully processed ${promotions.length} student(s)!`);
             setTimeout(() => {
                 window.location.reload();
             }, 1500);

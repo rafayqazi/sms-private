@@ -26,14 +26,17 @@ try {
     });
 
     // Format for frontend
-    $formattedResults = array_map(function($student) {
+    $formattedResults = array_map(function($student) use ($db) {
+        $outstanding = $db->getStudentTotalOutstandingFees($student['gr_no']);
         return [
             'id' => $student['id'],
             'student_name' => $student['student_name'],
             'gr_no' => $student['gr_no'],
             'father_name' => $student['father_name'],
             'current_class' => $student['current_class'],
-            'profile_image' => $student['profile_image'] ?? ''
+            'profile_image' => $student['profile_image'] ?? '',
+            'fees_cleared' => $outstanding < 0.01,
+            'outstanding_fees' => $outstanding
         ];
     }, array_values($results));
 
