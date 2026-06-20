@@ -2,6 +2,9 @@
 require_once '../includes/auth_session.php';
 require_once '../includes/db.php';
 
+$default_session_year = date('Y') . '-' . substr(date('Y') + 1, 2);
+$default_expiry_date = '31-03-' . (date('Y') + 1);
+
 include '../includes/header.php';
 ?>
 
@@ -22,6 +25,30 @@ include '../includes/header.php';
                         class="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Enter the unique GR Number of the student.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Session Year</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                        <i class="fas fa-calendar-alt"></i>
+                    </span>
+                    <input type="text" name="session_year" value="<?php echo htmlspecialchars($default_session_year); ?>" placeholder="e.g. 2026-27" required 
+                        class="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Specify the session year (e.g. 2026-27).</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                        <i class="fas fa-calendar-times"></i>
+                    </span>
+                    <input type="text" name="expiry_date" value="<?php echo htmlspecialchars($default_expiry_date); ?>" placeholder="e.g. 31-03-2027" required 
+                        class="w-full pl-10 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Specify the card expiry date (e.g. 31-03-2027).</p>
             </div>
 
             <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">

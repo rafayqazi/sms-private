@@ -23,6 +23,14 @@ $filters = [
 
 $students = $db->filterStudents($filters);
 
+// Fast-path optimization for autocomplete requests (bypasses heavy HTML generation and stats)
+if (isset($_GET['autocomplete']) && $_GET['autocomplete'] == '1') {
+    $students = array_slice($students, 0, 15);
+    header('Content-Type: application/json');
+    echo json_encode(['students' => $students]);
+    exit;
+}
+
 // Check if JSON response is requested
 if (isset($_GET['json']) && $_GET['json'] == '1') {
     ob_start();

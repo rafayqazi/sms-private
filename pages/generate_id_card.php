@@ -18,6 +18,15 @@ $gr_nos_raw = isset($_GET['gr_no']) ? trim($_GET['gr_no']) : '';
 $gr_nos = !empty($gr_nos_raw) ? explode(',', $gr_nos_raw) : [];
 $hide_controls = isset($_GET['hide_controls']) && $_GET['hide_controls'] == '1';
 
+$session_year = isset($_GET['session_year']) ? trim($_GET['session_year']) : '';
+if (empty($session_year)) {
+    $session_year = date('Y') . '-' . substr(date('Y') + 1, 2);
+}
+$expiry_date = isset($_GET['expiry_date']) ? trim($_GET['expiry_date']) : '';
+if (empty($expiry_date)) {
+    $expiry_date = '31-03-' . (date('Y') + 1);
+}
+
 if (empty($gr_nos)) {
     die("GR Number(s) are required.");
 }
@@ -142,18 +151,29 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                 <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" class="watermark" alt="Watermark">
 
                 <!-- Header -->
-                <header class="bg-primary text-white p-1 flex items-center justify-between border-b-2 border-secondary z-10" style="background-color: #15803d; border-color: #f59e0b;">
-                    <div class="flex items-center gap-2">
+                <header class="bg-primary text-white p-1.5 flex flex-col items-center justify-center relative border-b-2 border-secondary z-10" style="background-color: #15803d; border-color: #f59e0b;">
+                    <!-- Logo on absolute left -->
+                    <div class="absolute left-2 top-1/2 -translate-y-1/2 flex items-center">
                         <img src="<?php echo $logoPath; ?>?v=<?php echo time(); ?>" alt="Logo" class="h-8 w-8 bg-white rounded-full p-0.5 object-contain">
-                        <div>
-                            <h1 class="text-[9px] font-bold uppercase leading-tight tracking-wide"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
-                            <p class="text-[6px] uppercase tracking-widest leading-none"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
+                    </div>
+                    
+                    <!-- Center Content -->
+                    <div class="text-center flex flex-col items-center justify-center w-full pl-12 pr-4">
+                        <h1 class="text-[10px] font-black uppercase leading-tight tracking-wide text-center whitespace-nowrap"><?php echo htmlspecialchars($settings['school_name']); ?></h1>
+                        <p class="text-[7px] uppercase tracking-widest leading-none text-center opacity-90 mt-0.5 whitespace-nowrap"><?php echo htmlspecialchars($settings['address_tagline']); ?></p>
+                        
+                        <!-- Student Identity Card Badge centered -->
+                        <div class="text-[7px] font-black bg-yellow-500 text-green-900 px-2 py-0.5 rounded uppercase tracking-wider mt-1 whitespace-nowrap" style="background-color: #f59e0b !important; color: #14532d !important; -webkit-print-color-adjust: exact;">
+                            Student Identity Card
                         </div>
                     </div>
-                    <div class="text-[7px] font-bold bg-green-700 text-white px-1 py-0.5 rounded uppercase" style="background-color: #15803d !important; color: white !important; -webkit-print-color-adjust: exact;">
-                        Student Identity Card
-                    </div>
                 </header>
+
+                <?php if (!empty($session_year)): ?>
+                    <div class="text-center text-[7.5px] font-black text-gray-700 bg-gray-50/80 py-0.5 border-b border-gray-200/50 z-10 uppercase tracking-widest" style="-webkit-print-color-adjust: exact;">
+                        Session Year: <?php echo htmlspecialchars($session_year); ?>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Content -->
                 <div class="flex-1 flex px-3 items-center gap-2 z-10">
@@ -214,8 +234,11 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
 
                 <!-- Footer -->
                 <footer class="px-2 pb-1 z-10 mt-auto flex justify-between items-end">
-                    <div class="text-[6px] text-gray-500 italic">
+                    <div class="text-[6px] text-gray-500 italic flex flex-col gap-0.5">
                         <p>Valid during study period.</p>
+                        <?php if (!empty($expiry_date)): ?>
+                            <p class="font-black text-red-600 not-italic uppercase tracking-wider" style="font-size: 5.5px; color: #dc2626 !important; -webkit-print-color-adjust: exact;">Expiry: <?php echo htmlspecialchars($expiry_date); ?></p>
+                        <?php endif; ?>
                     </div>
                     <div class="text-center">
                         <div class="w-20 border-b border-black mb-0.5"></div>

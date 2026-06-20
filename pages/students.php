@@ -128,6 +128,43 @@ $classes = $db->getClassNames();
     </div>
 </div>
 
+<!-- ID Card Configuration Modal -->
+<div id="idCardConfigModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="idCardConfigModalContent">
+        <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white text-center pb-12">
+            <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30 shadow-inner">
+                <i class="fas fa-id-card text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-black tracking-tight">Print ID Cards</h3>
+            <p class="text-indigo-100 text-sm font-medium opacity-90 mt-2">Enter Session Year and Expiry Date</p>
+        </div>
+        
+        <div class="p-8 -mt-8">
+            <div class="space-y-4 mb-6">
+                <div class="bg-white rounded-2xl p-2 shadow-xl border border-gray-100">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 pl-4 pt-2">Session Year</label>
+                    <input type="text" id="idSessionYearInput" value="<?php echo date('Y') . '-' . substr(date('Y') + 1, 2); ?>" class="w-full px-4 py-2 bg-transparent text-gray-800 font-bold text-lg outline-none" placeholder="e.g. 2026-27">
+                </div>
+                
+                <div class="bg-white rounded-2xl p-2 shadow-xl border border-gray-100">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 pl-4 pt-2">Expiry Date</label>
+                    <input type="text" id="idExpiryDateInput" value="31-03-<?php echo date('Y') + 1; ?>" class="w-full px-4 py-2 bg-transparent text-gray-800 font-bold text-lg outline-none" placeholder="e.g. 31-03-2027">
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <button id="confirmIdCardBtn" class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center gap-3">
+                    <span class="uppercase tracking-widest">Generate Cards</span>
+                    <i class="fas fa-print"></i>
+                </button>
+                <button onclick="closeIdCardConfigModal()" class="w-full py-4 bg-gray-50 text-gray-500 font-black rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-xs">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Charts Section -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-indigo-500">
@@ -392,8 +429,7 @@ $classes = $db->getClassNames();
                             return row.cells[2].textContent.trim(); // GR No is in the 3rd column (index 2)
                         });
                     
-                    const url = `generate_id_card.php?gr_no=${selectedGrNos.join(',')}`;
-                    window.open(url, '_blank');
+                    openIdCardConfigModal(selectedGrNos);
                 }
             });
         }
@@ -479,6 +515,55 @@ $classes = $db->getClassNames();
                 const confirmBtn = document.getElementById('confirmAlumniBtn');
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = '<span class="uppercase tracking-widest">Mark Graduated</span><i class="fas fa-check-circle"></i>';
+            }, 300);
+        };
+
+        // ID Card Configuration Modal Functions
+        window.openIdCardConfigModal = function(selectedGrNos) {
+            const modal = document.getElementById('idCardConfigModal');
+            const content = document.getElementById('idCardConfigModalContent');
+            const confirmBtn = document.getElementById('confirmIdCardBtn');
+            const sessionYearInput = document.getElementById('idSessionYearInput');
+            const expiryDateInput = document.getElementById('idExpiryDateInput');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Handle confirmation
+            confirmBtn.onclick = function() {
+                const sessionYear = sessionYearInput.value.trim();
+                const expiryDate = expiryDateInput.value.trim();
+                
+                if (!sessionYear) {
+                    showModal('warning', 'Input Required', 'Please enter a session year.');
+                    return;
+                }
+                if (!expiryDate) {
+                    showModal('warning', 'Input Required', 'Please enter an expiry date.');
+                    return;
+                }
+                
+                const url = `generate_id_card.php?gr_no=${selectedGrNos.join(',')}&session_year=${encodeURIComponent(sessionYear)}&expiry_date=${encodeURIComponent(expiryDate)}`;
+                window.open(url, '_blank');
+                closeIdCardConfigModal();
+            };
+        };
+
+        window.closeIdCardConfigModal = function() {
+            const modal = document.getElementById('idCardConfigModal');
+            const content = document.getElementById('idCardConfigModalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }, 300);
         };
 

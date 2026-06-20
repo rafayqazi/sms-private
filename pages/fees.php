@@ -541,6 +541,7 @@ let overviewSelectedStudent = null;
 // ── Overview Student Search ──
 const overviewSearch = document.getElementById('overview_student_search');
 const overviewSearchResults = document.getElementById('overview_search_results');
+let overviewSearchTimeout = null;
 
 if (overviewSearch) {
     overviewSearch.addEventListener('input', function() {
@@ -549,53 +550,57 @@ if (overviewSearch) {
             overviewSearchResults.classList.add('hidden');
             return;
         }
-        fetch(`../api/get_students.php?search=${encodeURIComponent(query)}&json=1&include_alumni=1`)
-            .then(res => res.json())
-            .then(data => {
-                const students = data.students || [];
-                if (students.length === 0) {
-                    overviewSearchResults.innerHTML = '<div class="px-4 py-3 text-gray-500 italic text-sm">No students found.</div>';
-                } else {
-                    overviewSearchResults.innerHTML = '';
-                    students.forEach(s => {
-                        const displayClass = s.student_status === 'Alumni'
-                            ? `Alumni (${s.last_class || s.current_class})`
-                            : s.current_class;
-                        const div = document.createElement('div');
-                        div.className = 'px-4 py-3 hover:bg-indigo-50 border-b border-gray-100 last:border-0 flex items-center justify-between gap-3 group';
 
-                        const info = document.createElement('div');
-                        info.className = 'flex-1 min-w-0 cursor-pointer';
-                        info.innerHTML = `
-                            <div class="font-bold text-gray-800 truncate">${s.student_name}</div>
-                            <div class="text-[10px] text-gray-500 uppercase font-medium">GR: ${s.gr_no} | ${displayClass}</div>
-                        `;
-                        info.onclick = () => selectOverviewStudent(s);
+        clearTimeout(overviewSearchTimeout);
+        overviewSearchTimeout = setTimeout(() => {
+            fetch(`../api/get_students.php?search=${encodeURIComponent(query)}&json=1&include_alumni=1&autocomplete=1`)
+                .then(res => res.json())
+                .then(data => {
+                    const students = data.students || [];
+                    if (students.length === 0) {
+                        overviewSearchResults.innerHTML = '<div class="px-4 py-3 text-gray-500 italic text-sm">No students found.</div>';
+                    } else {
+                        overviewSearchResults.innerHTML = '';
+                        students.forEach(s => {
+                            const displayClass = s.student_status === 'Alumni'
+                                ? `Alumni (${s.last_class || s.current_class})`
+                                : s.current_class;
+                            const div = document.createElement('div');
+                            div.className = 'px-4 py-3 hover:bg-indigo-50 border-b border-gray-100 last:border-0 flex items-center justify-between gap-3 group';
 
-                        const actions = document.createElement('div');
-                        actions.className = 'flex items-center gap-1 flex-shrink-0';
+                            const info = document.createElement('div');
+                            info.className = 'flex-1 min-w-0 cursor-pointer';
+                            info.innerHTML = `
+                                <div class="font-bold text-gray-800 truncate">${s.student_name}</div>
+                                <div class="text-[10px] text-gray-500 uppercase font-medium">GR: ${s.gr_no} | ${displayClass}</div>
+                            `;
+                            info.onclick = () => selectOverviewStudent(s);
 
-                        const eyeBtn = document.createElement('button');
-                        eyeBtn.className = 'p-1.5 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition text-xs';
-                        eyeBtn.title = 'View Profile';
-                        eyeBtn.innerHTML = '<i class="fas fa-eye"></i>';
-                        eyeBtn.onclick = (e) => { e.stopPropagation(); selectOverviewStudent(s); viewOverviewStudentProfile(); };
+                            const actions = document.createElement('div');
+                            actions.className = 'flex items-center gap-1 flex-shrink-0';
 
-                        const editBtn = document.createElement('button');
-                        editBtn.className = 'p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition text-xs';
-                        editBtn.title = 'Add / Edit Fee';
-                        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-                        editBtn.onclick = (e) => { e.stopPropagation(); selectOverviewStudent(s); editOverviewStudentFees(); };
+                            const eyeBtn = document.createElement('button');
+                            eyeBtn.className = 'p-1.5 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition text-xs';
+                            eyeBtn.title = 'View Profile';
+                            eyeBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                            eyeBtn.onclick = (e) => { e.stopPropagation(); selectOverviewStudent(s); viewOverviewStudentProfile(); };
 
-                        actions.appendChild(eyeBtn);
-                        actions.appendChild(editBtn);
-                        div.appendChild(info);
-                        div.appendChild(actions);
-                        overviewSearchResults.appendChild(div);
-                    });
-                }
-                overviewSearchResults.classList.remove('hidden');
-            });
+                            const editBtn = document.createElement('button');
+                            editBtn.className = 'p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition text-xs';
+                            editBtn.title = 'Add / Edit Fee';
+                            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                            editBtn.onclick = (e) => { e.stopPropagation(); selectOverviewStudent(s); editOverviewStudentFees(); };
+
+                            actions.appendChild(eyeBtn);
+                            actions.appendChild(editBtn);
+                            div.appendChild(info);
+                            div.appendChild(actions);
+                            overviewSearchResults.appendChild(div);
+                        });
+                    }
+                    overviewSearchResults.classList.remove('hidden');
+                });
+        }, 200); // 200ms debounce
     });
 
     document.addEventListener('click', function(e) {
@@ -879,6 +884,7 @@ function switchTab(tabId) {
 // Student Search logic
 const studentSearch = document.getElementById('student_search');
 const searchResults = document.getElementById('search_results');
+let searchTimeout = null;
 
 if (studentSearch) {
     studentSearch.addEventListener('input', function() {
@@ -888,31 +894,34 @@ if (studentSearch) {
             return;
         }
 
-        fetch(`../api/get_students.php?search=${encodeURIComponent(query)}&json=1&include_alumni=1`)
-            .then(res => res.json())
-            .then(data => {
-                const students = data.students;
-                if (students && students.length > 0) {
-                    searchResults.innerHTML = '';
-                    students.forEach(s => {
-                        const displayClass = s.student_status === 'Alumni'
-                            ? `Alumni (${s.last_class || s.current_class})`
-                            : s.current_class;
-                        const div = document.createElement('div');
-                        div.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-0';
-                        div.innerHTML = `
-                            <div class="font-bold text-gray-800">${s.student_name}</div>
-                            <div class="text-xs text-gray-500 uppercase">GR: ${s.gr_no} | Class: ${displayClass}</div>
-                        `;
-                        div.onclick = () => selectStudent(s);
-                        searchResults.appendChild(div);
-                    });
-                    searchResults.classList.remove('hidden');
-                } else {
-                    searchResults.innerHTML = '<div class="px-4 py-3 text-gray-500 italic">No students found.</div>';
-                    searchResults.classList.remove('hidden');
-                }
-            });
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetch(`../api/get_students.php?search=${encodeURIComponent(query)}&json=1&include_alumni=1&autocomplete=1`)
+                .then(res => res.json())
+                .then(data => {
+                    const students = data.students;
+                    if (students && students.length > 0) {
+                        searchResults.innerHTML = '';
+                        students.forEach(s => {
+                            const displayClass = s.student_status === 'Alumni'
+                                ? `Alumni (${s.last_class || s.current_class})`
+                                : s.current_class;
+                            const div = document.createElement('div');
+                            div.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 last:border-0';
+                            div.innerHTML = `
+                                <div class="font-bold text-gray-800">${s.student_name}</div>
+                                <div class="text-xs text-gray-500 uppercase">GR: ${s.gr_no} | Class: ${displayClass}</div>
+                            `;
+                            div.onclick = () => selectStudent(s);
+                            searchResults.appendChild(div);
+                        });
+                        searchResults.classList.remove('hidden');
+                    } else {
+                        searchResults.innerHTML = '<div class="px-4 py-3 text-gray-500 italic">No students found.</div>';
+                        searchResults.classList.remove('hidden');
+                    }
+                });
+        }, 200); // 200ms debounce
     });
 }
 
@@ -1898,6 +1907,73 @@ function applyQuickDiscount(amt) {
         setTimeout(() => input.classList.remove('ring-2', 'ring-red-500'), 500);
     }
 }
+
+// Autocomplete Keyboard Navigation Support
+function initAutocompleteKeyboardNavigation(inputEl, resultsEl) {
+    if (!inputEl || !resultsEl) return;
+    let activeIndex = -1;
+
+    // Reset selection index whenever the dropdown contents change
+    const observer = new MutationObserver(() => {
+        activeIndex = -1;
+    });
+    observer.observe(resultsEl, { childList: true });
+
+    inputEl.addEventListener('keydown', function(e) {
+        if (resultsEl.classList.contains('hidden')) return;
+
+        // Filter out informational or loading elements from navigation
+        const items = Array.from(resultsEl.children).filter(item => {
+            return !item.classList.contains('italic') && !item.textContent.includes('No students') && !item.innerHTML.includes('fa-spinner');
+        });
+
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex++;
+            if (activeIndex >= items.length) activeIndex = 0;
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex--;
+            if (activeIndex < 0) activeIndex = items.length - 1;
+            updateHighlight(items);
+        } else if (e.key === 'Enter') {
+            if (activeIndex >= 0 && activeIndex < items.length) {
+                e.preventDefault();
+                const activeItem = items[activeIndex];
+                // Select either the inner clickable section (overview) or the row itself
+                const clickable = activeItem.querySelector('.cursor-pointer') || activeItem;
+                clickable.click();
+            }
+        } else if (e.key === 'Escape') {
+            resultsEl.classList.add('hidden');
+            inputEl.blur();
+        }
+    });
+
+    function updateHighlight(items) {
+        items.forEach((item, idx) => {
+            if (idx === activeIndex) {
+                item.classList.add('bg-indigo-100', 'ring-2', 'ring-indigo-200');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('bg-indigo-100', 'ring-2', 'ring-indigo-200');
+            }
+        });
+    }
+}
+
+// Initialize navigation on both autocomplete search boxes
+initAutocompleteKeyboardNavigation(
+    document.getElementById('student_search'),
+    document.getElementById('search_results')
+);
+initAutocompleteKeyboardNavigation(
+    document.getElementById('overview_student_search'),
+    document.getElementById('overview_search_results')
+);
 </script>
 
 <?php include '../includes/footer.php'; ?>
