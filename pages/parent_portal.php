@@ -53,30 +53,30 @@ $current_month_name = date('M Y'); // e.g. Mar 2026
 foreach ($children as $child) {
     // Check if they have previous debt, or if they haven't paid for current month
     $previous_debt = $db->getStudentPreviousDebt($child['gr_no'], $current_month);
-    if ($previous_debt > 0) {
-        $unpaid_count++;
-        continue;
-    }
+    $assignedMonthly = $db->getStudentAssignedMonthlyFee($child);
     
     $fee_history = $db->getStudentFeeHistory($child['gr_no']);
-    $paid_months = array_column($fee_history, 'month_for');
-    if (!in_array($current_month, $paid_months)) {
-        $unpaid_count++;
+    $current_payment = null;
+    foreach ($fee_history as $h) {
+        if ($h['month_for'] === $current_month) {
+            $current_payment = $h;
+            break;
+        }
+    }
+    
+    if ($current_payment) {
+        $due_tuition = (isset($current_payment['tuition_fee']) && $current_payment['tuition_fee'] !== '') ? (float)$current_payment['tuition_fee'] : $assignedMonthly;
+        $expected = $due_tuition + (float)($current_payment['admission_fee'] ?? 0) + (float)($current_payment['exam_fee'] ?? 0) + (float)($current_payment['other_fee'] ?? 0) - (float)($current_payment['discount'] ?? 0);
+        $total_due_with_prev = $expected + $previous_debt;
+        if ((float)$current_payment['amount_paid'] < $total_due_with_prev) {
+            $unpaid_count++;
+        }
     } else {
-        // If they did pay for current month, check if they paid less than due
-        foreach ($fee_history as $h) {
-            if ($h['month_for'] === $current_month) {
-                $feeStructure = $db->getFeeStructure();
-                $classFees = $feeStructure[$child['current_class']] ?? ['monthly_fee' => 0];
-                $standardMonthly = (float)$classFees['monthly_fee'];
-                $due_tuition = (isset($h['tuition_fee']) && $h['tuition_fee'] !== '') ? (float)$h['tuition_fee'] : $standardMonthly;
-                
-                $expected = $due_tuition + (float)($h['admission_fee'] ?? 0) + (float)($h['exam_fee'] ?? 0) + (float)($h['other_fee'] ?? 0) - (float)($h['discount'] ?? 0);
-                if ((float)$h['amount_paid'] < $expected) {
-                    $unpaid_count++;
-                }
-                break;
-            }
+        // No payment recorded yet for the current month.
+        // Total due is current month's fee + previous debt/surplus.
+        $total_due_with_prev = $assignedMonthly + $previous_debt;
+        if ($total_due_with_prev > 0) {
+            $unpaid_count++;
         }
     }
 }

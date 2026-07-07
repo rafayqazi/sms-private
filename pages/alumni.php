@@ -45,6 +45,14 @@ usort($alumniStudents, function($a, $b) {
     return (int)$a['gr_no'] - (int)$b['gr_no'];
 });
 
+// Pre-calculate fee status for all alumni
+$alumniFeeStatus = [];
+foreach ($alumniStudents as $student) {
+    $gr_no = $student['gr_no'];
+    $outstanding = $db->getAlumniOutstandingBalance($gr_no);
+    $alumniFeeStatus[$gr_no] = $outstanding;
+}
+
 // Get unique years for the filter dropdown
 $years = array_unique(array_map(function($s) {
     return $s['graduation_year'] ?? (isset($s['updated_at']) ? date('Y', strtotime($s['updated_at'])) : 'Unknown');
@@ -119,6 +127,47 @@ foreach ($alumniStudents as $student) {
     </form>
 </div>
 
+<?php
+// Count uncleared alumni
+$unclearedAlumni = array_filter($alumniStudents, function($s) use ($alumniFeeStatus) {
+    return ($alumniFeeStatus[$s['gr_no']] ?? 0) >= 0.01;
+});
+$unclearedCount = count($unclearedAlumni);
+?>
+
+<!-- Uncleared Alumni Actions Bar -->
+<?php if ($unclearedCount > 0): ?>
+<div class="bg-white rounded-lg shadow-lg p-4 mb-6 border border-red-100">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-red-50 rounded-lg">
+                <i class="fas fa-exclamation-triangle text-red-500"></i>
+            </div>
+            <div>
+                <div class="font-bold text-gray-800"><?php echo $unclearedCount; ?> Alumni with Uncleared Fees</div>
+                <div class="text-xs text-gray-500">Students who still have outstanding balance</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="relative" id="alumni_download_wrap">
+                <button type="button" onclick="toggleAlumniDownloadMenu()"
+                        class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-bold text-sm hover:bg-indigo-100 transition border border-indigo-200 shadow-sm">
+                    <i class="fas fa-download text-xs"></i> Download Uncleared List <i class="fas fa-chevron-down text-[8px]"></i>
+                </button>
+                <div id="alumni_download_menu" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
+                    <button type="button" onclick="downloadAlumniFees('pdf')" class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-indigo-50 flex items-center gap-2 border-b border-gray-100">
+                        <i class="fas fa-file-pdf text-red-500"></i> PDF
+                    </button>
+                    <button type="button" onclick="downloadAlumniFees('excel')" class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-indigo-50 flex items-center gap-2">
+                        <i class="fas fa-file-excel text-green-600"></i> Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
     <?php if (empty($alumniStudents)): ?>
     <div class="p-12 text-center">
@@ -161,6 +210,7 @@ foreach ($alumniStudents as $student) {
                             <th class="p-4">Student Information</th>
                             <th class="p-4 text-center">Leaving Class</th>
                             <th class="p-4 text-center">Graduated</th>
+                            <th class="p-4">Fee Status</th>
                             <th class="p-4">Admission Date</th>
                             <th class="p-4 text-center">Actions</th>
                         </tr>
@@ -168,7 +218,7 @@ foreach ($alumniStudents as $student) {
                     <tbody class="divide-y divide-gray-100">
                         <?php if (empty($stageStudents)): ?>
                             <tr>
-                                <td colspan="7" class="p-8 text-center text-gray-400 text-sm italic">
+                                <td colspan="8" class="p-8 text-center text-gray-400 text-sm italic">
                                     No records found in this section.
                                 </td>
                             </tr>
@@ -181,6 +231,9 @@ foreach ($alumniStudents as $student) {
                                         $lastClass = $student['current_class'];
                                     }
                                 }
+                                $gr_no = $student['gr_no'];
+                                $outstanding = $alumniFeeStatus[$gr_no] ?? 0;
+                                $feeCleared = $outstanding < 0.01;
                             ?>
                             <tr class="hover:bg-gray-50/50 transition-colors student-row" data-id="<?php echo $student['id']; ?>">
                                 <td class="p-4 text-center">
@@ -217,9 +270,25 @@ foreach ($alumniStudents as $student) {
                                         <i class="fas fa-calendar-alt text-[9px]"></i> <?php echo $graduationYear; ?>
                                     </span>
                                 </td>
+                                <td class="p-4">
+                                    <?php if ($feeCleared): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-50 text-green-700 text-[10px] font-bold border border-green-200">
+                                            <i class="fas fa-check-circle"></i> Fee Cleared
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-50 text-red-700 text-[10px] font-bold border border-red-200">
+                                            <i class="fas fa-exclamation-circle"></i> Rs. <?php echo number_format($outstanding); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="p-4 text-gray-500 text-xs italic font-medium"><?php echo htmlspecialchars($student['admission_date'] ?? ''); ?></td>
                                 <td class="p-4 text-center">
                                     <div class="flex items-center justify-center gap-2">
+                                        <?php if (!$feeCleared): ?>
+                                        <button onclick="clearAlumniFee('<?php echo htmlspecialchars($gr_no); ?>', '<?php echo htmlspecialchars($student['student_name']); ?>')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="Clear Fee">
+                                            <i class="fas fa-eraser text-xs"></i>
+                                        </button>
+                                        <?php endif; ?>
                                         <button onclick="restoreSingle(<?php echo $student['id']; ?>, '<?php echo addslashes($lastClass); ?>')" class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm" title="Quick Restore to <?php echo htmlspecialchars($lastClass); ?>">
                                             <i class="fas fa-undo-alt text-xs"></i>
                                         </button>
@@ -454,6 +523,54 @@ function executeBulkRestore() {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
     });
+}
+
+function toggleAlumniDownloadMenu() {
+    const menu = document.getElementById('alumni_download_menu');
+    if (menu) menu.classList.toggle('hidden');
+}
+
+document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('alumni_download_wrap');
+    const menu = document.getElementById('alumni_download_menu');
+    if (wrap && menu && !wrap.contains(e.target)) {
+        menu.classList.add('hidden');
+    }
+});
+
+function downloadAlumniFees(format) {
+    document.getElementById('alumni_download_menu')?.classList.add('hidden');
+    const params = new URLSearchParams({
+        search: '<?php echo htmlspecialchars($search); ?>',
+        year: '<?php echo htmlspecialchars($yearFilter); ?>'
+    });
+    if (format === 'pdf') {
+        window.open(`print_alumni_fees_report.php?${params.toString()}`, '_blank');
+    } else {
+        window.location.href = `../api/export_alumni_fees.php?${params.toString()}`;
+    }
+}
+
+function clearAlumniFee(grNo, studentName) {
+    if (!confirm(`Clear all outstanding fees for ${studentName} (GR: ${grNo})?\n\nThis will permanently remove all arrears records for this student.`)) return;
+    if (!confirm(`Are you absolutely sure? This action cannot be undone.`)) return;
+
+    const formData = new FormData();
+    formData.append('gr_no', grNo);
+
+    fetch('../api/clear_debt.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Fee cleared successfully!');
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to clear fee');
+            }
+        })
+        .catch(() => {
+            alert('Network error. Please try again.');
+        });
 }
 
 function restoreSingle(id, lastClass) {

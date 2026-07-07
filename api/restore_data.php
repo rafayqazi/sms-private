@@ -1,11 +1,8 @@
 <?php
 // api/restore_data.php
 
-// require_once '../includes/auth_session.php'; // Bypassed for installer support
+require_once '../includes/auth_session.php';
 require_once '../includes/functions.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 require_once '../includes/db.php';
 
 // Clean any buffer to ensure pure JSON output

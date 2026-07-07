@@ -87,8 +87,7 @@ $settings = $db->getSchoolSettings();
         <div class="amount-section">
             <?php 
             $feeStructure = $db->getFeeStructure();
-            $classFees = $feeStructure[$student['current_class']] ?? ['monthly_fee' => 0];
-            $assignedMonthly = (float)$classFees['monthly_fee'];
+            $assignedMonthly = $db->getStudentAssignedMonthlyFee($student);
             
             $discount = (float)($payment['discount'] ?? 0);
             $admission = (float)($payment['admission_fee'] ?? 0);
@@ -99,7 +98,7 @@ $settings = $db->getSchoolSettings();
             $previousDebt = $db->getStudentPreviousDebt($student['gr_no'], $payment['month_for']);
             
             $expectedTotal = $storedTuition + $admission + $exam + $other - $discount + $previousDebt;
-            $debt = max(0.0, $expectedTotal - (float)$payment['amount_paid']);
+            $debt = $expectedTotal - (float)$payment['amount_paid'];
             ?>
             <div class="info-row">
                 <span>Tuition Fee (Assigned):</span>
@@ -110,6 +109,11 @@ $settings = $db->getSchoolSettings();
             <div class="info-row" style="color: #b45309;">
                 <span>Previous Arrears:</span>
                 <span>Rs. <?php echo number_format($previousDebt, 2); ?></span>
+            </div>
+            <?php elseif ($previousDebt < 0): ?>
+            <div class="info-row" style="color: #047857;">
+                <span>Surplus (Advance Credit):</span>
+                <span>Rs. <?php echo number_format(abs($previousDebt), 2); ?></span>
             </div>
             <?php endif; ?>
 
@@ -143,18 +147,23 @@ $settings = $db->getSchoolSettings();
 
             <div class="info-row" style="border-top: 1px dashed #aaa; margin-top: 5px; padding-top: 5px; font-weight: bold;">
                 <span>TOTAL DUES:</span>
-                <span>Rs. <?php echo number_format($expectedTotal, 2); ?></span>
+                <span>Rs. <?php echo number_format(max(0.0, $expectedTotal), 2); ?></span>
             </div>
 
             <div class="info-row amount-total">
                 <span>AMOUNT PAID:</span>
-                <span>Rs. <?php echo number_format($payment['amount_paid'], 2); ?></span>
+                <span>Rs. <?php echo number_format((float)$payment['amount_paid'], 2); ?></span>
             </div>
 
             <?php if ($debt > 0): ?>
             <div class="info-row" style="font-size: 15px; font-weight: bold; color: #b45309; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
                 <span>REMAINING DEBT:</span>
                 <span>Rs. <?php echo number_format($debt, 2); ?></span>
+            </div>
+            <?php elseif ($debt < 0): ?>
+            <div class="info-row" style="font-size: 15px; font-weight: bold; color: #047857; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 5px;">
+                <span>SURPLUS CREDIT:</span>
+                <span>Rs. <?php echo number_format(abs($debt), 2); ?></span>
             </div>
             <?php endif; ?>
         </div>

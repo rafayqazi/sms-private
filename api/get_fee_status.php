@@ -23,6 +23,9 @@ $classFees = $feeStructure[$feeClass] ?? [
     'admission_fee' => 0,
     'exam_fee' => 0
 ];
+$standardMonthly = (float)$classFees['monthly_fee'];
+$assignedMonthly = $db->getStudentAssignedMonthlyFee($student);
+$customFee = $db->getStudentCustomFee($gr_no);
 
 $month = $_GET['month'] ?? '';
 $history = $db->getStudentFeeHistory($gr_no);
@@ -44,9 +47,16 @@ if ($month) {
     $previous_debt_breakdown = $db->getStudentPreviousDebtBreakdown($gr_no, $month);
 }
 
+$responseStructure = array_merge($classFees, ['monthly_fee' => $assignedMonthly]);
+
 echo json_encode([
     'student' => $student,
-    'structure' => $classFees,
+    'structure' => $responseStructure,
+    'standard_structure' => $classFees,
+    'assigned_monthly_fee' => $assignedMonthly,
+    'standard_monthly_fee' => $standardMonthly,
+    'has_custom_fee' => $customFee !== null,
+    'custom_fee' => $customFee,
     'existing_payment' => $existing_payment,
     'previous_debt' => $previous_debt,
     'previous_debt_breakdown' => $previous_debt_breakdown

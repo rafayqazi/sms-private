@@ -135,7 +135,7 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <button onclick="promptLeavingDate({type: 'single', id: <?php echo $student['id']; ?>})"
+                                        <button onclick="promptLeavingDate({type: 'single', id: <?php echo $student['id']; ?>, class: '<?php echo addslashes($student['last_class'] ?? $student['current_class']); ?>'})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
                                         </button>
@@ -193,11 +193,17 @@ if ($search) {
             </button>
         </div>
         <div class="p-8">
-            <div class="space-y-4">
+            <div class="space-y-5">
                 <div>
                     <label class="block text-xs font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 pl-1">Date of Leaving the School</label>
                     <input type="date" id="leavingDateInput" value="<?php echo date('Y-m-d'); ?>" 
                         class="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-950 rounded-2xl text-slate-800 dark:text-white font-bold transition-all outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-2 pl-1">Class at the time of Leaving</label>
+                    <input type="text" id="leavingClassInput" 
+                        class="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border-2 border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-950 rounded-2xl text-slate-800 dark:text-white font-bold transition-all outline-none"
+                        placeholder="e.g. Three">
                 </div>
             </div>
             <button onclick="confirmLeavingDate()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
@@ -281,7 +287,7 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
-                                        <button onclick="promptLeavingDate({type: 'single', id: ${item.id}})"
+                                        <button onclick="promptLeavingDate({type: 'single', id: ${item.id}, class: '${item.last_class}'})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
                                         </button>
@@ -336,6 +342,13 @@ if ($search) {
 
     function promptLeavingDate(target) {
         currentPrintTarget = target;
+        const classInput = document.getElementById('leavingClassInput');
+        // Pre-fill class for single student, leave empty for bulk
+        if (target.type === 'single' && target.class) {
+            classInput.value = target.class;
+        } else {
+            classInput.value = '';
+        }
         const modal = document.getElementById('leavingDateModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -352,6 +365,8 @@ if ($search) {
     function confirmLeavingDate() {
         const dateInput = document.getElementById('leavingDateInput');
         const date = dateInput.value;
+        const classInput = document.getElementById('leavingClassInput');
+        const leavingClass = classInput.value.trim();
         
         if (!date) {
             alert('Please select a date.');
@@ -359,6 +374,9 @@ if ($search) {
         }
         
         let url = 'print_school_leaving.php?leaving_date=' + date;
+        if (leavingClass) {
+            url += '&leaving_class=' + encodeURIComponent(leavingClass);
+        }
         if (currentPrintTarget.type === 'single') {
             url += '&student_id=' + currentPrintTarget.id;
         } else {

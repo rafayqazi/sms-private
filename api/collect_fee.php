@@ -13,7 +13,7 @@ $gr_no = $_POST['gr_no'] ?? '';
 $amount = $_POST['amount_paid'] ?? 0;
 $month = $_POST['month_for'] ?? '';
 
-if (!$gr_no || !$amount || !$month) {
+if (!$gr_no || $amount === null || $amount === '' || !$month) {
     echo json_encode(['error' => 'Missing required fields']);
     exit;
 }
@@ -37,11 +37,6 @@ $other_fee = (float)($_POST['other_fee'] ?? 0);
 $discount = (float)($_POST['discount'] ?? 0);
 
 $total_due = $tuition_fee + $admission_fee + $exam_fee + $other_fee - $discount + $previous_debt;
-
-if ($amount > $total_due + 0.01) {
-    echo json_encode(['error' => 'Paid amount cannot exceed total dues (Rs. ' . $total_due . ')']);
-    exit;
-}
 
 $data = [
     'gr_no' => $gr_no,

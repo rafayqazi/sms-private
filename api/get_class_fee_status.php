@@ -29,6 +29,7 @@ foreach ($allStudents as $s) {
     $status = $s['student_status'] ?? '';
     if ($status === 'Active' || $status === '0' || $status === '') {
         $gr = $s['gr_no'];
+        $assignedMonthly = $db->getStudentAssignedMonthlyFee($s);
         
         $previous_debt = $db->getStudentPreviousDebt($gr, $month);
         

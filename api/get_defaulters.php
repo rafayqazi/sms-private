@@ -40,6 +40,33 @@ if (!empty($stage)) {
         return $studentStage === $stage;
     });
 }
+
+$total_defaulters = count($defaulters);
+$total_debt = 0;
+foreach ($defaulters as $s) {
+    $total_debt += (float)($s['debt'] ?? 0);
+}
+
+$format = $_GET['format'] ?? 'html';
+
+if ($format === 'json') {
+    ob_start();
+    renderTable($defaulters);
+    $html = ob_get_clean();
+    header('Content-Type: application/json');
+    echo json_encode([
+        'html' => $html,
+        'stats' => [
+            'total_defaulters' => $total_defaulters,
+            'total_debt' => $total_debt
+        ]
+    ]);
+    exit;
+}
+
+renderTable($defaulters);
+
+function renderTable($defaulters) {
 ?>
 <div class="overflow-x-auto">
     <table class="w-full text-left">
@@ -98,3 +125,6 @@ if (!empty($stage)) {
         </tbody>
     </table>
 </div>
+<?php
+}
+?>

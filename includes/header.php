@@ -41,11 +41,21 @@ if (isset($_SESSION['user'])) {
     }
 }
 ?>
+<?php
+// Security headers
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
+// Content-Security-Policy (relaxed for CDN resources)
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none';");
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <title><?php echo htmlspecialchars($headerSettings['school_name']); ?> - School Management System</title>
     <link rel="icon" type="image/x-icon" href="<?php echo $base_path; ?>assets/branding/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -385,6 +395,31 @@ if (isset($_SESSION['user'])) {
                         </a>
                         <a href="<?php echo $base_path; ?>pages/dead_stock.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'dead_stock.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
                             <i class="fas fa-book-dead w-4 text-center"></i> Dead Stock
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Expense Dropdown -->
+                <?php if (!isset($_SESSION['teacher_id'])): ?>
+                <div class="flex flex-col w-full group-[.collapsed]:items-center">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['expenses.php', 'expense_form.php', 'expense_categories.php']) ? 'bg-indigo-50 text-indigo-600' : ''; ?>" title="Expenses">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-money-bill-wave w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Expenses</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                    </button>
+                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['expenses.php', 'expense_form.php', 'expense_categories.php']) ? '!flex' : ''; ?>">
+                        <a href="<?php echo $base_path; ?>pages/expenses.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'expenses.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-list w-4 text-center"></i> All Expenses
+                        </a>
+                        <?php if (!isViewer()): ?>
+                        <a href="<?php echo $base_path; ?>pages/expense_form.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'expense_form.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-plus-circle w-4 text-center"></i> Add Expense
+                        </a>
+                        <a href="<?php echo $base_path; ?>pages/expense_categories.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-indigo-600 hover:bg-gray-50 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'expense_categories.php' ? 'text-indigo-600 bg-gray-50' : ''; ?>">
+                            <i class="fas fa-tags w-4 text-center"></i> Categories
                         </a>
                         <?php endif; ?>
                     </div>

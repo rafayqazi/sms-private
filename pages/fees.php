@@ -144,11 +144,17 @@ include '../includes/header.php';
                         <button onclick="showAddArrearsModal()" class="p-2.5 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-600 hover:text-white transition shadow-sm flex items-center gap-2 text-xs font-bold" title="Add previous dues / arrears">
                             <i class="fas fa-plus-circle"></i> <span class="hidden sm:inline">Add Arrears</span>
                         </button>
+                        <button onclick="showSetStudentFeeModal()" class="p-2.5 bg-violet-50 text-violet-600 rounded-lg hover:bg-violet-600 hover:text-white transition shadow-sm flex items-center gap-2 text-xs font-bold" title="Set custom monthly fee for this student">
+                            <i class="fas fa-sliders-h"></i> <span class="hidden sm:inline">Set Student Fees</span>
+                        </button>
                         <button onclick="viewOverviewStudentProfile()" class="p-2.5 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition shadow-sm flex items-center gap-2 text-xs font-bold" title="View Complete Profile">
                             <i class="fas fa-eye"></i> <span class="hidden sm:inline">View Profile</span>
                         </button>
                         <button onclick="editOverviewStudentFees()" class="p-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm flex items-center gap-2 text-xs font-bold" title="Add / Edit Fees">
                             <i class="fas fa-edit"></i> <span class="hidden sm:inline">Add / Edit Fee</span>
+                        </button>
+                        <button onclick="clearStudentDebt()" class="p-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-600 hover:text-white transition shadow-sm flex items-center gap-2 text-xs font-bold" title="Clear all debt / arrears for this student">
+                            <i class="fas fa-eraser"></i> <span class="hidden sm:inline">Clear Debt</span>
                         </button>
                         <button onclick="clearOverviewStudent()" class="p-2.5 bg-gray-50 text-gray-400 rounded-lg hover:bg-gray-200 hover:text-gray-600 transition" title="Clear">
                             <i class="fas fa-times"></i>
@@ -421,6 +427,7 @@ include '../includes/header.php';
                         <option value="Pre-Primary">Pre-Primary</option>
                         <option value="Elementary">Elementary</option>
                         <option value="College">College</option>
+                        <option value="Alumni">Alumni</option>
                     </select>
                     <select id="history_class" class="text-sm border rounded px-3 py-1 bg-white focus:ring-2 focus:ring-indigo-500 transition" onchange="loadHistory()">
                         <option value="">All Classes</option>
@@ -463,7 +470,38 @@ include '../includes/header.php';
         </div>
     </div>
 
+<?php
+// Compute defaulter stats for initial render
+$defaulterTotalDebt = 0;
+foreach ($defaulters as $d) {
+    $defaulterTotalDebt += (float)($d['debt'] ?? 0);
+}
+?>
     <div id="content-defaulters" class="tab-content hidden">
+        <!-- Defaulter Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-red-50 rounded-lg text-red-600">
+                        <i class="fas fa-user-times fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Defaulters</h3>
+                <p class="text-2xl font-bold text-gray-900 mt-1" id="defaulter_count_card"><?php echo count($defaulters); ?></p>
+                <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-circle"></i> Students with pending fees</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-amber-50 rounded-lg text-amber-600">
+                        <i class="fas fa-hand-holding-usd fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Pending Amount</h3>
+                <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <span id="defaulter_debt_card"><?php echo number_format($defaulterTotalDebt); ?></span></p>
+                <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> Yet to be collected</p>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50/30">
                 <div class="flex items-center gap-3">
@@ -481,6 +519,7 @@ include '../includes/header.php';
                         <option value="Pre-Primary">Pre-Primary</option>
                         <option value="Elementary">Elementary</option>
                         <option value="College">College</option>
+                        <option value="Alumni">Alumni</option>
                     </select>
                     <select id="defaulter_class" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" onchange="loadDefaulters()">
                         <option value="">All Classes</option>
@@ -490,7 +529,7 @@ include '../includes/header.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="month" id="defaulter_month" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value="<?php echo date('Y-m'); ?>" onchange="loadDefaulters()">
+                    <input type="month" id="defaulter_month" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value="<?php echo $selectedMonth; ?>" onchange="loadDefaulters()">
                 </div>
             </div>
             <div id="defaulters_table_container">
@@ -634,7 +673,12 @@ window.selectOverviewStudent = function(student) {
         .then(data => {
             if (data.error) return;
             const monthlyFee = data.structure.monthly_fee || 0;
-            document.getElementById('overview_student_fee').innerHTML = `<i class="fas fa-tag text-indigo-400 mr-1"></i> Monthly: Rs. ${Number(monthlyFee).toLocaleString()}`;
+            const standardFee = data.standard_monthly_fee ?? monthlyFee;
+            const hasCustomFee = !!data.has_custom_fee;
+            const feeLabel = hasCustomFee
+                ? `<i class="fas fa-tag text-violet-500 mr-1"></i> Monthly: Rs. ${Number(monthlyFee).toLocaleString()} <span class="text-[9px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded ml-1">Custom</span>`
+                : `<i class="fas fa-tag text-indigo-400 mr-1"></i> Monthly: Rs. ${Number(monthlyFee).toLocaleString()}`;
+            document.getElementById('overview_student_fee').innerHTML = feeLabel;
 
             const existing = data.existing_payment;
             const prevDebt = data.previous_debt || 0;
@@ -663,7 +707,7 @@ window.selectOverviewStudent = function(student) {
                 </div>
                 <div class="p-3 rounded-lg bg-slate-50">
                     <p class="text-[9px] font-black uppercase text-gray-400 tracking-wider">Assigned Fee</p>
-                    <p class="text-sm font-black text-slate-700">Rs. ${Number(monthlyFee).toLocaleString()}</p>
+                    <p class="text-sm font-black text-slate-700">Rs. ${Number(monthlyFee).toLocaleString()}${hasCustomFee ? ` <span class="text-[9px] text-violet-600">(Std: ${Number(standardFee).toLocaleString()})</span>` : ''}</p>
                 </div>
             `;
         });
@@ -782,6 +826,162 @@ window.clearOverviewStudent = function() {
     document.getElementById('overview_student_panel').classList.add('hidden');
 };
 
+window.clearStudentDebt = function() {
+    if (!overviewSelectedStudent) return;
+
+    const student = overviewSelectedStudent;
+    const name = student.student_name;
+    const gr = student.gr_no;
+
+    if (!confirm(`Clear all debt / arrears for ${name} (GR: ${gr})?\n\nThis will permanently remove all arrears records.`)) return;
+
+    if (!confirm(`Are you absolutely sure?\n\nThis action cannot be undone. All outstanding debt for ${name} will be wiped clean.`)) return;
+
+    const btn = event?.target?.closest?.('button') || document.querySelector('[onclick="clearStudentDebt()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+
+    const formData = new FormData();
+    formData.append('gr_no', gr);
+
+    fetch('../api/clear_debt.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || 'Debt cleared successfully!');
+                selectOverviewStudent(student);
+            } else {
+                alert(data.error || 'Failed to clear debt');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-eraser"></i>'; }
+            }
+        })
+        .catch(() => {
+            alert('Network error. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-eraser"></i>'; }
+        });
+};
+
+window.showSetStudentFeeModal = function(grNo, studentName) {
+    const student = overviewSelectedStudent || window.currentCollectStudent || {};
+    const gr = grNo || student.gr_no;
+    const name = studentName || student.student_name;
+    if (!gr) return;
+
+    const modal = document.getElementById('class_detail_modal');
+    const content = document.getElementById('modal_content');
+    const title = document.getElementById('modal_title');
+    const subtitle = document.getElementById('modal_subtitle');
+    const dialog = document.getElementById('fee_modal_dialog');
+
+    title.innerText = 'Set Student Fees';
+    subtitle.innerText = `${name} — GR: ${gr}`;
+    content.innerHTML = '<div class="py-10 text-center"><i class="fas fa-spinner fa-spin fa-2x text-violet-500"></i></div>';
+
+    if (dialog) {
+        dialog.classList.remove('sm:max-w-4xl');
+        dialog.classList.add('sm:max-w-2xl');
+    }
+    modal.style.display = 'block';
+    modal.classList.remove('hidden');
+
+    fetch(`../api/get_fee_status.php?gr_no=${encodeURIComponent(gr)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                content.innerHTML = `<p class="text-red-600 font-bold text-center">${data.error}</p>`;
+                return;
+            }
+
+            const assigned = data.assigned_monthly_fee ?? data.structure.monthly_fee ?? 0;
+            const standard = data.standard_monthly_fee ?? assigned;
+            const hasCustom = !!data.has_custom_fee;
+
+            content.innerHTML = `
+                <form id="set_student_fee_form" class="space-y-5">
+                    <div class="p-4 bg-violet-50 border border-violet-100 rounded-xl text-sm text-violet-900">
+                        <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> Per-student fee override</p>
+                        <p class="text-xs text-violet-700">Set a custom monthly fee for <strong>${name}</strong> only. Other students in the same class will continue using the standard class fee (Rs. ${Number(standard).toLocaleString()}).</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
+                            <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider mb-1">Class Standard</p>
+                            <p class="text-xl font-black text-gray-700">Rs. ${Number(standard).toLocaleString()}</p>
+                        </div>
+                        <div class="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center">
+                            <p class="text-[10px] font-black uppercase text-violet-500 tracking-wider mb-1">Current Assigned</p>
+                            <p class="text-xl font-black text-violet-700">Rs. ${Number(assigned).toLocaleString()}${hasCustom ? ' <span class="text-[10px]">(Custom)</span>' : ''}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest mb-2">Custom Monthly Fee (Rs.)</label>
+                        <input type="number" id="custom_monthly_fee_input" min="1" step="1" value="${assigned}"
+                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-4 py-4 focus:border-violet-500 focus:bg-white transition-all outline-none font-black text-xl text-gray-800"
+                               placeholder="e.g. 2800">
+                        <p class="text-[11px] text-gray-500 mt-2">This amount will apply every month for fee collection and debt calculation for this student only.</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button type="button" onclick="saveStudentCustomFee('${gr}', false)"
+                                class="flex-1 bg-violet-600 text-white font-black py-4 rounded-2xl hover:bg-violet-700 transition shadow-lg uppercase tracking-widest text-xs">
+                            <i class="fas fa-save mr-2"></i> Save Custom Fee
+                        </button>
+                        <button type="button" onclick="saveStudentCustomFee('${gr}', true)" ${!hasCustom ? 'disabled' : ''}
+                                class="flex-1 bg-white text-gray-600 font-black py-4 rounded-2xl hover:bg-gray-50 transition border-2 border-gray-200 uppercase tracking-widest text-xs ${!hasCustom ? 'opacity-50 cursor-not-allowed' : ''}">
+                            <i class="fas fa-undo mr-2"></i> Use Standard Fee
+                        </button>
+                    </div>
+                </form>
+            `;
+        });
+};
+
+window.saveStudentCustomFee = function(grNo, useStandard) {
+    const formData = new FormData();
+    formData.append('gr_no', grNo);
+    if (useStandard) {
+        formData.append('use_standard', '1');
+    } else {
+        const input = document.getElementById('custom_monthly_fee_input');
+        const amount = input ? input.value : '';
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Please enter a valid monthly fee amount.');
+            return;
+        }
+        formData.append('monthly_fee', amount);
+    }
+
+    fetch('../api/set_student_fee.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            closeFeeModal();
+
+            const monthPicker = document.getElementById('fee_month_picker');
+            const month = monthPicker ? monthPicker.value : new Date().toISOString().slice(0, 7);
+            const collectStudent = window.currentCollectStudent;
+            const overviewStudent = overviewSelectedStudent;
+
+            if (collectStudent && collectStudent.gr_no === grNo) {
+                fetch(`../api/get_fee_status.php?gr_no=${grNo}&month=${month}`)
+                    .then(res => res.json())
+                    .then(feeData => {
+                        window.currentStudentFeeData = feeData;
+                        renderCollectionForm(collectStudent, feeData);
+                    });
+            }
+
+            if (overviewStudent && overviewStudent.gr_no === grNo) {
+                selectOverviewStudent(overviewStudent);
+            }
+        })
+        .catch(() => alert('Failed to save student fee. Please try again.'));
+};
+
 window.showStudentFeeProfile = function(gr, name) {
     const modal = document.getElementById('class_detail_modal');
     const content = document.getElementById('modal_content');
@@ -855,7 +1055,10 @@ window.showStudentFeeProfile = function(gr, name) {
                     <button onclick="closeFeeModal(); showAddArrearsModal();" class="flex-1 min-w-[120px] bg-amber-600 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-amber-700 transition flex items-center justify-center gap-2">
                         <i class="fas fa-plus-circle"></i> Add Arrears
                     </button>
-                    <button onclick="closeFeeModal(); openEditForStudent('${gr}', ${JSON.stringify(name)});" class="flex-1 min-w-[120px] bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    <button onclick="closeFeeModal(); showSetStudentFeeModal('${gr}', ${JSON.stringify(name).replace(/"/g, '&quot;')});" class="flex-1 min-w-[120px] bg-violet-600 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-violet-700 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-sliders-h"></i> Set Student Fees
+                    </button>
+                    <button onclick="closeFeeModal(); openEditForStudent('${gr}', ${JSON.stringify(name).replace(/"/g, '&quot;')});" class="flex-1 min-w-[120px] bg-indigo-600 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
                         <i class="fas fa-edit"></i> Add / Edit Fee
                     </button>
                     <a href="print_fee_history.php?gr_no=${gr}" target="_blank" class="flex-1 min-w-[120px] bg-gray-100 text-gray-700 text-xs font-bold py-2.5 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2">
@@ -879,6 +1082,8 @@ function switchTab(tabId) {
     });
     document.getElementById('tab-' + tabId).classList.remove('border-transparent', 'text-gray-500');
     document.getElementById('tab-' + tabId).classList.add('border-indigo-500', 'text-indigo-600');
+
+    localStorage.setItem('fees_active_tab', tabId);
 }
 
 // Student Search logic
@@ -938,7 +1143,8 @@ function selectStudent(student) {
         .then(res => res.json())
         .then(data => {
             window.currentStudentFeeData = data;
-            renderCollectionForm(student, data);
+            const fullStudent = Object.assign({}, student, data.student || {});
+            renderCollectionForm(fullStudent, data);
         });
 }
 
@@ -954,7 +1160,8 @@ window.selectStudentWithMonth = function(gr_no, name, month) {
         .then(res => res.json())
         .then(data => {
             window.currentStudentFeeData = data;
-            renderCollectionForm(student, data);
+            const fullStudent = Object.assign({}, student, data.student || {});
+            renderCollectionForm(fullStudent, data);
             // Ensure student name is cleared from search if picking from recent
             if(studentSearch) studentSearch.value = name;
         });
@@ -963,16 +1170,19 @@ window.selectStudentWithMonth = function(gr_no, name, month) {
 window.checkFeeStatusForMonth = function(gr_no) {
     const month = document.getElementById('fee_month_picker').value;
     if (!month) return;
-    
-    // Extract student name from the UI
-    const nameEl = document.querySelector('#collection_details h2');
-    const name = nameEl ? nameEl.innerText : 'Student';
+
+    const container = document.getElementById('collection_details');
+    const collectStudent = window.currentCollectStudent || { gr_no: gr_no, student_name: 'Student' };
+
+    container.classList.add('opacity-50');
     
     fetch(`../api/get_fee_status.php?gr_no=${gr_no}&month=${month}`)
         .then(res => res.json())
         .then(data => {
+            container.classList.remove('opacity-50');
             window.currentStudentFeeData = data;
-            renderCollectionForm({ gr_no: gr_no, student_name: name }, data);
+            const fullStudent = Object.assign({}, collectStudent, data.student || {});
+            renderCollectionForm(fullStudent, data);
         });
 }
 
@@ -980,10 +1190,13 @@ function renderCollectionForm(student, feeData) {
     const container = document.getElementById('collection_details');
     const existing = feeData.existing_payment;
     const isUpdate = !!existing;
+    const hasCustomFee = !!feeData.has_custom_fee;
+    const standardMonthly = feeData.standard_monthly_fee ?? feeData.structure.monthly_fee;
     
     // Set base fee for recalculation
     currentBaseFee = parseInt(feeData.structure.monthly_fee) || 0;
     window.currentStudentFeeData = feeData;
+    window.currentCollectStudent = student;
 
     container.innerHTML = `
         <div class="bg-indigo-50 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between border-2 border-indigo-100 shadow-sm relative overflow-hidden group">
@@ -993,7 +1206,7 @@ function renderCollectionForm(student, feeData) {
                 <p class="text-2xl font-black text-gray-900 leading-none mb-2">${student.student_name}</p>
                 <div class="flex items-center gap-3 text-sm text-gray-500 font-bold">
                     <span class="flex items-center gap-1"><i class="fas fa-id-card text-indigo-400"></i> ${student.gr_no}</span>
-                    <span class="flex items-center gap-1"><i class="fas fa-school text-indigo-400"></i> ${student.current_class}</span>
+                    <span class="flex items-center gap-1"><i class="fas fa-school text-indigo-400"></i> ${student.current_class || (feeData.student && feeData.student.current_class) || ''}</span>
                 </div>
             </div>
             
@@ -1001,7 +1214,12 @@ function renderCollectionForm(student, feeData) {
                 <div class="text-center md:text-right">
                     <p class="text-[10px] text-indigo-600/60 font-black uppercase tracking-wider mb-1">Assigned Fee</p>
                     <p class="text-3xl font-black text-slate-800">Rs. ${feeData.structure.monthly_fee}</p>
+                    ${hasCustomFee ? `<p class="text-[10px] text-violet-600 font-bold mt-1">Custom fee (Class standard: Rs. ${Number(standardMonthly).toLocaleString()})</p>` : ''}
                 </div>
+                <button type="button" onclick="showSetStudentFeeModal('${student.gr_no}', ${JSON.stringify(student.student_name).replace(/"/g, '&quot;')})"
+                        class="px-4 py-2 bg-violet-50 text-violet-700 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-violet-100 transition-all border-2 border-violet-100 flex items-center gap-2 shadow-sm">
+                    <i class="fas fa-sliders-h"></i> Set Student Fees
+                </button>
                 ${isUpdate ? `
                     <div class="px-6 py-2 bg-emerald-100 text-emerald-700 rounded-full font-black text-xs uppercase tracking-widest flex items-center gap-2 border-2 border-emerald-200 animate-pulse">
                         <i class="fas fa-check-circle"></i> Already Paid
@@ -1066,7 +1284,7 @@ function renderCollectionForm(student, feeData) {
                             <div class="w-6"></div>
                         </div>
                         
-                        <!-- Previous Month Debt (If exists) -->
+                        <!-- Previous Month Debt (If exists) / Surplus -->
                         ${feeData.previous_debt > 0 ? `
                         <div onclick="showArrearsBreakdown()" class="flex items-center gap-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl shadow-sm cursor-pointer hover:bg-amber-100 hover:border-amber-300 transition-all group/arrears" title="Click to view month-wise breakdown">
                             <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 group-hover/arrears:scale-110 transition-transform">
@@ -1086,7 +1304,26 @@ function renderCollectionForm(student, feeData) {
                                 <i class="fas fa-chevron-right text-xs"></i>
                             </div>
                         </div>
-                        ` : ''}
+                        ` : (feeData.previous_debt < 0 ? `
+                        <div onclick="showArrearsBreakdown()" class="flex items-center gap-3 p-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-100 hover:border-emerald-300 transition-all group/arrears" title="Click to view month-wise breakdown">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 group-hover/arrears:scale-110 transition-transform">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[10px] text-emerald-700 font-bold uppercase tracking-tighter flex items-center gap-1">
+                                    Surplus Balance (Advance)
+                                    <i class="fas fa-external-link-alt text-[8px] opacity-50 group-hover/arrears:opacity-100"></i>
+                                </p>
+                                <p class="text-xs font-bold text-emerald-500">Already paid in advance</p>
+                            </div>
+                            <div class="w-24 text-right pr-3 font-black text-lg text-emerald-700">
+                                Rs. ${Number(Math.abs(feeData.previous_debt)).toLocaleString()}
+                            </div>
+                            <div class="w-6 flex items-center justify-center text-emerald-400 group-hover/arrears:text-emerald-600">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </div>
+                        </div>
+                        ` : '')}
                     </div>
 
                     <!-- Quick Add Toggles -->
@@ -1216,21 +1453,6 @@ function renderCollectionForm(student, feeData) {
     setTimeout(recalculateTotal, 50);
 }
 
-window.checkFeeStatusForMonth = function(gr_no) {
-    const month = document.getElementById('fee_month_picker').value;
-    const container = document.getElementById('collection_details');
-    
-    // Add a slight overlay to indicate loading
-    container.classList.add('opacity-50');
-    
-    fetch(`../api/get_fee_status.php?gr_no=${gr_no}&month=${month}`)
-        .then(res => res.json())
-        .then(data => {
-            container.classList.remove('opacity-50');
-            renderCollectionForm(data.student, data);
-        });
-}
-
 window.addToTotalAmount = function(amt) {
     const input = document.getElementById('amount_paid_input');
     if (input) {
@@ -1353,14 +1575,6 @@ function recalculateTotal() {
     const amountPaidInput = document.getElementById('amount_paid_input');
     let totalPaid = amountPaidInput ? parseInt(amountPaidInput.value) || 0 : 0;
 
-    // Enforce: Total Paid cannot exceed Total Dues!
-    if (totalPaid > totalDues) {
-        totalPaid = totalDues;
-        if (amountPaidInput) {
-            amountPaidInput.value = totalPaid;
-        }
-    }
-
     const remainingDebt = Math.max(0, totalDues - totalPaid);
 
     const displayPaid = document.getElementById('total_amount_display');
@@ -1369,7 +1583,13 @@ function recalculateTotal() {
     const hiddenInput = document.getElementById('total_amount_input');
     
     if (displayPaid) displayPaid.innerText = totalPaid.toLocaleString();
-    if (displayDues) displayDues.innerText = totalDues.toLocaleString();
+    if (displayDues) {
+        if (totalDues < 0) {
+            displayDues.innerText = '-' + Math.abs(totalDues).toLocaleString();
+        } else {
+            displayDues.innerText = totalDues.toLocaleString();
+        }
+    }
     if (displayDebt) displayDebt.innerText = remainingDebt.toLocaleString();
     if (hiddenInput) hiddenInput.value = totalPaid;
 }
@@ -1592,7 +1812,7 @@ window.showStudentHistory = function(gr, name) {
 
 window.showArrearsBreakdown = function() {
     const feeData = window.currentStudentFeeData;
-    if (!feeData || !feeData.previous_debt || feeData.previous_debt <= 0) return;
+    if (!feeData || !feeData.previous_debt) return;
 
     const breakdown = feeData.previous_debt_breakdown || [];
     const student = feeData.student || {};
@@ -1606,7 +1826,7 @@ window.showArrearsBreakdown = function() {
     const subtitle = document.getElementById('modal_subtitle');
     const dialog = document.getElementById('fee_modal_dialog');
 
-    title.innerText = 'Previous Arrears Breakdown';
+    title.innerText = feeData.previous_debt < 0 ? 'Surplus / Advance Balance Breakdown' : 'Previous Arrears Breakdown';
     subtitle.innerText = `${student.student_name || 'Student'} (GR: ${student.gr_no || '—'}) — before ${targetLabel}`;
 
     let rowsHtml = '';
@@ -1616,16 +1836,19 @@ window.showArrearsBreakdown = function() {
         breakdown.forEach(row => {
             const monthLabel = new Date(row.month + '-01').toLocaleString('en-US', { month: 'long', year: 'numeric' });
             const isUnpaid = row.status === 'unpaid';
-            const statusBadge = isUnpaid
-                ? '<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase">Unpaid</span>'
-                : '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase">Partial</span>';
+            const isSurplus = row.status === 'surplus';
+            const statusBadge = isSurplus
+                ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase">Surplus</span>'
+                : (isUnpaid
+                    ? '<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase">Unpaid</span>'
+                    : '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase">Partial</span>');
 
             rowsHtml += `
                 <tr class="hover:bg-amber-50/50 transition">
                     <td class="px-4 py-3 font-bold text-gray-800">${monthLabel}</td>
                     <td class="px-4 py-3 text-right text-gray-600">Rs. ${Number(row.due).toLocaleString()}</td>
                     <td class="px-4 py-3 text-right text-emerald-600">Rs. ${Number(row.paid).toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right font-black text-amber-700">Rs. ${Number(row.balance).toLocaleString()}</td>
+                    <td class="px-4 py-3 text-right font-black ${row.balance < 0 ? 'text-emerald-700' : 'text-amber-700'}">Rs. ${row.balance < 0 ? '-' + Number(Math.abs(row.balance)).toLocaleString() : Number(row.balance).toLocaleString()}</td>
                     <td class="px-4 py-3 text-center">${statusBadge}</td>
                 </tr>
             `;
@@ -1633,14 +1856,14 @@ window.showArrearsBreakdown = function() {
     }
 
     content.innerHTML = `
-        <div class="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+        <div class="mb-4 p-4 ${feeData.previous_debt < 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'} rounded-xl border flex items-center justify-between">
             <div>
-                <p class="text-[10px] font-black uppercase text-amber-600 tracking-wider">Total Previous Arrears</p>
-                <p class="text-2xl font-black text-amber-800">Rs. ${Number(feeData.previous_debt).toLocaleString()}</p>
+                <p class="text-[10px] font-black uppercase ${feeData.previous_debt < 0 ? 'text-emerald-600' : 'text-amber-600'} tracking-wider">${feeData.previous_debt < 0 ? 'Total Surplus Balance' : 'Total Previous Arrears'}</p>
+                <p class="text-2xl font-black ${feeData.previous_debt < 0 ? 'text-emerald-800' : 'text-amber-800'}">Rs. ${Number(Math.abs(feeData.previous_debt)).toLocaleString()}</p>
             </div>
-            <div class="text-right text-xs text-amber-600 font-medium">
-                <p>${breakdown.length} month(s) pending</p>
-                <p class="text-[10px] text-amber-500 mt-0.5">Before ${targetLabel}</p>
+            <div class="text-right text-xs ${feeData.previous_debt < 0 ? 'text-emerald-600' : 'text-amber-600'} font-medium">
+                <p>${breakdown.length} month(s) pending/credited</p>
+                <p class="text-[10px] ${feeData.previous_debt < 0 ? 'text-emerald-500' : 'text-amber-500'} mt-0.5">Before ${targetLabel}</p>
             </div>
         </div>
         <div class="overflow-x-auto rounded-xl border border-gray-100">
@@ -1782,6 +2005,11 @@ function loadClassStudents() {
 
 // Initial loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Restore last active tab
+    const savedTab = localStorage.getItem('fees_active_tab');
+    if (savedTab && document.getElementById('tab-' + savedTab)) {
+        switchTab(savedTab);
+    }
     loadHistory();
     loadDefaulters();
     // Default the history month to current
@@ -1812,7 +2040,7 @@ function filterHistoryClasses() {
     classSelector.value = '';
     options.forEach(opt => {
         if (!opt.value) return;
-        if (!stage || opt.dataset.stage === stage) {
+        if (!stage || stage === 'Alumni' || opt.dataset.stage === stage) {
             opt.classList.remove('hidden');
         } else {
             opt.classList.add('hidden');
@@ -1821,8 +2049,7 @@ function filterHistoryClasses() {
     loadHistory();
 }
 
-// Ensure loadDefaulters passes stage
-const originalLoadDefaulters = window.loadDefaulters;
+// Ensure loadDefaulters passes stage and updates stats cards
 window.loadDefaulters = function() {
     const month = document.getElementById('defaulter_month').value;
     const stage = document.getElementById('defaulter_stage').value;
@@ -1832,17 +2059,20 @@ window.loadDefaulters = function() {
     
     container.innerHTML = '<div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading defaulters...</div>';
     
-    fetch(`../api/get_defaulters.php?month=${month}&stage=${encodeURIComponent(stage)}&class=${encodeURIComponent(className)}&search=${encodeURIComponent(search)}`)
-        .then(res => res.text())
-        .then(html => {
-            container.innerHTML = html;
+    fetch(`../api/get_defaulters.php?month=${month}&stage=${encodeURIComponent(stage)}&class=${encodeURIComponent(className)}&search=${encodeURIComponent(search)}&format=json`)
+        .then(res => res.json())
+        .then(data => {
+            container.innerHTML = data.html;
             // Update badge count
             const badge = document.getElementById('defaulter_badge');
             if (badge) {
-                const rowCount = container.querySelectorAll('tbody tr:not(.no-defaulters)').length;
-                const isEmpty = container.querySelector('td[colspan="6"]');
-                badge.innerText = isEmpty ? 0 : rowCount;
+                badge.innerText = data.stats.total_defaulters;
             }
+            // Update stats cards
+            const countCard = document.getElementById('defaulter_count_card');
+            const debtCard = document.getElementById('defaulter_debt_card');
+            if (countCard) countCard.innerText = data.stats.total_defaulters;
+            if (debtCard) debtCard.innerText = Number(data.stats.total_debt).toLocaleString();
         });
 };
 
@@ -1854,7 +2084,7 @@ function filterDefaulterClasses() {
     classSelector.value = '';
     options.forEach(opt => {
         if (!opt.value) return;
-        if (!stage || opt.dataset.stage === stage) {
+        if (!stage || stage === 'Alumni' || opt.dataset.stage === stage) {
             opt.classList.remove('hidden');
         } else {
             opt.classList.add('hidden');
@@ -1864,12 +2094,36 @@ function filterDefaulterClasses() {
 
 function fillFullPayment() {
     // We want the student to pay the TOTAL DUE amount (including previous debt).
-    const totalDuesDisplay = document.getElementById('total_dues_display');
-    const totalDues = totalDuesDisplay ? parseInt(totalDuesDisplay.innerText.replace(/[^\d]/g, '')) || 0 : 0;
+    let currentDues = 0;
+    const tuitionInput = document.querySelector('input[name="tuition_fee"]');
+    if (tuitionInput) currentDues += parseInt(tuitionInput.value) || 0;
+    
+    const admissionBtn = document.getElementById('btn_toggle_admission');
+    if (admissionBtn && admissionBtn.getAttribute('data-selected') === 'true') {
+        const admissionInput = document.querySelector('input[name="admission_fee"]');
+        if (admissionInput) currentDues += parseInt(admissionInput.value) || 0;
+    }
+    const examBtn = document.getElementById('btn_toggle_exam');
+    if (examBtn && examBtn.getAttribute('data-selected') === 'true') {
+        const examInput = document.querySelector('input[name="exam_fee"]');
+        if (examInput) currentDues += parseInt(examInput.value) || 0;
+    }
+    const otherBtn = document.getElementById('btn_toggle_other');
+    if (otherBtn && otherBtn.getAttribute('data-selected') === 'true') {
+        const otherInput = document.querySelector('input[name="other_fee"]');
+        if (otherInput) currentDues += parseInt(otherInput.value) || 0;
+    }
+    const discountInput = document.querySelector('input[name="discount"]');
+    if (discountInput) currentDues -= parseInt(discountInput.value) || 0;
+    if (currentDues < 0) currentDues = 0;
+
+    const feeData = window.currentStudentFeeData;
+    const previousDebt = feeData && feeData.previous_debt ? parseFloat(feeData.previous_debt) : 0;
+    const totalDues = currentDues + previousDebt;
     
     const amountPaidInput = document.getElementById('amount_paid_input');
     if (amountPaidInput) {
-        amountPaidInput.value = totalDues;
+        amountPaidInput.value = Math.max(0, totalDues);
     }
     
     recalculateTotal();

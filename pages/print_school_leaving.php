@@ -485,9 +485,12 @@ if (count($studentsToPrint) > 1) {
                                  <div class="field-value"><?php echo !empty($_GET['leaving_date']) ? date('d-m-Y', strtotime($_GET['leaving_date'])) : (!empty($student['updated_at']) ? date('d-m-Y', strtotime($student['updated_at'])) : date('d-m-Y')); ?></div>
                             </div>
                             
+                            <?php 
+                                $leavingClass = !empty($_GET['leaving_class']) ? $_GET['leaving_class'] : ($student['last_class'] ?? $student['current_class']);
+                            ?>
                             <div class="field-row">
                                 <span class="field-label">Class at the time of Leaving</span>
-                                <div class="field-value"><?php echo htmlspecialchars($student['last_class'] ?? $student['current_class']); ?></div>
+                                <div class="field-value"><?php echo htmlspecialchars($leavingClass); ?></div>
                             </div>
                             
                             <div class="field-row">
@@ -497,7 +500,7 @@ if (count($studentsToPrint) > 1) {
                             
                             <div class="field-row">
                                 <span class="field-label">Remarks</span>
-                                <div class="field-value">&nbsp;</div>
+                                <div class="field-value">Standing at <?php echo htmlspecialchars($leavingClass); ?></div>
                             </div>
                             </div>
                             

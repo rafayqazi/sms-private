@@ -6,12 +6,12 @@ $base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
 
 // Set session cookie security parameters
 session_set_cookie_params([
-    'lifetime' => 86400,
+    'lifetime' => 14400, // 4 hours (reduced from 24h)
     'path' => '/',
     'domain' => '',
-    'secure' => isset($_SERVER['HTTPS']), // Secure if using HTTPS
-    'httponly' => true,                  // Prevent JS access to session cookie
-    'samesite' => 'Lax'                  // Protect against some CSRF
+    'secure' => true,    // Always set Secure flag (works on HTTP too, just ignored)
+    'httponly' => true,  // Prevent JS access to session cookie
+    'samesite' => 'Strict' // Prevent CSRF-based session attacks
 ]);
 
 session_start();

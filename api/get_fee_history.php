@@ -34,12 +34,12 @@ $display_list = array_map(function ($r) {
 
 if (!$is_student_history && count($display_list) > 1) {
     $feeStructure = $db->getFeeStructure();
-    $getSortTier = function($row) use ($feeStructure) {
+    $getSortTier = function($row) use ($db) {
         $p = $row['payment'];
         if (empty($p)) return 0;
 
-        $classFees = $feeStructure[$row['class']] ?? ['monthly_fee' => 0];
-        $assignedMonthly = (float)$classFees['monthly_fee'];
+        $student = $db->getStudentByGrNo($row['gr_no']);
+        $assignedMonthly = $student ? $db->getStudentAssignedMonthlyFee($student) : 0;
         $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '' && (float)$p['tuition_fee'] > 0)
             ? (float)$p['tuition_fee'] : $assignedMonthly;
         $expected = $due_tuition
@@ -102,14 +102,13 @@ if (!$is_student_history && count($display_list) > 1) {
                 $isPaid = !empty($p); 
                 $debt = (float)($row['_report']['remaining_debt'] ?? 0);
                 if ($isPaid && $debt <= 0) {
-                    $feeStructure = $db->getFeeStructure();
-                    $classFees = $feeStructure[$row['class']] ?? ['monthly_fee' => 0];
-                    $assignedMonthly = (float)$classFees['monthly_fee'];
+                    $student = $db->getStudentByGrNo($row['gr_no']);
+                    $assignedMonthly = $student ? $db->getStudentAssignedMonthlyFee($student) : (float)(($feeStructure[$row['class']] ?? ['monthly_fee' => 0])['monthly_fee']);
                     $due_tuition = (isset($p['tuition_fee']) && $p['tuition_fee'] !== '' && (float)$p['tuition_fee'] > 0)
                                    ? (float)$p['tuition_fee']
                                    : $assignedMonthly;
                     $expected = $due_tuition + (float)($p['admission_fee'] ?? 0) + (float)($p['exam_fee'] ?? 0) + (float)($p['other_fee'] ?? 0) - (float)($p['discount'] ?? 0);
-                    $debt = max(0.0, $expected - (float)$p['amount_paid']);
+                    $debt = $expected - (float)$p['amount_paid'];
                 }
                 ?>
                 <tr class="hover:bg-gray-50 transition group">
@@ -146,12 +145,14 @@ if (!$is_student_history && count($display_list) > 1) {
                     </td>
                     <td class="px-6 py-4">
                         <?php if ($isPaid): ?>
-                            <div class="font-bold text-gray-900">Rs. <?php echo number_format($p['amount_paid']); ?></div>
-                            <?php if($p['discount'] > 0): ?>
-                                <div class="text-[10px] text-red-500 font-medium">Disc: Rs. <?php echo number_format($p['discount']); ?></div>
+                            <div class="font-bold text-gray-900">Rs. <?php echo number_format((float)$p['amount_paid']); ?></div>
+                            <?php if((float)$p['discount'] > 0): ?>
+                                <div class="text-[10px] text-red-500 font-medium">Disc: Rs. <?php echo number_format((float)$p['discount']); ?></div>
                             <?php endif; ?>
                             <?php if($debt > 0): ?>
-                                <div class="text-[10px] text-amber-600 font-bold font-mono">Dues: Rs. <?php echo number_format($debt); ?></div>
+                                <div class="text-[10px] text-amber-600 font-bold font-mono">Dues: Rs. <?php echo number_format((float)$debt); ?></div>
+                            <?php elseif($debt < 0): ?>
+                                <div class="text-[10px] text-emerald-600 font-bold font-mono">Surplus: Rs. <?php echo number_format(abs($debt)); ?></div>
                             <?php endif; ?>
                         <?php else: ?>
                             <span class="text-gray-300 italic text-sm">Pending</span>
@@ -193,8 +194,8 @@ if (!$is_student_history && count($display_list) > 1) {
                                 <button onclick="window.showStudentHistory('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="p-2 inline-flex items-center justify-center bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-600 hover:text-white transition shadow-sm" title="View Full History">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button onclick="pickStudent('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5">
-                                    <i class="fas fa-hand-holding-usd"></i> Collect
+                                <button onclick="pickStudent('<?php echo $row['gr_no']; ?>', '<?php echo addslashes($row['student_name']); ?>')" class="p-2 inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition shadow-sm" title="Pay Fee">
+                                    <i class="fas fa-edit"></i>
                                 </button>
                             </div>
                         <?php endif; ?>

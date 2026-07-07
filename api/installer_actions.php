@@ -11,14 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     switch ($action) {
         case 'verify_superuser':
-            $username = $_POST['username'] ?? '';
-            $password = $_POST['password'] ?? '';
-            
-            if ($username === 'abdul rafay' && $password === 'khuljasimsim') {
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Invalid Super User credentials.']);
-            }
+            echo json_encode(['success' => false, 'message' => 'Super user verification is disabled.']);
             break;
 
         case 'activate_license':

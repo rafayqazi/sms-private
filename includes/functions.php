@@ -72,7 +72,9 @@ function canAccessPage($page) {
             'view_results.php',
             'book_bank.php',
             'inventory.php',
-            'messages.php'
+            'messages.php',
+            'expenses.php',
+            'expense_categories.php'
         ];
         return in_array($page, $allowedPages);
     }

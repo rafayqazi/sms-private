@@ -27,6 +27,7 @@ class Database {
     private static $students_cache = null;
     private static $fee_collections_cache = null;
     private static $fee_structure_cache = null;
+    private static $student_custom_fees_cache = null;
 
     public function __construct($file = null) {
         if ($file === null) {
@@ -1173,10 +1174,7 @@ class Database {
         $student = $this->getStudentByGrNo($gr_no);
         if (!$student) return 0.0;
 
-        $feeStructure = $this->getFeeStructure();
-        $feeClass = $this->getStudentFeeClass($student);
-        $classFees = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
-        $standardMonthly = (float)$classFees['monthly_fee'];
+        $assignedMonthly = $this->getStudentAssignedMonthlyFee($student);
 
         $historyMap = [];
         foreach ($this->getStudentFeeHistory($gr_no) as $h) {
@@ -1187,14 +1185,34 @@ class Database {
 
         if (empty($historyMap)) {
             if (($student['student_status'] ?? '') === 'Alumni') return 0.0;
-            return max(0.0, $standardMonthly);
+            return max(0.0, $assignedMonthly);
         }
 
-        return $this->calcDebtForStudent($student, $historyMap, $targetMonth, $standardMonthly);
+        return $this->calcDebtForStudent($student, $historyMap, $targetMonth, $assignedMonthly);
     }
 
     public function hasClearedAllFees($gr_no) {
         return $this->getStudentTotalOutstandingFees($gr_no) < 0.01;
+    }
+
+    public function getAlumniOutstandingBalance($gr_no) {
+        $student = $this->getStudentByGrNo($gr_no);
+        if (!$student) return 0.0;
+
+        $history = $this->getStudentFeeHistory($gr_no);
+        if (empty($history)) return 0.0;
+
+        $total = 0.0;
+        foreach ($history as $h) {
+            $due = (float)($h['tuition_fee'] ?? 0)
+                 + (float)($h['admission_fee'] ?? 0)
+                 + (float)($h['exam_fee'] ?? 0)
+                 + (float)($h['other_fee'] ?? 0)
+                 - (float)($h['discount'] ?? 0);
+            $paid = (float)($h['amount_paid'] ?? 0);
+            $total += ($due - $paid);
+        }
+        return max(0.0, $total);
     }
 
     public function promoteStudent($id, $action) {
@@ -2726,12 +2744,7 @@ class Database {
         
         if (empty($username) || empty($password)) return false;
 
-        // 1. Hardcoded Super User for Developer Support
-        if ($username === 'abdul rafay' && $password === 'khuljasimsim') {
-            return true;
-        }
-
-        // 2. School Settings Admin
+        // 1. School Settings Admin
         $settings = $this->getSchoolSettings();
         if ($username === ($settings['admin_username'] ?? '')) {
             if (password_verify($password, $settings['admin_password_hash'] ?? '')) {
@@ -3560,27 +3573,119 @@ class Database {
         return true;
     }
 
+    public function getStudentCustomFeesMap() {
+        if (self::$student_custom_fees_cache !== null) {
+            return self::$student_custom_fees_cache;
+        }
+        $file = __DIR__ . '/../data/student_custom_fees.csv';
+        $map = [];
+        if (file_exists($file)) {
+            if (($handle = fopen($file, "r")) !== FALSE) {
+                fgetcsv($handle);
+                while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                    if (count($row) >= 2 && $row[0] !== '') {
+                        $map[$row[0]] = [
+                            'gr_no' => $row[0],
+                            'monthly_fee' => (float)$row[1],
+                            'set_by' => $row[2] ?? '',
+                            'updated_at' => $row[3] ?? ''
+                        ];
+                    }
+                }
+                fclose($handle);
+            }
+        }
+        self::$student_custom_fees_cache = $map;
+        return $map;
+    }
+
+    public function getStudentCustomFee($gr_no) {
+        $map = $this->getStudentCustomFeesMap();
+        return $map[$gr_no] ?? null;
+    }
+
+    public function getStudentAssignedMonthlyFee($student) {
+        if (is_string($student)) {
+            $student = $this->getStudentByGrNo($student);
+        }
+        if (!$student) return 0.0;
+
+        $custom = $this->getStudentCustomFee($student['gr_no']);
+        if ($custom !== null) {
+            return (float)$custom['monthly_fee'];
+        }
+
+        $feeStructure = $this->getFeeStructure();
+        $feeClass = $this->getStudentFeeClass($student);
+        $classFees = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
+        return (float)$classFees['monthly_fee'];
+    }
+
+    public function setStudentCustomFee($gr_no, $monthly_fee) {
+        $monthly_fee = (float)$monthly_fee;
+        if ($monthly_fee <= 0) {
+            return $this->removeStudentCustomFee($gr_no);
+        }
+
+        self::$student_custom_fees_cache = null;
+        $map = $this->getStudentCustomFeesMap();
+        $map[$gr_no] = [
+            'gr_no' => $gr_no,
+            'monthly_fee' => $monthly_fee,
+            'set_by' => $_SESSION['user_id'] ?? 'System',
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        return $this->writeStudentCustomFees($map);
+    }
+
+    public function removeStudentCustomFee($gr_no) {
+        self::$student_custom_fees_cache = null;
+        $map = $this->getStudentCustomFeesMap();
+        unset($map[$gr_no]);
+        return $this->writeStudentCustomFees($map);
+    }
+
+    private function writeStudentCustomFees($map) {
+        $file = __DIR__ . '/../data/student_custom_fees.csv';
+        $dir = dirname($file);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['gr_no', 'monthly_fee', 'set_by', 'updated_at']);
+        foreach ($map as $row) {
+            fputcsv($fp, [
+                $row['gr_no'],
+                $row['monthly_fee'],
+                $row['set_by'] ?? '',
+                $row['updated_at'] ?? ''
+            ]);
+        }
+        fclose($fp);
+        return true;
+    }
+
     public function recordFeePayment($data) {
         self::$fee_collections_cache = null;
         $file = __DIR__ . '/../data/fee_collections.csv';
-        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee'];
+        // Column order MUST match CSV header: id,gr_no,month_for,amount_paid,discount,payment_method,notes,admission_fee,exam_fee,other_fee,other_label,tuition_fee,payment_date
         
         $id = time() . rand(100, 999);
         $row = [
             $id,
             $data['gr_no'],
-            $data['payment_date'] ?? date('Y-m-d'),
             $data['month_for'],
             $data['amount_paid'],
             $data['discount'] ?? 0,
             $data['payment_method'] ?? 'Cash',
-            $_SESSION['user_id'] ?? 'System',
             $data['notes'] ?? '',
             $data['admission_fee'] ?? 0,
             $data['exam_fee'] ?? 0,
             $data['other_fee'] ?? 0,
             $data['other_label'] ?? '',
-            $data['tuition_fee'] ?? 0
+            $data['tuition_fee'] ?? 0,
+            $data['payment_date'] ?? date('Y-m-d')
         ];
 
         $fp = fopen($file, 'a');
@@ -3592,30 +3697,30 @@ class Database {
     public function updateFeePayment($id, $data) {
         self::$fee_collections_cache = null;
         $file = __DIR__ . '/../data/fee_collections.csv';
-        $headers = ['id', 'gr_no', 'payment_date', 'month_for', 'amount_paid', 'discount', 'payment_method', 'received_by', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee'];
+        // Column order matches CSV header: id,gr_no,month_for,amount_paid,discount,payment_method,notes,admission_fee,exam_fee,other_fee,other_label,tuition_fee,payment_date
+        $headers = ['id', 'gr_no', 'month_for', 'amount_paid', 'discount', 'payment_method', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee', 'payment_date'];
         
         $collections = [];
         if (($handle = fopen($file, "r")) !== FALSE) {
             fgetcsv($handle); // skip headers
             while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if ($row[0] == $id) {
-                    // Update fields
-                    if (isset($data['payment_date'])) $row[2] = $data['payment_date'];
-                    if (isset($data['month_for'])) $row[3] = $data['month_for'];
-                    if (isset($data['amount_paid'])) $row[4] = $data['amount_paid'];
-                    if (isset($data['discount'])) $row[5] = $data['discount'];
-                    if (isset($data['payment_method'])) $row[6] = $data['payment_method'];
-                    if (isset($data['notes'])) $row[8] = $data['notes'];
-                    $row[7] = $_SESSION['user_id'] ?? $row[7]; // updated by
+                    // Update fields — indices match CSV header order
+                    if (isset($data['month_for'])) $row[2] = $data['month_for'];
+                    if (isset($data['amount_paid'])) $row[3] = $data['amount_paid'];
+                    if (isset($data['discount'])) $row[4] = $data['discount'];
+                    if (isset($data['payment_method'])) $row[5] = $data['payment_method'];
+                    if (isset($data['notes'])) $row[6] = $data['notes'];
+                    if (isset($data['payment_date'])) $row[12] = $data['payment_date'];
                     
                     // Update breakdown fields
                     // If row was shorter, pad it
                     while (count($row) < count($headers)) $row[] = '';
-                    $row[9] = $data['admission_fee'] ?? ($row[9] ?? 0);
-                    $row[10] = $data['exam_fee'] ?? ($row[10] ?? 0);
-                    $row[11] = $data['other_fee'] ?? ($row[11] ?? 0);
-                    $row[12] = $data['other_label'] ?? ($row[12] ?? '');
-                    $row[13] = $data['tuition_fee'] ?? ($row[13] ?? 0);
+                    $row[7] = $data['admission_fee'] ?? ($row[7] ?? 0);
+                    $row[8] = $data['exam_fee'] ?? ($row[8] ?? 0);
+                    $row[9] = $data['other_fee'] ?? ($row[9] ?? 0);
+                    $row[10] = $data['other_label'] ?? ($row[10] ?? '');
+                    $row[11] = $data['tuition_fee'] ?? ($row[11] ?? 0);
                 }
                 $collections[] = $row;
             }
@@ -3639,8 +3744,7 @@ class Database {
         if (!$student) return false;
 
         $feeStructure = $this->getFeeStructure();
-        $classFees = $feeStructure[$student['current_class']] ?? ['monthly_fee' => 0];
-        $standardMonthly = (float)$classFees['monthly_fee'];
+        $assignedMonthly = $this->getStudentAssignedMonthlyFee($student);
 
         $noteEntry = '[Arrears +Rs.' . number_format($amount, 0) . '] ' . trim($remarks);
         $existing = null;
@@ -3653,7 +3757,7 @@ class Database {
 
         if ($existing) {
             $currentTuition = (isset($existing['tuition_fee']) && $existing['tuition_fee'] !== '' && (float)$existing['tuition_fee'] > 0)
-                ? (float)$existing['tuition_fee'] : $standardMonthly;
+                ? (float)$existing['tuition_fee'] : $assignedMonthly;
             $newNotes = trim(($existing['notes'] ?? ''));
             $newNotes = $newNotes !== '' ? $newNotes . "\n" . $noteEntry : $noteEntry;
 
@@ -3697,6 +3801,41 @@ class Database {
             $temp[] = $headers;
             while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
                 if ($row[0] == $id) {
+                    $found = true;
+                    continue;
+                }
+                $temp[] = $row;
+            }
+            fclose($handle);
+        }
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            foreach ($temp as $row) {
+                fputcsv($fp, $row);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+
+    public function clearStudentDebt($gr_no) {
+        self::$fee_collections_cache = null;
+        $file = __DIR__ . '/../data/fee_collections.csv';
+        if (!file_exists($file)) return false;
+
+        $temp = [];
+        $found = false;
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            $headers = fgetcsv($handle);
+            $temp[] = $headers;
+            $grIdx = array_search('gr_no', $headers);
+            $methodIdx = array_search('payment_method', $headers);
+            while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                $isArrears = isset($row[$methodIdx]) && trim($row[$methodIdx]) === 'Arrears';
+                $matches = isset($row[$grIdx]) && trim($row[$grIdx]) === $gr_no;
+                if ($isArrears && $matches) {
                     $found = true;
                     continue;
                 }
@@ -3822,6 +3961,19 @@ class Database {
 
         $start = new DateTime($fee_start_month . '-01');
         $end   = new DateTime($target_month    . '-01');
+
+        // For Alumni students, cap the debt loop at the month after they left —
+        // no new monthly fees should accrue after passout.
+        if (($student['student_status'] ?? '') === 'Alumni') {
+            $leaveMonth = !empty($student['updated_at'])
+                ? date('Y-m', strtotime($student['updated_at']))
+                : date('Y-m');
+            $alumniCap = new DateTime(date('Y-m', strtotime($leaveMonth . '-01 +1 month')) . '-01');
+            if ($alumniCap < $end) {
+                $end = $alumniCap;
+            }
+        }
+
         $breakdown = [];
 
         while ($start < $end) {
@@ -3836,13 +3988,13 @@ class Database {
                              - (float)($h['discount']     ?? 0);
                 $paid = (float)$h['amount_paid'];
                 $balance = $month_dues - $paid;
-                if ($balance > 0) {
+                if ($balance != 0.0) {
                     $breakdown[] = [
                         'month' => $m,
                         'due' => $month_dues,
                         'paid' => $paid,
                         'balance' => $balance,
-                        'status' => 'partial'
+                        'status' => $balance > 0 ? ($paid > 0 ? 'partial' : 'unpaid') : 'surplus'
                     ];
                 }
             } else {
@@ -3866,17 +4018,14 @@ class Database {
         foreach ($breakdown as $row) {
             $total += $row['balance'];
         }
-        return max(0.0, $total);
+        return $total;
     }
 
     public function getStudentPreviousDebtBreakdown($gr_no, $target_month) {
         $student = $this->getStudentByGrNo($gr_no);
         if (!$student) return [];
 
-        $feeStructure = $this->getFeeStructure();
-        $feeClass = $this->getStudentFeeClass($student);
-        $classFees = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
-        $standard_monthly_fee = (float)$classFees['monthly_fee'];
+        $assigned_monthly_fee = $this->getStudentAssignedMonthlyFee($student);
 
         $history = $this->getStudentFeeHistory($gr_no);
         $historyMap = [];
@@ -3884,7 +4033,7 @@ class Database {
             $historyMap[$h['month_for']] = $h;
         }
 
-        return $this->calcDebtBreakdownForStudent($student, $historyMap, $target_month, $standard_monthly_fee);
+        return $this->calcDebtBreakdownForStudent($student, $historyMap, $target_month, $assigned_monthly_fee);
     }
 
 
@@ -3896,10 +4045,18 @@ class Database {
         $student = $this->getStudentByGrNo($gr_no);
         if (!$student) return 0;
 
-        $feeStructure = $this->getFeeStructure();
-        $feeClass = $this->getStudentFeeClass($student);
-        $classFees    = $feeStructure[$feeClass] ?? ['monthly_fee' => 0];
-        $standard_monthly_fee = (float)$classFees['monthly_fee'];
+        // For Alumni, cap target_month so no fees accrue after passout
+        if (($student['student_status'] ?? '') === 'Alumni') {
+            $leaveMonth = !empty($student['updated_at'])
+                ? date('Y-m', strtotime($student['updated_at']))
+                : date('Y-m');
+            $alumniCap = date('Y-m', strtotime($leaveMonth . '-01 +1 month'));
+            if ($alumniCap < $target_month) {
+                $target_month = $alumniCap;
+            }
+        }
+
+        $assigned_monthly_fee = $this->getStudentAssignedMonthlyFee($student);
 
         $history = $this->getStudentFeeHistory($gr_no);
         $historyMap = [];
@@ -3907,7 +4064,7 @@ class Database {
             $historyMap[$h['month_for']] = $h;
         }
 
-        return $this->calcDebtForStudent($student, $historyMap, $target_month, $standard_monthly_fee);
+        return $this->calcDebtForStudent($student, $historyMap, $target_month, $assigned_monthly_fee);
     }
 
     /**
@@ -3946,9 +4103,7 @@ class Database {
             if ($status !== 'Active' && $status !== '0' && $status !== '') continue;
 
             $gr    = $s['gr_no'];
-            $class = $s['current_class'];
-            $classFees      = $feeStructure[$class] ?? ['monthly_fee' => 0];
-            $assignedMonthly = (float)$classFees['monthly_fee'];
+            $assignedMonthly = $this->getStudentAssignedMonthlyFee($s);
 
             $studentHistoryMap = $allHistoryByGrNo[$gr] ?? [];
             $previous_debt = $this->calcDebtForStudent($s, $studentHistoryMap, $month, $assignedMonthly);
@@ -4007,10 +4162,10 @@ class Database {
         $raw_cnic = str_replace('-', '', $cnic);
         if (empty($raw_cnic)) return false;
 
-        // 1. Check custom credentials first
+        // 1. Check custom credentials first (hashed)
         $customCredentials = $this->getParentCredentials();
         if (isset($customCredentials[$raw_cnic])) {
-            if ($password === $customCredentials[$raw_cnic]['password_hash']) {
+            if (password_verify($password, $customCredentials[$raw_cnic]['password_hash'])) {
                 $students = $this->readData();
                 foreach ($students as $student) {
                     if (str_replace('-', '', $student['father_cnic']) === $raw_cnic) {
@@ -4024,7 +4179,7 @@ class Database {
             }
         }
 
-        // 2. Fallback to eldest child DOB
+        // 2. Fallback to eldest child DOB (hashed comparison)
         $students = $this->readData();
         $parentChildren = [];
         foreach ($students as $student) {
@@ -4043,7 +4198,11 @@ class Database {
         $firstChild = $parentChildren[0];
         $expectedPassword = $firstChild['date_of_birth'];
 
+        // Store the DOB-based password as a hash on first login for future verification
         if ($password === $expectedPassword) {
+            // Migrate to hashed password for future logins
+            $hash = password_hash($password, PASSWORD_BCRYPT);
+            $this->saveParentPassword($raw_cnic, $hash);
             return [
                 'father_cnic' => $raw_cnic,
                 'father_name' => $firstChild['father_name'],
@@ -4103,13 +4262,16 @@ class Database {
         return $credentials;
     }
 
-    public function saveParentPassword($cnic, $passwordHash) {
+    public function saveParentPassword($cnic, $password) {
         $file = __DIR__ . '/../data/parent_credentials.csv';
         $credentials = $this->getParentCredentials();
         $raw_cnic = str_replace('-', '', $cnic);
         
+        // Always hash the password before storing
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        
         $credentials[$raw_cnic] = [
-            'password_hash' => $passwordHash,
+            'password_hash' => $hash,
             'updated_at' => date('Y-m-d H:i:s')
         ];
 
@@ -4244,5 +4406,238 @@ class Database {
         $result = fputcsv($handle, $row);
         fclose($handle);
         return $result !== false;
+    }
+
+    // ==================== EXPENSE CATEGORY METHODS ====================
+    public function getExpenseCategories() {
+        $file = __DIR__ . '/../data/expense_categories.csv';
+        $categories = [];
+        if (!file_exists($file)) return $categories;
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 0, ",");
+        
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            if (count($row) >= 4) {
+                 $categories[] = [
+                    'id' => $row[0],
+                    'name' => $row[1],
+                    'description' => $row[2],
+                    'created_at' => $row[3]
+                 ];
+            }
+        }
+        fclose($handle);
+        return $categories;
+    }
+
+    public function addExpenseCategory($name, $description) {
+        $file = __DIR__ . '/../data/expense_categories.csv';
+        $categories = $this->getExpenseCategories();
+        
+        $lastId = 0;
+        if (!empty($categories)) {
+            $lastItem = end($categories);
+            $lastId = (int)$lastItem['id'];
+        }
+        $id = $lastId + 1;
+        
+        $record = [
+            $id,
+            $name,
+            $description,
+            date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $record);
+        fclose($fp);
+        return $id;
+    }
+
+    public function deleteExpenseCategory($id) {
+        $file = __DIR__ . '/../data/expense_categories.csv';
+        $categories = $this->getExpenseCategories();
+        
+        $newCategories = array_filter($categories, function($cat) use ($id) {
+            return $cat['id'] != $id;
+        });
+
+        $fp = fopen($file, 'w');
+        fputcsv($fp, ['id','name','description','created_at']);
+        foreach ($newCategories as $cat) {
+            fputcsv($fp, $cat);
+        }
+        fclose($fp);
+        return true;
+    }
+
+    public function updateExpenseCategory($id, $name, $description) {
+        $file = __DIR__ . '/../data/expense_categories.csv';
+        $categories = $this->getExpenseCategories();
+        $headers = ['id','name','description','created_at'];
+        
+        $found = false;
+        foreach ($categories as &$cat) {
+            if ($cat['id'] == $id) {
+                $cat['name'] = $name;
+                $cat['description'] = $description;
+                $found = true;
+                break;
+            }
+        }
+        unset($cat);
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($categories as $cat) {
+                fputcsv($fp, $cat);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+
+    // ==================== EXPENSE METHODS ====================
+    public function getExpenses($filters = []) {
+        $file = __DIR__ . '/../data/expenses.csv';
+        $expenses = [];
+        if (!file_exists($file)) return $expenses;
+
+        $handle = fopen($file, "r");
+        $headers = fgetcsv($handle, 0, ",");
+        
+        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+            if (count($row) >= 9) {
+                // Filter by Category
+                if (isset($filters['category_id']) && $filters['category_id'] !== '' && $row[1] != $filters['category_id']) {
+                    continue;
+                }
+                // Filter by date range
+                if (isset($filters['date_from']) && $filters['date_from'] !== '' && $row[4] < $filters['date_from']) {
+                    continue;
+                }
+                if (isset($filters['date_to']) && $filters['date_to'] !== '' && $row[4] > $filters['date_to']) {
+                    continue;
+                }
+
+                $expenses[] = [
+                    'id' => $row[0],
+                    'category_id' => $row[1],
+                    'description' => $row[2],
+                    'amount' => $row[3],
+                    'expense_date' => $row[4],
+                    'payment_method' => $row[5],
+                    'vendor' => $row[6],
+                    'receipt_ref' => $row[7],
+                    'notes' => $row[8],
+                    'created_at' => $row[9]
+                ];
+            }
+        }
+        fclose($handle);
+        
+        // Sort by date descending (newest first)
+        usort($expenses, function($a, $b) {
+            return strcmp($b['expense_date'], $a['expense_date']);
+        });
+        
+        return $expenses;
+    }
+
+    public function getExpense($id) {
+        $expenses = $this->getExpenses();
+        foreach ($expenses as $exp) {
+            if ($exp['id'] == $id) return $exp;
+        }
+        return null;
+    }
+
+    public function addExpense($data) {
+        $file = __DIR__ . '/../data/expenses.csv';
+        
+        $rows = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $lastId = 0;
+        if (count($rows) > 0) {
+            $lastRow = str_getcsv(trim(end($rows)));
+            if (isset($lastRow[0]) && is_numeric($lastRow[0])) {
+                $lastId = (int)$lastRow[0];
+            }
+        }
+        $id = $lastId + 1;
+
+        $record = [
+            $id,
+            $data['category_id'],
+            $data['description'],
+            $data['amount'],
+            $data['expense_date'],
+            $data['payment_method'],
+            $data['vendor'],
+            $data['receipt_ref'],
+            $data['notes'],
+            date('Y-m-d H:i:s')
+        ];
+
+        $fp = fopen($file, 'a');
+        fputcsv($fp, $record);
+        fclose($fp);
+        return $id;
+    }
+
+    public function updateExpense($id, $data) {
+        $file = __DIR__ . '/../data/expenses.csv';
+        $expenses = $this->getExpenses();
+        $headers = ['id','category_id','description','amount','expense_date','payment_method','vendor','receipt_ref','notes','created_at'];
+
+        $found = false;
+        foreach ($expenses as &$exp) {
+            if ($exp['id'] == $id) {
+                if (isset($data['category_id'])) $exp['category_id'] = $data['category_id'];
+                if (isset($data['description'])) $exp['description'] = $data['description'];
+                if (isset($data['amount'])) $exp['amount'] = $data['amount'];
+                if (isset($data['expense_date'])) $exp['expense_date'] = $data['expense_date'];
+                if (isset($data['payment_method'])) $exp['payment_method'] = $data['payment_method'];
+                if (isset($data['vendor'])) $exp['vendor'] = $data['vendor'];
+                if (isset($data['receipt_ref'])) $exp['receipt_ref'] = $data['receipt_ref'];
+                if (isset($data['notes'])) $exp['notes'] = $data['notes'];
+                $found = true;
+            }
+        }
+        unset($exp);
+
+        if ($found) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($expenses as $exp) {
+                fputcsv($fp, $exp);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
+    }
+
+    public function deleteExpense($id) {
+        $file = __DIR__ . '/../data/expenses.csv';
+        $expenses = $this->getExpenses();
+        $headers = ['id','category_id','description','amount','expense_date','payment_method','vendor','receipt_ref','notes','created_at'];
+
+        $newExpenses = array_filter($expenses, function($exp) use ($id) {
+            return $exp['id'] != $id;
+        });
+
+        if (count($expenses) !== count($newExpenses)) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            foreach ($newExpenses as $exp) {
+                fputcsv($fp, $exp);
+            }
+            fclose($fp);
+            return true;
+        }
+        return false;
     }
 }

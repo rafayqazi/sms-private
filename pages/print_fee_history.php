@@ -317,8 +317,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                 $totalDiscount = 0;
                 
                 $feeStructure = $db->getFeeStructure();
-                $classFees = $feeStructure[$student['current_class']] ?? ['monthly_fee' => 0];
-                $assignedMonthly = (float)$classFees['monthly_fee'];
+                $assignedMonthly = $db->getStudentAssignedMonthlyFee($student);
                 
                 if (empty($collections)): ?>
                     <tr><td colspan="7" style="text-align:center; padding: 50px; color: #94a3b8; font-style: italic;">No payment records found in the system.</td></tr>
@@ -334,7 +333,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                         
                         $previous_debt = $db->getStudentPreviousDebt($student['gr_no'], $p['month_for']);
                         $expected = $due_tuition + $adm + $exm + $oth - $disc + $previous_debt;
-                        $debt = max(0.0, $expected - $paid);
+                        $debt = $expected - $paid;
                         
                         $totalPaid += $paid;
                         $totalDiscount += $disc;
@@ -345,8 +344,16 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                         <td><span style="font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: bold;"><?php echo $p['payment_method']; ?></span></td>
                         <td class="receipt-id">#<?php echo $p['id']; ?></td>
                         <td class="amount text-red-500"><?php echo $disc > 0 ? '-Rs. ' . number_format($disc) : '-'; ?></td>
-                        <td class="amount <?php echo $debt > 0 ? 'text-amber-600 font-bold' : 'text-slate-400'; ?>">
-                            <?php echo $debt > 0 ? 'Rs. ' . number_format($debt) : 'Cleared'; ?>
+                        <td class="amount <?php echo $debt > 0 ? 'text-amber-600 font-bold' : ($debt < 0 ? 'text-emerald-600 font-bold' : 'text-slate-400'); ?>">
+                            <?php 
+                            if ($debt > 0) {
+                                echo 'Rs. ' . number_format($debt);
+                            } elseif ($debt < 0) {
+                                echo 'Surplus: Rs. ' . number_format(abs($debt));
+                            } else {
+                                echo 'Cleared';
+                            }
+                            ?>
                         </td>
                         <td class="amount" style="color: <?= $brandColor ?>;">Rs. <?php echo number_format($paid); ?></td>
                     </tr>

@@ -33,9 +33,10 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
         foreach ($all_students as $s) {
             $student_gr = $s['gr_no'];
             $student_class = $s['current_class'];
+            $isAlumni = ($s['student_status'] ?? '') === 'Alumni';
+            $displayClass = $isAlumni ? ($s['last_class'] ?? $student_class) : $student_class;
 
-            if ($class_filter && $student_class !== $class_filter) continue;
-            if (isset($s['student_status']) && $s['student_status'] === 'Alumni') continue;
+            if ($class_filter && $displayClass !== $class_filter) continue;
 
             $payment = null;
             foreach ($history as $h) {
@@ -49,8 +50,9 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
                 'gr_no' => $student_gr,
                 'student_name' => $s['student_name'],
                 'father_name' => $s['father_name'] ?? '',
-                'class' => $student_class,
-                'stage' => $classStageMap[$student_class] ?? 'Elementary',
+                'class' => $displayClass,
+                'stage' => $isAlumni ? 'Alumni' : ($classStageMap[$displayClass] ?? 'Elementary'),
+                'student_status' => $s['student_status'] ?? 'Active',
                 'payment' => $payment
             ];
         }
@@ -59,9 +61,10 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
             $s = $studentMap[$h['gr_no']] ?? null;
             $s_name = $s ? $s['student_name'] : 'Unknown';
             $father_name = $s ? ($s['father_name'] ?? '') : '';
+            $isAlumni = $s && ($s['student_status'] ?? '') === 'Alumni';
             $s_class = 'N/A';
             if ($s) {
-                $s_class = ($s['student_status'] ?? '') === 'Alumni'
+                $s_class = $isAlumni
                     ? ($s['last_class'] ?? $s['current_class'])
                     : $s['current_class'];
             }
@@ -73,7 +76,8 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
                 'student_name' => $s_name,
                 'father_name' => $father_name,
                 'class' => $s_class,
-                'stage' => $classStageMap[$s_class] ?? 'Elementary',
+                'stage' => $isAlumni ? 'Alumni' : ($classStageMap[$s_class] ?? 'Elementary'),
+                'student_status' => $s['student_status'] ?? 'Active',
                 'payment' => $h
             ];
         }
@@ -98,8 +102,19 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
         $rows[] = enrichFeeHistoryReportRow($db, $row, $feeStructure, $month);
     }
 
-    $stageOrder = ['Pre-Primary' => 0, 'Elementary' => 1, 'College' => 2];
+    $rows = array_values(array_filter($rows, function ($r) {
+        if (isset($r['student_status']) && $r['student_status'] === 'Alumni') {
+            return ($r['remaining_debt'] ?? 0) > 0;
+        }
+        return true;
+    }));
+
+    $stageOrder = ['Pre-Primary' => 0, 'Elementary' => 1, 'College' => 2, 'Alumni' => 3];
     usort($rows, function ($a, $b) use ($stageOrder, $classOrderMap) {
+        $isAlumniA = ($a['student_status'] ?? '') === 'Alumni';
+        $isAlumniB = ($b['student_status'] ?? '') === 'Alumni';
+        if ($isAlumniA !== $isAlumniB) return $isAlumniA - $isAlumniB;
+
         $sA = $stageOrder[$a['stage']] ?? 99;
         $sB = $stageOrder[$b['stage']] ?? 99;
         if ($sA !== $sB) return $sA - $sB;
@@ -119,8 +134,8 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
 
 function enrichFeeHistoryReportRow(Database $db, array $row, array $feeStructure, $defaultMonth) {
     $p = $row['payment'];
-    $classFees = $feeStructure[$row['class']] ?? ['monthly_fee' => 0];
-    $assignedMonthly = (float)$classFees['monthly_fee'];
+    $student = $db->getStudentByGrNo($row['gr_no']);
+    $assignedMonthly = $student ? $db->getStudentAssignedMonthlyFee($student) : (float)(($feeStructure[$row['class']] ?? ['monthly_fee' => 0])['monthly_fee']);
     $month_for = $p ? $p['month_for'] : ($defaultMonth ?: date('Y-m'));
     $arrears = $db->getStudentPreviousDebt($row['gr_no'], $month_for);
 
