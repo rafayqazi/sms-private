@@ -837,7 +837,7 @@ window.clearStudentDebt = function() {
 
     if (!confirm(`Are you absolutely sure?\n\nThis action cannot be undone. All outstanding debt for ${name} will be wiped clean.`)) return;
 
-    const btn = event?.target?.closest?.('button') || document.querySelector('[onclick="clearStudentDebt()"]');
+    const btn = document.querySelector('[onclick="clearStudentDebt()"]');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
     const formData = new FormData();
@@ -915,7 +915,7 @@ window.showSetStudentFeeModal = function(grNo, studentName) {
 
                     <div>
                         <label class="block text-sm font-bold text-gray-700 uppercase tracking-widest mb-2">Custom Monthly Fee (Rs.)</label>
-                        <input type="number" id="custom_monthly_fee_input" min="1" step="1" value="${assigned}"
+                        <input type="number" id="custom_monthly_fee_input" min="0" step="1" value="${assigned}"
                                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-4 py-4 focus:border-violet-500 focus:bg-white transition-all outline-none font-black text-xl text-gray-800"
                                placeholder="e.g. 2800">
                         <p class="text-[11px] text-gray-500 mt-2">This amount will apply every month for fee collection and debt calculation for this student only.</p>
@@ -944,8 +944,8 @@ window.saveStudentCustomFee = function(grNo, useStandard) {
     } else {
         const input = document.getElementById('custom_monthly_fee_input');
         const amount = input ? input.value : '';
-        if (!amount || parseFloat(amount) <= 0) {
-            alert('Please enter a valid monthly fee amount.');
+        if (amount === '' || amount === null || amount === undefined || isNaN(parseFloat(amount)) || parseFloat(amount) < 0) {
+            alert('Please enter a valid monthly fee amount (0 is allowed for full scholarship).');
             return;
         }
         formData.append('monthly_fee', amount);

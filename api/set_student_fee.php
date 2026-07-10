@@ -51,8 +51,8 @@ if ($monthly_fee === null || $monthly_fee === '') {
 }
 
 $monthly_fee = (float)$monthly_fee;
-if ($monthly_fee <= 0) {
-    echo json_encode(['error' => 'Monthly fee must be greater than 0']);
+if ($monthly_fee < 0) {
+    echo json_encode(['error' => 'Monthly fee cannot be negative']);
     exit;
 }
 

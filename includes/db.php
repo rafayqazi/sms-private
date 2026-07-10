@@ -3626,7 +3626,7 @@ class Database {
 
     public function setStudentCustomFee($gr_no, $monthly_fee) {
         $monthly_fee = (float)$monthly_fee;
-        if ($monthly_fee <= 0) {
+        if ($monthly_fee < 0) {
             return $this->removeStudentCustomFee($gr_no);
         }
 
@@ -3835,12 +3835,33 @@ class Database {
             $temp[] = $headers;
             $grIdx = array_search('gr_no', $headers);
             $methodIdx = array_search('payment_method', $headers);
+            $tuitionIdx = array_search('tuition_fee', $headers);
+            $admissionIdx = array_search('admission_fee', $headers);
+            $examIdx = array_search('exam_fee', $headers);
+            $otherIdx = array_search('other_fee', $headers);
+            $discountIdx = array_search('discount', $headers);
+            $paidIdx = array_search('amount_paid', $headers);
+            $notesIdx = array_search('notes', $headers);
             while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-                $isArrears = isset($row[$methodIdx]) && trim($row[$methodIdx]) === 'Arrears';
                 $matches = isset($row[$grIdx]) && trim($row[$grIdx]) === $gr_no;
+                $isArrears = isset($row[$methodIdx]) && trim($row[$methodIdx]) === 'Arrears';
                 if ($isArrears && $matches) {
                     $found = true;
                     continue;
+                }
+                if ($matches && !$isArrears) {
+                    $due = (float)($row[$tuitionIdx] ?? 0)
+                         + (float)($row[$admissionIdx] ?? 0)
+                         + (float)($row[$examIdx] ?? 0)
+                         + (float)($row[$otherIdx] ?? 0)
+                         - (float)($row[$discountIdx] ?? 0);
+                    $paid = (float)($row[$paidIdx] ?? 0);
+                    if ($due > $paid + 0.01) {
+                        $row[$paidIdx] = (string)$due;
+                        $notes = trim($row[$notesIdx] ?? '');
+                        $row[$notesIdx] = ($notes ? $notes . ' ' : '') . '[Cleared by admin]';
+                        $found = true;
+                    }
                 }
                 $temp[] = $row;
             }
@@ -3853,6 +3874,7 @@ class Database {
                 fputcsv($fp, $row);
             }
             fclose($fp);
+            self::$fee_collections_cache = null;
             return true;
         }
         return false;
@@ -3959,6 +3981,10 @@ class Database {
         }
 
         if ($fee_start_month >= $target_month) {
+            return [];
+        }
+
+        if (!preg_match('/^\d{4}-\d{2}$/', $fee_start_month) || !preg_match('/^\d{4}-\d{2}$/', $target_month)) {
             return [];
         }
 

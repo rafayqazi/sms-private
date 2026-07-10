@@ -26,5 +26,5 @@ if (!$student) {
 if ($db->clearStudentDebt($gr_no)) {
     echo json_encode(['success' => true, 'message' => 'All debt cleared for ' . $student['student_name']]);
 } else {
-    echo json_encode(['error' => 'No arrears found or failed to clear debt']);
+    echo json_encode(['error' => 'No outstanding debt found for this student']);
 }
