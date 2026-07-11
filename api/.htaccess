@@ -1,3 +1,0 @@
-<FilesMatch "restore_data\.php$">
-    Deny from all
-</FilesMatch>

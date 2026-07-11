@@ -72,6 +72,48 @@ class Database {
         return array_combine($headers, $row);
     }
 
+    /**
+     * Normalize legacy fee collection rows where payment_date was stored
+     * in the month_for column and month (YYYY-MM) in amount_paid.
+     */
+    private function normalizeFeeCollectionRecord($headers, $rawRow) {
+        $rawRow = array_map('trim', $rawRow);
+        $item = $this->safeCombine($headers, $rawRow);
+
+        $monthFor = $item['month_for'] ?? '';
+        $amountPaid = $item['amount_paid'] ?? '';
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $monthFor) && preg_match('/^\d{4}-\d{2}$/', $amountPaid)) {
+            $trailing = (count($rawRow) > count($headers)) ? ($rawRow[count($headers)] ?? '') : '';
+
+            $item['payment_date'] = $monthFor;
+            $item['month_for'] = $amountPaid;
+
+            if ($trailing !== '' && is_numeric($trailing)) {
+                $item['amount_paid'] = (float)$trailing;
+            } else {
+                $item['amount_paid'] = (float)($item['discount'] ?? 0);
+            }
+
+            if (is_numeric($item['payment_method'] ?? '')) {
+                $item['discount'] = (float)$item['payment_method'];
+                $item['payment_method'] = $item['notes'] ?? 'Cash';
+                $item['notes'] = $item['admission_fee'] ?? '';
+            } else {
+                $item['discount'] = is_numeric($item['discount'] ?? '') ? (float)$item['discount'] : 0;
+            }
+
+            if ($trailing !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $trailing)) {
+                $item['payment_date'] = $trailing;
+            }
+        } else {
+            $item['amount_paid'] = is_numeric($amountPaid) ? (float)$amountPaid : 0;
+            $item['discount'] = is_numeric($item['discount'] ?? '') ? (float)$item['discount'] : 0;
+        }
+
+        return $item;
+    }
+
     public function readData() {
         if (self::$students_cache !== null) {
             return self::$students_cache;
@@ -3888,7 +3930,7 @@ class Database {
                 if (($handle = fopen($file, "r")) !== FALSE) {
                     $headers = fgetcsv($handle);
                     while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-                        $item = $this->safeCombine($headers, $row);
+                        $item = $this->normalizeFeeCollectionRecord($headers, $row);
                         $collections[] = $item;
                     }
                     fclose($handle);

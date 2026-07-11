@@ -263,7 +263,7 @@ include '../includes/header.php';
                                 <td class="px-6 py-4">
                                     <span class="font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md text-xs"><?php echo $r['month_for']; ?></span>
                                 </td>
-                                <td class="px-6 py-4 font-bold text-slate-700">Rs. <?php echo number_format($r['amount_paid'], 2); ?></td>
+                                <td class="px-6 py-4 font-bold text-slate-700">Rs. <?php echo number_format((float)($r['amount_paid'] ?? 0), 2); ?></td>
                                 <td class="px-6 py-4 text-sm text-gray-500 font-medium"><?php echo date('d M, Y', strtotime($r['payment_date'])); ?></td>
                                 <td class="px-6 py-4">
                                     <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] uppercase font-black text-gray-500 shadow-sm transition-all group-hover/row:border-indigo-200 group-hover/row:text-indigo-600">

@@ -1,57 +1,57 @@
 <?php
 // api/restore_data.php
 
+// Ensure strict JSON output even if errors occur
+error_reporting(0);
+ini_set('display_errors', 0);
+
 require_once '../includes/auth_session.php';
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
-// Clean any buffer to ensure pure JSON output
-if (ob_get_length()) ob_clean();
-ob_start();
 header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
-    exit;
-}
-
-// No password verification as per user request
-
-
-// Check for file upload
-if (!isset($_FILES['backup_file'])) {
-    ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'No file was uploaded.']);
-    exit;
-}
-
-if ($_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
-    $errorMsg = 'Upload failed: ';
-    switch ($_FILES['backup_file']['error']) {
-        case UPLOAD_ERR_INI_SIZE:   $errorMsg .= 'File exceeds upload_max_filesize in php.ini'; break;
-        case UPLOAD_ERR_FORM_SIZE:  $errorMsg .= 'File exceeds MAX_FILE_SIZE in HTML form'; break;
-        case UPLOAD_ERR_PARTIAL:   $errorMsg .= 'File was only partially uploaded'; break;
-        case UPLOAD_ERR_NO_FILE:    $errorMsg .= 'No file was uploaded'; break;
-        case UPLOAD_ERR_NO_TMP_DIR: $errorMsg .= 'Missing a temporary folder'; break;
-        case UPLOAD_ERR_CANT_WRITE: $errorMsg .= 'Failed to write file to disk'; break;
-        case UPLOAD_ERR_EXTENSION:  $errorMsg .= 'A PHP extension stopped the file upload'; break;
-        default:                   $errorMsg .= 'Unknown upload error'; break;
+try {
+    if (!isAdmin() && !isSuperAdmin()) {
+        throw new Exception('Unauthorized access');
     }
-    echo json_encode(['success' => false, 'message' => $errorMsg]);
-    exit;
-}
 
-$zipPath = $_FILES['backup_file']['tmp_name'];
-$projectRoot = __DIR__ . '/../';
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception('Invalid request method');
+    }
 
-if (!class_exists('ZipArchive')) {
-    echo json_encode(['success' => false, 'message' => 'PHP ZipArchive extension is not enabled in this XAMPP installation. Please enable it in php.ini.']);
-    exit;
-}
+    if (!isset($_FILES['backup_file'])) {
+        throw new Exception('No file was uploaded.');
+    }
 
-$zip = new ZipArchive();
-if ($zip->open($zipPath) === TRUE) {
+    if ($_FILES['backup_file']['error'] !== UPLOAD_ERR_OK) {
+        $errorMsg = 'Upload failed: ';
+        switch ($_FILES['backup_file']['error']) {
+            case UPLOAD_ERR_INI_SIZE:   $errorMsg .= 'File exceeds upload_max_filesize in php.ini'; break;
+            case UPLOAD_ERR_FORM_SIZE:  $errorMsg .= 'File exceeds MAX_FILE_SIZE in HTML form'; break;
+            case UPLOAD_ERR_PARTIAL:   $errorMsg .= 'File was only partially uploaded'; break;
+            case UPLOAD_ERR_NO_FILE:    $errorMsg .= 'No file was uploaded'; break;
+            case UPLOAD_ERR_NO_TMP_DIR: $errorMsg .= 'Missing a temporary folder'; break;
+            case UPLOAD_ERR_CANT_WRITE: $errorMsg .= 'Failed to write file to disk'; break;
+            case UPLOAD_ERR_EXTENSION:  $errorMsg .= 'A PHP extension stopped the file upload'; break;
+            default:                   $errorMsg .= 'Unknown upload error'; break;
+        }
+        throw new Exception($errorMsg);
+    }
+
+    $zipPath = $_FILES['backup_file']['tmp_name'];
+    $projectRoot = realpath(__DIR__ . '/../') . DIRECTORY_SEPARATOR;
+
+    if (!class_exists('ZipArchive')) {
+        throw new Exception('PHP ZipArchive extension is not enabled. Please enable it in php.ini.');
+    }
+
+    $zip = new ZipArchive();
+    $openResult = $zip->open($zipPath);
+    if ($openResult !== TRUE) {
+        throw new Exception('Could not open ZIP file (error code: ' . $openResult . '). It might be corrupted.');
+    }
+
     // Create data and uploads directories if they don't exist
     $dataDir = $projectRoot . 'data';
     $uploadsDir = $projectRoot . 'uploads';
@@ -63,19 +63,22 @@ if ($zip->open($zipPath) === TRUE) {
         mkdir($uploadsDir, 0777, true);
     }
     
-    // Extract the entire backup to project root
-    // The ZIP contains data/ and uploads/ folders which will merge with existing ones
-    if ($zip->extractTo($projectRoot)) {
+    if (!$zip->extractTo($projectRoot)) {
         $zip->close();
-        ob_end_clean();
-        echo json_encode(['success' => true, 'message' => 'Database successfully restored! All data has been updated.']);
-    } else {
-        $zip->close();
-        ob_end_clean();
-        echo json_encode(['success' => false, 'message' => 'Failed to extract backup file.']);
+        throw new Exception('Failed to extract backup file. Check directory permissions.');
     }
-} else {
-    ob_end_clean();
-    echo json_encode(['success' => false, 'message' => 'Could not open ZIP file. It might be corrupted.']);
+    
+    $zip->close();
+    
+    // Clean all output buffers
+    while (ob_get_level() > 0) ob_end_clean();
+    
+    echo json_encode(['success' => true, 'message' => 'Database successfully restored! All data has been updated.']);
+    
+} catch (Exception $e) {
+    // Clean all output buffers
+    while (ob_get_level() > 0) ob_end_clean();
+    
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

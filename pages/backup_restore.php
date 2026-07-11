@@ -329,7 +329,14 @@ async function runRestore() {
 
     try {
         const res = await fetch('../api/restore_data.php', { method: 'POST', body: fd });
-        const data = await res.json();
+        
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (jsonError) {
+            throw new Error('Server returned non-JSON response: ' + text.substring(0, 200));
+        }
         
         if (data.success) {
             btn.innerHTML = '<i class="fas fa-check"></i> Success!';
@@ -340,7 +347,7 @@ async function runRestore() {
             btn.innerHTML = originalText;
         }
     } catch(e) {
-        alert('Restore Failed: Network Error');
+        alert('Restore Failed: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
