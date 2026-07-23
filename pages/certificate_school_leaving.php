@@ -135,10 +135,16 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center gap-2">
                                         <button onclick="promptLeavingDate({type: 'single', id: <?php echo $student['id']; ?>, class: '<?php echo addslashes($student['last_class'] ?? $student['current_class']); ?>'})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
                                         </button>
+                                        <button onclick="promptLeavingDate({type: 'single', id: <?php echo $student['id']; ?>, class: '<?php echo addslashes($student['last_class'] ?? $student['current_class']); ?>', format: 'pad'})"
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Print SLC (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -287,10 +293,16 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
                                         <button onclick="promptLeavingDate({type: 'single', id: ${item.id}, class: '${item.last_class}'})"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print SLC
                                         </button>
+                                        <button onclick="promptLeavingDate({type: 'single', id: ${item.id}, class: '${item.last_class}', format: 'pad'})"
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Print SLC (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 `;
                                 searchResultsBody.appendChild(tr);
@@ -373,7 +385,8 @@ if ($search) {
             return;
         }
         
-        let url = 'print_school_leaving.php?leaving_date=' + date;
+        const baseUrl = currentPrintTarget.format === 'pad' ? 'print_school_leaving_pad.php' : 'print_school_leaving.php';
+        let url = baseUrl + '?leaving_date=' + date;
         if (leavingClass) {
             url += '&leaving_class=' + encodeURIComponent(leavingClass);
         }

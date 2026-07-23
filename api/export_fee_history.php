@@ -27,12 +27,21 @@ fputcsv($output, ['Fee Collection Report — ' . $title]);
 fputcsv($output, ['Generated', date('d M Y, h:i A')]);
 fputcsv($output, []);
 
-fputcsv($output, [
-    'S.No', 'Stage', 'Class', 'GR No', 'Student Name', "Father's Name",
-    'For Month', 'Status', 'Tuition Fee', 'Admission Fee', 'Exam Fee', 'Other Fee',
-    'Discount', 'Month Fee', 'Arrears', 'Total Due', 'Amount Paid', 'Remaining Debt',
-    'Payment Method', 'Payment Date', 'Remarks'
-]);
+$isAlumni = ($params['stage'] ?? '') === 'Alumni';
+
+if ($isAlumni) {
+    fputcsv($output, [
+        'S.No', 'Stage', 'GR No', 'Student Name', "Father's Name",
+        'For Month', 'Total Due'
+    ]);
+} else {
+    fputcsv($output, [
+        'S.No', 'Stage', 'Class', 'GR No', 'Student Name', "Father's Name",
+        'For Month', 'Status', 'Tuition Fee', 'Admission Fee', 'Exam Fee', 'Other Fee',
+        'Discount', 'Month Fee', 'Arrears', 'Total Due', 'Amount Paid', 'Remaining Debt',
+        'Payment Method', 'Payment Date', 'Remarks'
+    ]);
+}
 
 $serial = 1;
 $totPaid = 0;
@@ -40,32 +49,48 @@ $totDebt = 0;
 foreach ($rows as $r) {
     $totPaid += $r['amount_paid'];
     $totDebt += $r['remaining_debt'];
-    fputcsv($output, [
-        $serial++,
-        $r['stage'],
-        $r['class'],
-        $r['gr_no'],
-        $r['student_name'],
-        $r['father_name'],
-        $r['month_label'],
-        $r['status'],
-        $r['tuition_fee'],
-        $r['admission_fee'],
-        $r['exam_fee'],
-        $r['other_fee'],
-        $r['discount'],
-        $r['month_fee'],
-        $r['arrears'],
-        $r['total_due'],
-        $r['amount_paid'],
-        $r['remaining_debt'],
-        $r['payment_method'],
-        $r['payment_date'],
-        $r['remarks']
-    ]);
+    if ($isAlumni) {
+        fputcsv($output, [
+            $serial++,
+            $r['stage'],
+            $r['gr_no'],
+            $r['student_name'],
+            $r['father_name'],
+            $r['month_label'],
+            $r['remaining_debt']
+        ]);
+    } else {
+        fputcsv($output, [
+            $serial++,
+            $r['stage'],
+            $r['class'],
+            $r['gr_no'],
+            $r['student_name'],
+            $r['father_name'],
+            $r['month_label'],
+            $r['status'],
+            $r['tuition_fee'],
+            $r['admission_fee'],
+            $r['exam_fee'],
+            $r['other_fee'],
+            $r['discount'],
+            $r['month_fee'],
+            $r['arrears'],
+            $r['total_due'],
+            $r['amount_paid'],
+            $r['remaining_debt'],
+            $r['payment_method'],
+            $r['payment_date'],
+            $r['remarks']
+        ]);
+    }
 }
 
 fputcsv($output, []);
-fputcsv($output, ['', '', '', '', '', '', '', 'TOTALS', '', '', '', '', '', '', '', '', $totPaid, $totDebt, '', '', '']);
+if ($isAlumni) {
+    fputcsv($output, ['', '', '', '', '', '', 'TOTALS', $totDebt]);
+} else {
+    fputcsv($output, ['', '', '', '', '', '', '', 'TOTALS', '', '', '', '', '', '', '', '', $totPaid, $totDebt, '', '', '']);
+}
 fclose($output);
 exit;
