@@ -28,6 +28,8 @@ class Database {
     private static $fee_collections_cache = null;
     private static $fee_structure_cache = null;
     private static $student_custom_fees_cache = null;
+    private static $fee_stats_cache = [];
+    private static $defaulters_cache = [];
 
     public function __construct($file = null) {
         if ($file === null) {
@@ -3962,12 +3964,13 @@ class Database {
     }
 
     public function getFeeStats($month = null) {
-        $collections = $this->getFeeCollections();
-        if ($month) {
-            $thisMonth = $month;
-        } else {
-            $thisMonth = date('Y-m');
+        if (!$month) $month = date('Y-m');
+        $cacheKey = $month;
+        if (isset(self::$fee_stats_cache[$cacheKey])) {
+            return self::$fee_stats_cache[$cacheKey];
         }
+
+        $collections = $this->getFeeCollections();
         $today = date('Y-m-d');
         
         $stats = [
@@ -3982,7 +3985,7 @@ class Database {
         foreach ($students as $s) $stMap[$s['gr_no']] = $s['current_class'];
 
         foreach ($collections as $c) {
-            if (strpos($c['payment_date'], $thisMonth) === 0) {
+            if (strpos($c['payment_date'], $month) === 0) {
                 $stats['this_month'] += (float)$c['amount_paid'];
                 
                 $cls = $stMap[$c['gr_no']] ?? 'Unknown';
@@ -3993,6 +3996,8 @@ class Database {
                 $stats['today'] += (float)$c['amount_paid'];
             }
         }
+
+        self::$fee_stats_cache[$cacheKey] = $stats;
         return $stats;
     }
 
@@ -4145,6 +4150,9 @@ class Database {
      */
     public function getDefaulters($month = null) {
         if (!$month) $month = date('Y-m');
+        if (isset(self::$defaulters_cache[$month])) {
+            return self::$defaulters_cache[$month];
+        }
 
         $students      = $this->readData();
         $feeStructure  = $this->getFeeStructure();
@@ -4208,6 +4216,7 @@ class Database {
                 }
             }
         }
+        self::$defaulters_cache[$month] = $defaulters;
         return $defaulters;
     }
 

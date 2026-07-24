@@ -14,8 +14,6 @@ $db = new Database();
 $classes = $db->getClasses();
 $feeStructure = $db->getFeeStructure();
 $selectedMonth = isset($_GET['overview_month']) ? $_GET['overview_month'] : date('Y-m');
-$feeStats = $db->getFeeStats($selectedMonth);
-$defaulters = $db->getDefaulters($selectedMonth);
 
 $success = '';
 $error = '';
@@ -91,9 +89,7 @@ include '../includes/header.php';
             </button>
             <button onclick="switchTab('defaulters')" id="tab-defaulters" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
                 Defaulters List
-                <span id="defaulter_badge" class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-black ring-1 ring-red-100 shadow-sm">
-                    <?php echo count($defaulters); ?>
-                </span>
+                <span id="defaulter_badge" class="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-[10px] font-black ring-1 ring-red-100 shadow-sm">...</span>
             </button>
         </nav>
     </div>
@@ -104,7 +100,7 @@ include '../includes/header.php';
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
                 <h2 class="text-lg font-bold text-gray-800">Fee Overview</h2>
-                <p class="text-xs text-gray-500">Viewing statistics for <?php echo date('F Y', strtotime($selectedMonth)); ?></p>
+                <p id="overview_subtitle" class="text-xs text-gray-500">Viewing statistics for <span id="overview_month_label"><?php echo date('F Y', strtotime($selectedMonth)); ?></span></p>
             </div>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                 <!-- Student Search -->
@@ -115,13 +111,12 @@ include '../includes/header.php';
                            class="w-full border-2 border-indigo-100 rounded-lg pl-10 pr-4 py-2.5 focus:border-indigo-500 outline-none font-medium text-gray-700 bg-indigo-50/30 transition-all hover:border-indigo-200 placeholder:text-gray-400">
                     <div id="overview_search_results" class="absolute z-40 w-full bg-white mt-1 border border-gray-200 rounded-xl shadow-2xl hidden max-h-72 overflow-y-auto custom-scrollbar"></div>
                 </div>
-                <form method="GET" class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
                     <div class="relative flex-1 sm:flex-initial">
                         <i class="fas fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
-                        <input type="month" name="overview_month" value="<?php echo $selectedMonth; ?>" onchange="this.form.submit()" class="w-full sm:w-auto border-2 border-gray-100 rounded-lg pl-9 pr-4 py-2 focus:border-indigo-500 outline-none font-bold text-gray-700 bg-gray-50/50 transition-all hover:border-indigo-200">
+                        <input type="month" id="overview_month_picker" value="<?php echo $selectedMonth; ?>" onchange="loadOverviewTab(this.value)" class="w-full sm:w-auto border-2 border-gray-100 rounded-lg pl-9 pr-4 py-2 focus:border-indigo-500 outline-none font-bold text-gray-700 bg-gray-50/50 transition-all hover:border-indigo-200">
                     </div>
-                    <noscript><button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Apply</button></noscript>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -177,8 +172,8 @@ include '../includes/header.php';
                         <i class="fas fa-calendar-alt fa-lg"></i>
                     </div>
                 </div>
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Collections (<?php echo date('M Y', strtotime($selectedMonth)); ?>)</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <?php echo number_format($feeStats['this_month'], 2); ?></p>
+                <h3 id="stats_monthly_label" class="text-gray-500 text-sm font-medium uppercase tracking-wider">Collections</h3>
+                <p id="stats_monthly_value" class="text-2xl font-bold text-gray-900 mt-1"><i class="fas fa-spinner fa-spin text-indigo-400"></i></p>
                 <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> For selected period</p>
             </div>
             
@@ -189,7 +184,7 @@ include '../includes/header.php';
                     </div>
                 </div>
                 <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Today's Collections</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <?php echo number_format($feeStats['today'], 2); ?></p>
+                <p id="stats_today_value" class="text-2xl font-bold text-gray-900 mt-1"><i class="fas fa-spinner fa-spin text-emerald-400"></i></p>
                 <p class="text-xs text-indigo-600 mt-2">Recorded today</p>
             </div>
 
@@ -199,31 +194,19 @@ include '../includes/header.php';
                         <i class="fas fa-user-clock fa-lg"></i>
                     </div>
                 </div>
-                <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Defaulters (<?php echo date('M Y', strtotime($selectedMonth)); ?>)</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-1"><?php echo count($defaulters); ?></p>
-                <p class="text-xs text-amber-600 mt-2">Pending for <?php echo date('F Y', strtotime($selectedMonth)); ?></p>
+                <h3 id="stats_defaulter_label" class="text-gray-500 text-sm font-medium uppercase tracking-wider">Defaulters</h3>
+                <p id="stats_defaulter_value" class="text-2xl font-bold text-gray-900 mt-1"><i class="fas fa-spinner fa-spin text-amber-400"></i></p>
+                <p id="stats_defaulter_period" class="text-xs text-amber-600 mt-2"></p>
             </div>
         </div>
         
         <!-- Class-wise Breakdown -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 mt-6">
             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-chart-pie text-indigo-500"></i> Collections by Class (<?php echo date('F Y', strtotime($selectedMonth)); ?>)
+                <i class="fas fa-chart-pie text-indigo-500"></i> <span id="breakdown_title">Collections by Class</span>
             </h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <?php foreach ($feeStats['class_breakdown'] as $cls => $amt): ?>
-                <div onclick="showClassDetail('<?php echo htmlspecialchars($cls); ?>')" class="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:border-indigo-300 hover:shadow-md transition cursor-pointer group">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="text-[10px] text-gray-500 font-bold uppercase"><?php echo htmlspecialchars($cls); ?></div>
-                        <i class="fas fa-external-link-alt text-[8px] text-gray-300 group-hover:text-indigo-400"></i>
-                    </div>
-                    <div class="text-sm font-bold text-gray-900">Rs. <?php echo number_format($amt); ?></div>
-                </div>
-                <?php endforeach; ?>
-
-                <?php if (empty($feeStats['class_breakdown'])): ?>
-                <div class="col-span-full py-4 text-center text-gray-400 text-sm italic">No collections recorded yet for this month.</div>
-                <?php endif; ?>
+            <div id="class_breakdown_grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="col-span-full py-4 text-center text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>
             </div>
         </div>
         
@@ -232,49 +215,8 @@ include '../includes/header.php';
                 <h3 class="font-bold text-gray-800">Recent Collections</h3>
                 <a href="#" onclick="switchTab('history')" class="text-indigo-600 text-sm font-medium hover:underline">View All</a>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-                        <tr>
-                            <th class="px-6 py-4">Student</th>
-                            <th class="px-6 py-4">Month</th>
-                            <th class="px-6 py-4">Amount</th>
-                            <th class="px-6 py-4">Date</th>
-                            <th class="px-6 py-4">Method</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <?php if (empty($feeStats['recent'])): ?>
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">No recent collections found.</td>
-                            </tr>
-                        <?php else: 
-                            // Get student names for recent list
-                            $allStudents = $db->readData();
-                            $sMap = [];
-                            foreach ($allStudents as $st) $sMap[$st['gr_no']] = $st['student_name'];
-                        ?>
-                            <?php foreach ($feeStats['recent'] as $r): ?>
-                            <tr class="hover:bg-indigo-50/50 cursor-pointer group/row transition-colors" onclick="selectStudentWithMonth('<?php echo $r['gr_no']; ?>', '<?php echo addslashes($sMap[$r['gr_no']] ?? 'Unknown'); ?>', '<?php echo $r['month_for']; ?>')">
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-gray-800 group-hover/row:text-indigo-600 transition-colors"><?php echo htmlspecialchars($sMap[$r['gr_no']] ?? 'Unknown'); ?></div>
-                                    <div class="text-[10px] text-gray-500">GR: <?php echo $r['gr_no']; ?></div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md text-xs"><?php echo $r['month_for']; ?></span>
-                                </td>
-                                <td class="px-6 py-4 font-bold text-slate-700">Rs. <?php echo number_format((float)($r['amount_paid'] ?? 0), 2); ?></td>
-                                <td class="px-6 py-4 text-sm text-gray-500 font-medium"><?php echo date('d M, Y', strtotime($r['payment_date'])); ?></td>
-                                <td class="px-6 py-4">
-                                    <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] uppercase font-black text-gray-500 shadow-sm transition-all group-hover/row:border-indigo-200 group-hover/row:text-indigo-600">
-                                        <?php echo $r['payment_method']; ?>
-                                    </span>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+            <div id="recent_collections_container" class="overflow-x-auto">
+                <div class="px-6 py-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading recent collections...</div>
             </div>
         </div>
     </div>
@@ -470,13 +412,6 @@ include '../includes/header.php';
         </div>
     </div>
 
-<?php
-// Compute defaulter stats for initial render
-$defaulterTotalDebt = 0;
-foreach ($defaulters as $d) {
-    $defaulterTotalDebt += (float)($d['debt'] ?? 0);
-}
-?>
     <div id="content-defaulters" class="tab-content hidden">
         <!-- Defaulter Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -487,7 +422,7 @@ foreach ($defaulters as $d) {
                     </div>
                 </div>
                 <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Defaulters</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-1" id="defaulter_count_card"><?php echo count($defaulters); ?></p>
+                <p class="text-2xl font-bold text-gray-900 mt-1" id="defaulter_count_card">...</p>
                 <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-circle"></i> Students with pending fees</p>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -497,7 +432,7 @@ foreach ($defaulters as $d) {
                     </div>
                 </div>
                 <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Pending Amount</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <span id="defaulter_debt_card"><?php echo number_format($defaulterTotalDebt); ?></span></p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">Rs. <span id="defaulter_debt_card">...</span></p>
                 <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> Yet to be collected</p>
             </div>
         </div>
@@ -2004,12 +1939,107 @@ function loadClassStudents() {
 }
 
 // Initial loads
+function loadOverviewTab(month) {
+    if (!month) {
+        const picker = document.getElementById('overview_month_picker');
+        month = picker ? picker.value : OVERVIEW_MONTH;
+    }
+
+    // Update the month picker if called externally
+    const picker = document.getElementById('overview_month_picker');
+    if (picker && picker.value !== month) picker.value = month;
+
+    fetch(`../api/get_fee_stats.php?month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+            // Overview subtitle
+            const monthLabel = document.getElementById('overview_month_label');
+            if (monthLabel) monthLabel.innerText = data.month_label;
+
+            // Stats cards
+            document.getElementById('stats_monthly_label').innerHTML = `Collections (${data.month_label})`;
+            document.getElementById('stats_monthly_value').innerHTML = `Rs. ${Number(data.this_month).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('stats_today_value').innerHTML = `Rs. ${Number(data.today).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('stats_defaulter_label').innerHTML = `Defaulters (${data.month_label})`;
+            document.getElementById('stats_defaulter_value').innerText = data.defaulter_count;
+            document.getElementById('stats_defaulter_period').innerHTML = `Pending for ${data.month_label}`;
+
+            // Defaulter badge
+            const badge = document.getElementById('defaulter_badge');
+            if (badge) badge.innerText = data.defaulter_count;
+
+            // Class breakdown
+            const breakdownGrid = document.getElementById('class_breakdown_grid');
+            document.getElementById('breakdown_title').innerHTML = `Collections by Class (${data.month_label})`;
+            const classes = data.class_breakdown || {};
+            const classKeys = Object.keys(classes);
+            if (classKeys.length === 0) {
+                breakdownGrid.innerHTML = '<div class="col-span-full py-4 text-center text-gray-400 text-sm italic">No collections recorded yet for this month.</div>';
+            } else {
+                breakdownGrid.innerHTML = '';
+                classKeys.forEach(cls => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-gray-50 rounded-lg p-3 border border-gray-100 hover:border-indigo-300 hover:shadow-md transition cursor-pointer group';
+                    div.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="text-[10px] text-gray-500 font-bold uppercase">${cls}</div>
+                            <i class="fas fa-external-link-alt text-[8px] text-gray-300 group-hover:text-indigo-400"></i>
+                        </div>
+                        <div class="text-sm font-bold text-gray-900">Rs. ${Number(classes[cls]).toLocaleString()}</div>
+                    `;
+                    div.onclick = () => showClassDetail(cls);
+                    breakdownGrid.appendChild(div);
+                });
+            }
+
+            // Recent collections
+            const recentContainer = document.getElementById('recent_collections_container');
+            const recent = data.recent || [];
+            if (recent.length === 0) {
+                recentContainer.innerHTML = '<div class="px-6 py-12 text-center text-gray-500 italic">No recent collections found.</div>';
+            } else {
+                let html = `<table class="w-full text-left">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                        <tr>
+                            <th class="px-6 py-4">Student</th>
+                            <th class="px-6 py-4">Month</th>
+                            <th class="px-6 py-4">Amount</th>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Method</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">`;
+                recent.forEach(r => {
+                    const dateObj = new Date(r.payment_date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    html += `<tr class="hover:bg-indigo-50/50 cursor-pointer group/row transition-colors" onclick="selectStudentWithMonth('${r.gr_no}', '${r.student_name.replace(/'/g, "\\'")}', '${r.month_for}')">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-gray-800 group-hover/row:text-indigo-600 transition-colors">${r.student_name}</div>
+                            <div class="text-[10px] text-gray-500">GR: ${r.gr_no}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md text-xs">${r.month_for}</span>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-700">Rs. ${Number(r.amount_paid).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 font-medium">${formattedDate}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 bg-white border border-gray-200 rounded-full text-[10px] uppercase font-black text-gray-500 shadow-sm transition-all group-hover/row:border-indigo-200 group-hover/row:text-indigo-600">${r.payment_method}</span>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                recentContainer.innerHTML = html;
+            }
+        });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Restore last active tab
     const savedTab = localStorage.getItem('fees_active_tab');
     if (savedTab && document.getElementById('tab-' + savedTab)) {
         switchTab(savedTab);
     }
+    loadOverviewTab(OVERVIEW_MONTH);
     loadHistory();
     loadDefaulters();
     // Default the history month to current
