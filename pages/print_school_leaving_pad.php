@@ -49,13 +49,12 @@ if (count($studentsToPrint) > 1) {
         
         @page {
             size: A4 portrait;
-            margin: 2.5in 0 2in 0;
+            margin: 0;
         }
         
         @media print {
             html, body {
                 width: 210mm;
-                height: 297mm;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
@@ -68,7 +67,7 @@ if (count($studentsToPrint) > 1) {
                 width: 210mm !important;
                 height: 297mm !important;
                 margin: 0 auto !important;
-                padding: 0 !important;
+                padding: 6mm !important;
                 page-break-inside: avoid;
                 page-break-after: always;
             }
