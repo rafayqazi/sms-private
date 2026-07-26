@@ -243,7 +243,7 @@
                 </div>
                 <div>
                     <span class="block text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none">Developed by</span>
-                    <span class="text-xs font-bold text-slate-700">Abdul Rafay/span>
+                    <span class="text-xs font-bold text-slate-700">Abdul Rafay</span>
                 </div>
             </div>
             <div class="flex items-center gap-4 text-slate-400">

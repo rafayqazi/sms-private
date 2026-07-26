@@ -5,14 +5,39 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
-require_once '../includes/auth_session.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
+require_once '../includes/license.php';
+require_once '../includes/install_check.php';
 
 header('Content-Type: application/json');
 
 try {
-    if (!isAdmin() && !isSuperAdmin()) {
+    $db = new Database();
+    $isAuthorized = false;
+
+    // 1. Check if logged in as Admin or Super Admin
+    if (isAdmin() || isSuperAdmin()) {
+        $isAuthorized = true;
+    }
+
+    // 2. Check if valid admin/superuser credentials were provided in POST
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    if (!empty($username) && !empty($password) && $db->verifyAdmin($username, $password)) {
+        $isAuthorized = true;
+    }
+
+    // 3. Check if system is not yet installed (Restore from installer)
+    if (!isInstalled()) {
+        $isAuthorized = true;
+    }
+
+    if (!$isAuthorized) {
         throw new Exception('Unauthorized access');
     }
 
@@ -69,6 +94,14 @@ try {
     }
     
     $zip->close();
+
+    // Auto-activate license if missing after restore
+    if (!License::isLicensed()) {
+        $currentMac = License::getMacAddress();
+        if ($currentMac && $currentMac !== 'Unknown') {
+            License::activate($currentMac);
+        }
+    }
     
     // Clean all output buffers
     while (ob_get_level() > 0) ob_end_clean();
