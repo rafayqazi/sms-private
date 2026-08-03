@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'headmaster_name' => $_POST['headmaster_name']
         ];
         if ($db->updateSchoolSettings($data)) {
+            $logoUpdated = false;
             // Handle Logo Upload
             if (isset($_FILES['school_logo']) && $_FILES['school_logo']['error'] == 0) {
                 $allowed = ['png', 'jpg', 'jpeg'];
@@ -35,24 +36,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $target_rel = 'uploads/' . $new_filename;
                     $target_abs = '../' . $target_rel;
                     
+                    $upload_dir = dirname($target_abs);
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0755, true);
+                    }
+
                     if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $target_abs)) {
                         // Update the logo path in the database settings
                         $db->updateSchoolSettings(['school_logo' => $target_rel]);
-                        $_SESSION['success_message'] = "Settings and Logo updated successfully!";
+                        $logoUpdated = true;
                     } else {
-                        $_SESSION['success_message'] = "Settings updated, but Logo upload failed.";
+                        $errorMsg = "Settings updated, but Logo upload failed.";
                     }
                 } else {
                      $errorMsg = "Invalid logo format. Only PNG, JPG allowed.";
                 }
-            } else {
-                $_SESSION['success_message'] = "School settings updated successfully!";
             }
-            
-            // Redirect to index after successful update as requested
-            header("Location: ../index.php");
-            exit;
 
+            if (empty($errorMsg)) {
+                $successMsg = $logoUpdated ? "School settings and Logo updated successfully!" : "School settings updated successfully!";
+            }
         } else {
             $errorMsg = "Failed to update settings.";
         }
@@ -246,7 +249,7 @@ $settings = $db->getSchoolSettings();
                                         <?php 
                                         $logoUrl = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
                                                    ? '../' . $settings['school_logo'] 
-                                                   : '../GBPS_LOGO.png'; 
+                                                   : '../assets/img/logo.jpg'; 
                                         ?>
                                         <img id="logo_preview" src="<?php echo $logoUrl; ?>?v=<?php echo time(); ?>" alt="Current Logo" class="max-w-full max-h-full object-contain">
                                     </div>

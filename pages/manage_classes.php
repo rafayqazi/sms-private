@@ -52,13 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $grRequired = 1; // Mandatory for all classes by default
             $stage = $_POST['stage'] ?? 'Elementary';
             $hasGroup = ($stage === 'College' && isset($_POST['has_group'])) ? 1 : 0;
-            foreach ($classes as &$c) {
+            foreach ($classes as $i => $c) {
                 if ($c['id'] == $id) {
-                    $c['class_name'] = $name;
-                    $c['sort_order'] = $sortOrder;
-                    $c['is_gr_required'] = $grRequired;
-                    $c['has_group'] = $hasGroup;
-                    $c['stage'] = $stage;
+                    $classes[$i]['class_name'] = $name;
+                    $classes[$i]['sort_order'] = $sortOrder;
+                    $classes[$i]['is_gr_required'] = $grRequired;
+                    $classes[$i]['has_group'] = $hasGroup;
+                    $classes[$i]['stage'] = $stage;
                     break;
                 }
             }
@@ -171,7 +171,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'updated') {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
                             <input type="text" name="class_name" id="class_name" required placeholder="e.g. Class 6" value="<?php echo htmlspecialchars($editClass['class_name']); ?>"
-                                oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1).toLowerCase()"
+                                oninput="this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1)"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 

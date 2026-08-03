@@ -3203,9 +3203,9 @@ class Database {
                 }
             }
             
-            foreach ($updatedClasses as &$c) {
+            foreach ($updatedClasses as $i => $c) {
                 if ($c['id'] != $targetId && ($c['stage'] ?? 'Elementary') == $targetStage && $c['sort_order'] >= $newOrder) {
-                    $c['sort_order']++;
+                    $updatedClasses[$i]['sort_order']++;
                 }
             }
         }
@@ -3221,10 +3221,10 @@ class Database {
         
         // Re-normalize independently for each stage to ensure 1, 2, 3... per section
         $stageCounters = [];
-        foreach ($updatedClasses as &$c) {
+        foreach ($updatedClasses as $i => $c) {
             $s = $c['stage'] ?? 'Elementary';
             if (!isset($stageCounters[$s])) $stageCounters[$s] = 1;
-            $c['sort_order'] = $stageCounters[$s]++;
+            $updatedClasses[$i]['sort_order'] = $stageCounters[$s]++;
         }
         
         $fp = fopen($file, 'w');
@@ -3718,6 +3718,30 @@ class Database {
         $file = __DIR__ . '/../data/fee_collections.csv';
         // Column order MUST match CSV header: id,gr_no,month_for,amount_paid,discount,payment_method,notes,admission_fee,exam_fee,other_fee,other_label,tuition_fee,payment_date
         
+        $headers = ['id', 'gr_no', 'month_for', 'amount_paid', 'discount', 'payment_method', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee', 'payment_date'];
+
+        // If file doesn't exist or has no header row, write the header first
+        $needsHeader = !file_exists($file) || filesize($file) === 0;
+        if (!$needsHeader && file_exists($file)) {
+            // Check if first line looks like a header (starts with "id")
+            $firstLine = '';
+            $fh = fopen($file, 'r');
+            if ($fh) {
+                $firstLine = trim(fgets($fh));
+                fclose($fh);
+            }
+            // If first line starts with a numeric ID (not the header word "id"), add header
+            if (!empty($firstLine) && !preg_match('/^id[,"]/', $firstLine)) {
+                $needsHeader = true;
+                // Read existing data, prepend header, rewrite
+                $existing = file_get_contents($file);
+                $fp = fopen($file, 'w');
+                fputcsv($fp, $headers);
+                fclose($fp);
+                file_put_contents($file, file_get_contents($file) . $existing);
+            }
+        }
+
         $id = time() . rand(100, 999);
         $row = [
             $id,
@@ -3735,7 +3759,12 @@ class Database {
             $data['payment_date'] ?? date('Y-m-d')
         ];
 
-        $fp = fopen($file, 'a');
+        if ($needsHeader) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+        } else {
+            $fp = fopen($file, 'a');
+        }
         fputcsv($fp, $row);
         fclose($fp);
         return $id;
