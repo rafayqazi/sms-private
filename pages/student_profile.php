@@ -36,6 +36,9 @@ if (!$student) {
         <button onclick="window.print()" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium">
             <i class="fas fa-print"></i> Print Profile
         </button>
+        <a href="print_admission_form.php?id=<?php echo $student['id']; ?>" target="_blank" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium">
+            <i class="fas fa-file-invoice"></i> Admission Form
+        </a>
         <a href="students.php" class="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-md hover:bg-white/30 transition duration-300 flex items-center justify-center gap-2 font-medium">
             <i class="fas fa-arrow-left"></i> Back to List
         </a>

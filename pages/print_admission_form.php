@@ -240,6 +240,7 @@ $admDateFormatted = !empty($student['admission_date']) ? date('d-m-Y', strtotime
             width: 100%;
             height: 100%;
             object-fit: cover;
+            object-position: top center;
         }
 
         .photo-label {

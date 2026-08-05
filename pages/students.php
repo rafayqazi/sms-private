@@ -301,7 +301,7 @@ $classes = $db->getClassNames();
                     $serial = 1;
                     foreach ($students as $student): 
                     ?>
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer" data-student-id="<?php echo htmlspecialchars($student['id']); ?>">
                         <td class="p-4">
                             <input type="checkbox" name="student_ids[]" value="<?php echo htmlspecialchars($student['id']); ?>" class="student-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
                         </td>
@@ -584,6 +584,14 @@ $classes = $db->getClassNames();
             const classVal = document.getElementById('bulk-edit-class').value;
             window.location.href = `../api/export_students_csv.php?class=${encodeURIComponent(classVal)}`;
         };
+
+        // Row click → open student profile
+        document.querySelectorAll('#students-table-body tr[data-student-id]').forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.target.closest('a, button, input, select, label')) return;
+                window.location.href = `student_profile.php?id=${this.dataset.studentId}`;
+            });
+        });
     });
 </script>
 
