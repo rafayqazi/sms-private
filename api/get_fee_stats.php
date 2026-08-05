@@ -20,10 +20,12 @@ foreach ($defaulters as $d) {
 $allStudents = $db->readData();
 $sMap = [];
 foreach ($allStudents as $st) {
-    $sMap[$st['gr_no']] = [
+    $info = [
         'student_name' => $st['student_name'],
         'current_class' => $st['current_class'] ?? ''
     ];
+    if (!empty($st['gr_no'])) $sMap[$st['gr_no']] = $info;
+    if (!empty($st['id'])) $sMap[$st['id']] = $info;
 }
 
 $recent = [];

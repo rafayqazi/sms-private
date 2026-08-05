@@ -23,7 +23,8 @@ function buildFeeHistoryReport(Database $db, array $params = []) {
     $all_students = $db->readData();
     $studentMap = [];
     foreach ($all_students as $s) {
-        $studentMap[$s['gr_no']] = $s;
+        if (!empty($s['gr_no'])) $studentMap[$s['gr_no']] = $s;
+        if (!empty($s['id'])) $studentMap[$s['id']] = $s;
     }
 
     $feeStructure = $db->getFeeStructure();

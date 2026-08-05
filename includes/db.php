@@ -164,7 +164,8 @@ class Database {
             $lastItem = end($data);
             $lastId = isset($lastItem['id']) ? (int)$lastItem['id'] : 0;
         }
-        $studentData['id'] = $lastId + 1;
+        $newId = $lastId + 1;
+        $studentData['id'] = $newId;
         
         // Set timestamps
         $now = date('Y-m-d H:i:s');
@@ -183,7 +184,7 @@ class Database {
 
         $data[] = $studentData;
         $this->writeData($data);
-        return true;
+        return $newId;
     }
 
     public function bulkAddStudents($studentsArray) {
@@ -3720,25 +3721,24 @@ class Database {
         
         $headers = ['id', 'gr_no', 'month_for', 'amount_paid', 'discount', 'payment_method', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee', 'payment_date'];
 
-        // If file doesn't exist or has no header row, write the header first
-        $needsHeader = !file_exists($file) || filesize($file) === 0;
-        if (!$needsHeader && file_exists($file)) {
-            // Check if first line looks like a header (starts with "id")
-            $firstLine = '';
+        // If file doesn't exist or is empty, write header
+        if (!file_exists($file) || filesize($file) === 0) {
+            $fp = fopen($file, 'w');
+            fputcsv($fp, $headers);
+            fclose($fp);
+        } else {
+            // Check if first line starts with "id"
             $fh = fopen($file, 'r');
-            if ($fh) {
-                $firstLine = trim(fgets($fh));
-                fclose($fh);
-            }
-            // If first line starts with a numeric ID (not the header word "id"), add header
+            $firstLine = $fh ? trim(fgets($fh)) : '';
+            if ($fh) fclose($fh);
+            
             if (!empty($firstLine) && !preg_match('/^id[,"]/', $firstLine)) {
-                $needsHeader = true;
-                // Read existing data, prepend header, rewrite
+                // Prepend header to existing content
                 $existing = file_get_contents($file);
                 $fp = fopen($file, 'w');
                 fputcsv($fp, $headers);
                 fclose($fp);
-                file_put_contents($file, file_get_contents($file) . $existing);
+                file_put_contents($file, $existing, FILE_APPEND);
             }
         }
 
@@ -3759,12 +3759,7 @@ class Database {
             $data['payment_date'] ?? date('Y-m-d')
         ];
 
-        if ($needsHeader) {
-            $fp = fopen($file, 'w');
-            fputcsv($fp, $headers);
-        } else {
-            $fp = fopen($file, 'a');
-        }
+        $fp = fopen($file, 'a');
         fputcsv($fp, $row);
         fclose($fp);
         return $id;
@@ -3956,20 +3951,30 @@ class Database {
     public function getFeeCollections($filters = []) {
         if (self::$fee_collections_cache === null) {
             $file = __DIR__ . '/../data/fee_collections.csv';
+            $defaultHeaders = ['id', 'gr_no', 'month_for', 'amount_paid', 'discount', 'payment_method', 'notes', 'admission_fee', 'exam_fee', 'other_fee', 'other_label', 'tuition_fee', 'payment_date'];
             $collections = [];
             if (file_exists($file)) {
                 if (($handle = fopen($file, "r")) !== FALSE) {
-                    $headers = fgetcsv($handle);
-                    while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
-                        $item = $this->normalizeFeeCollectionRecord($headers, $row);
-                        $collections[] = $item;
+                    $firstRow = fgetcsv($handle, 0, ",");
+                    if ($firstRow !== FALSE) {
+                        if (isset($firstRow[0]) && trim($firstRow[0]) === 'id') {
+                            $headers = array_map('trim', $firstRow);
+                        } else {
+                            $headers = $defaultHeaders;
+                            $item = $this->normalizeFeeCollectionRecord($headers, $firstRow);
+                            $collections[] = $item;
+                        }
+                        while (($row = fgetcsv($handle, 0, ",")) !== FALSE) {
+                            $item = $this->normalizeFeeCollectionRecord($headers, $row);
+                            $collections[] = $item;
+                        }
                     }
                     fclose($handle);
                 }
             }
             // Latest first
             usort($collections, function($a, $b) {
-                return strcmp($b['payment_date'], $a['payment_date']);
+                return strcmp($b['payment_date'] ?? '', $a['payment_date'] ?? '');
             });
             self::$fee_collections_cache = $collections;
         }

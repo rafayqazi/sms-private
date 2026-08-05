@@ -208,16 +208,79 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if ($id) {
             $db->updateStudent($id, $data);
+            header("Location: students.php");
+            exit;
         } else {
-            $db->addStudent($data);
+            $newStudentId = $db->addStudent($data);
+            // Redirect back to the form page with a flag to show the admission popup
+            header("Location: student_form.php?admission_success=1&new_id=" . intval($newStudentId));
+            exit;
         }
-        header("Location: students.php");
-        exit;
     }
 }
 ?>
 
 <?php include '../includes/header.php'; ?>
+
+<?php if (isset($_GET['admission_success']) && $_GET['admission_success'] == '1' && !empty($_GET['new_id'])): ?>
+<?php $admissionNewId = intval($_GET['new_id']); ?>
+<!-- ============================================================
+     ADMISSION SUCCESS MODAL
+     ============================================================ -->
+<div id="admissionSuccessModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+     style="background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-bounce-in"
+         style="animation: slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;">
+        <!-- Green Success Banner -->
+        <div class="bg-gradient-to-r from-emerald-500 to-green-600 p-6 text-center relative">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                <i class="fas fa-user-graduate text-emerald-500 text-3xl"></i>
+            </div>
+            <h2 class="text-white text-xl font-black tracking-wide">Admission Successful!</h2>
+            <p class="text-green-100 text-sm mt-1 font-medium">Student has been registered in the system</p>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5 text-center">
+                <p class="text-emerald-800 text-sm font-semibold">
+                    <i class="fas fa-check-circle text-emerald-600 mr-1"></i>
+                    New Student ID: <strong>#<?php echo $admissionNewId; ?></strong> created successfully.
+                </p>
+                <p class="text-gray-500 text-xs mt-1">Download or Print the official Admission Form for the student's records and parent signatures.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-3">
+                <a href="print_admission_form.php?id=<?php echo $admissionNewId; ?>" 
+                   target="_blank"
+                   class="flex items-center justify-center gap-3 w-full px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md text-sm">
+                    <i class="fas fa-file-alt text-lg"></i>
+                    <span>Download / Print Admission Form</span>
+                    <i class="fas fa-external-link-alt text-xs opacity-75"></i>
+                </a>
+
+                <div class="flex gap-3">
+                    <a href="student_form.php" 
+                       class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-all text-sm">
+                        <i class="fas fa-user-plus"></i> New Admission
+                    </a>
+                    <a href="students.php"
+                       class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all text-sm">
+                        <i class="fas fa-list"></i> Student List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+</style>
+<?php endif; ?>
 
 <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden my-6 md:my-10">
     <div class="bg-gradient-to-r from-primary to-green-900 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
