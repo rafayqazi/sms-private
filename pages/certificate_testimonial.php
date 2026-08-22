@@ -97,6 +97,7 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
                                         <button onclick="openTestimonialModal(<?php echo htmlspecialchars(json_encode([
                                             'id' => $student['id'],
                                             'gr_no' => $student['gr_no'],
@@ -108,6 +109,18 @@ if ($search) {
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Generate
                                         </button>
+                                        <button onclick="openTestimonialModal(<?php echo htmlspecialchars(json_encode([
+                                            'id' => $student['id'],
+                                            'gr_no' => $student['gr_no'],
+                                            'date_of_birth' => $student['date_of_birth'] ?? '',
+                                            'admission_date' => $student['admission_date'] ?? '',
+                                            'updated_at' => $student['updated_at'] ?? '',
+                                            'student_status' => $student['student_status'] ?? 'Active'
+                                        ])); ?>, 'pad')" 
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Generate (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -207,7 +220,10 @@ if ($search) {
 </div>
 
 <script>
-    function openTestimonialModal(student) {
+    let currentTestimonialFormat = null;
+
+    function openTestimonialModal(student, format = null) {
+        currentTestimonialFormat = format;
         document.getElementById('student_id').value = student.id;
         document.getElementById('gr_no').value = student.gr_no || '';
         document.getElementById('dob').value = student.date_of_birth || '';
@@ -280,7 +296,8 @@ if ($search) {
             dated: dated
         });
 
-        window.open('print_testimonial_certificate.php?' + params.toString(), '_blank');
+        const basePage = currentTestimonialFormat === 'pad' ? 'print_testimonial_certificate_pad.php' : 'print_testimonial_certificate.php';
+        window.open(basePage + '?' + params.toString(), '_blank');
         closeTestimonialModal();
     }
 
@@ -327,6 +344,7 @@ if ($search) {
                                     </span>
                                 </td>
                                 <td class="p-6 text-center">
+                                    <div class="flex items-center justify-center gap-2">
                                     <button onclick="openTestimonialModal(${JSON.stringify({
                                         id: item.id,
                                         gr_no: item.gr_no,
@@ -338,6 +356,18 @@ if ($search) {
                                        class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-200 dark:shadow-none hover:scale-105 active:scale-95">
                                         <i class="fas fa-print"></i> Generate
                                     </button>
+                                    <button onclick="openTestimonialModal(${JSON.stringify({
+                                        id: item.id,
+                                        gr_no: item.gr_no,
+                                        date_of_birth: item.date_of_birth || '',
+                                        admission_date: item.admission_date || '',
+                                        updated_at: item.updated_at || '',
+                                        student_status: item.student_status || 'Active'
+                                    }).replace(/"/g, '&quot;')}, 'pad')" 
+                                       class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                        <i class="fas fa-print"></i> Generate (PAD)
+                                    </button>
+                                    </div>
                                 </td>
                             `;
                             searchResultsBody.appendChild(tr);

@@ -285,6 +285,9 @@ if (count($studentsToPrint) > 1) {
         <button id="downloadPdfBtn" style="background: #1e40af; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             <i class="fas fa-download"></i> Download PDF
         </button>
+        <button onclick="window.print()" style="background: #059669; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-print"></i> Print Now
+        </button>
         <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             Close
         </button>
@@ -502,10 +505,10 @@ if (count($studentsToPrint) > 1) {
                                 <span class="field-label">Remarks</span>
                                 <div class="field-value">Standing at <?php echo htmlspecialchars($leavingClass); ?></div>
                             </div>
-                            </div>
-                            
+
                             <div class="footer-text">
                                 Certified that the above information is in accordance with the school General Register.
+                            </div>
                             </div>
                         </div>
                         

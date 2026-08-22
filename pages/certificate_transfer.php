@@ -135,10 +135,16 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
                                         <button onclick="openTCModal(<?php echo $student['id']; ?>, 'single')" 
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-green-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print TC
                                         </button>
+                                        <button onclick="openTCModal(<?php echo $student['id']; ?>, 'single', 'pad')" 
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Print TC (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -247,10 +253,16 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
                                         <button onclick="openTCModal(${item.id}, 'single')" 
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-green-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Print TC
                                         </button>
+                                        <button onclick="openTCModal(${item.id}, 'single', 'pad')" 
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Print TC (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 `;
                                 searchResultsBody.appendChild(tr);
@@ -278,14 +290,16 @@ if ($search) {
 
     let currentPrintTarget = null;
     let currentPrintType = null;
+    let currentPrintFormat = null;
 
-    function openTCModal(target, type) {
+    function openTCModal(target, type, format = null) {
         if (!target && type === 'bulk') {
             showModal('warning', 'Selection Required', 'Please select a graduation year first.');
             return;
         }
         currentPrintTarget = target;
         currentPrintType = type;
+        currentPrintFormat = format;
         
         const modal = document.getElementById('tcParamsModal');
         modal.classList.remove('hidden');
@@ -308,7 +322,8 @@ if ($search) {
         const hsc_year = document.getElementById('hsc_year').value;
         const hsc_seat = document.getElementById('hsc_seat').value;
 
-        let url = `print_transfer.php?`;
+        const basePage = currentPrintFormat === 'pad' ? 'print_transfer_pad.php' : 'print_transfer.php';
+        let url = `${basePage}?`;
         if (currentPrintType === 'single') {
             url += `student_id=${currentPrintTarget}`;
         } else {

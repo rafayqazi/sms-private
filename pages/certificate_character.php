@@ -94,6 +94,7 @@ if ($search) {
                                         </span>
                                     </td>
                                     <td class="p-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
                                         <button onclick="openCharacterModal(<?php echo htmlspecialchars(json_encode([
                                             'id' => $student['id'],
                                             'caste' => $student['caste'] ?? '',
@@ -106,6 +107,19 @@ if ($search) {
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-purple-200 dark:shadow-none hover:scale-105 active:scale-95">
                                             <i class="fas fa-print"></i> Generate
                                         </button>
+                                        <button onclick="openCharacterModal(<?php echo htmlspecialchars(json_encode([
+                                            'id' => $student['id'],
+                                            'caste' => $student['caste'] ?? '',
+                                            'admission_class' => $student['admission_class'] ?? '',
+                                            'admission_date' => $student['admission_date'] ?? '',
+                                            'updated_at' => $student['updated_at'] ?? '',
+                                            'student_status' => $student['student_status'] ?? 'Active',
+                                            'last_class' => ($student['student_status'] === 'Alumni' ? $student['last_class'] : $student['current_class']) ?? ''
+                                        ])); ?>, 'pad')" 
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                            <i class="fas fa-print"></i> Generate (PAD)
+                                        </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -162,7 +176,10 @@ if ($search) {
 </div>
 
 <script>
-    function openCharacterModal(student) {
+    let currentCharacterFormat = null;
+
+    function openCharacterModal(student, format = null) {
+        currentCharacterFormat = format;
         document.getElementById('student_id').value = student.id;
         document.getElementById('caste').value = student.caste || '';
         document.getElementById('admission_class').value = student.admission_class || '';
@@ -212,7 +229,8 @@ if ($search) {
         const leaving_class = document.getElementById('leaving_class').value;
         const dated = document.getElementById('dated').value;
 
-        let url = `print_character_certificate.php?id=${id}`;
+        const basePage = currentCharacterFormat === 'pad' ? 'print_character_certificate_pad.php' : 'print_character_certificate.php';
+        let url = `${basePage}?id=${id}`;
         url += `&caste=${encodeURIComponent(caste)}`;
         url += `&years=${encodeURIComponent(years)}`;
         url += `&admission_class=${encodeURIComponent(admission_class)}`;
@@ -271,6 +289,7 @@ if ($search) {
                                     </span>
                                 </td>
                                 <td class="p-6 text-center">
+                                    <div class="flex items-center justify-center gap-2">
                                     <button onclick="openCharacterModal(${JSON.stringify({
                                         id: item.id,
                                         caste: item.caste || '',
@@ -283,6 +302,19 @@ if ($search) {
                                        class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-purple-200 dark:shadow-none hover:scale-105 active:scale-95">
                                         <i class="fas fa-print"></i> Generate
                                     </button>
+                                    <button onclick="openCharacterModal(${JSON.stringify({
+                                        id: item.id,
+                                        caste: item.caste || '',
+                                        admission_class: item.admission_class || '',
+                                        admission_date: item.admission_date || '',
+                                        updated_at: item.updated_at || '',
+                                        student_status: item.student_status || 'Active',
+                                        last_class: item.current_class || ''
+                                    }).replace(/"/g, '&quot;')}, 'pad')" 
+                                       class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 dark:shadow-none hover:scale-105 active:scale-95">
+                                        <i class="fas fa-print"></i> Generate (PAD)
+                                    </button>
+                                    </div>
                                 </td>
                             `;
                             searchResultsBody.appendChild(tr);

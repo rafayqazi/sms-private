@@ -514,6 +514,9 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
         <button id="downloadPdfBtn" style="background: var(--primary); color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: 'Montserrat', sans-serif; letter-spacing: 1px; transition: all 0.2s;">
             <i class="fas fa-file-pdf mr-2"></i> Save Official PDF
         </button>
+        <button onclick="window.print()" style="background: #059669; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: 'Montserrat', sans-serif; letter-spacing: 1px; transition: all 0.2s;">
+            <i class="fas fa-print mr-2"></i> Print Now
+        </button>
         <button onclick="window.close()" style="background: white; color: var(--text-dark); padding: 12px 24px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family: 'Montserrat', sans-serif; transition: all 0.2s;">
             Cancel
         </button>

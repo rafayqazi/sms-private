@@ -246,6 +246,10 @@ if (count($studentsToPrint) > 1) {
             style="background: #1e40af; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             <i class="fas fa-download"></i> Download PDF
         </button>
+        <button onclick="window.print()"
+            style="background: #059669; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+            <i class="fas fa-print"></i> Print Now
+        </button>
         <button onclick="window.close()"
             style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             Close

@@ -40,22 +40,20 @@ if (count($studentsToPrint) > 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transfer Certificate</title>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Transfer Certificate (PAD)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         @page {
             size: A4 portrait;
             margin: 0;
         }
-        
+
         @media print {
             html, body {
                 width: 210mm;
-                height: 297mm;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
@@ -64,159 +62,92 @@ if (count($studentsToPrint) > 1) {
             }
             .no-print { display: none !important; }
             .page-break { page-break-after: always; }
-            .cert-page { 
+            .cert-page {
                 width: 210mm !important;
                 height: 297mm !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
                 padding: 0 !important;
                 page-break-inside: avoid;
                 page-break-after: always;
             }
+            .cert-page:last-child { page-break-after: auto; }
         }
-        
+
         body {
             font-family: 'Times New Roman', Times, serif;
             background: #f0f0f0;
             padding: 10px;
             color: #000;
         }
-        
+
+        /* A4 page wrapper — no branding, spacing via spacers */
         .cert-page {
             width: 210mm;
             height: 297mm;
+            max-height: 297mm;
             background: white;
             margin: 0 auto 20px;
-            padding: 0; /* Removing padding to allow header-bar to bleed */
+            padding: 0;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        /* Corner logo at intersection */
-        /* Corner logo at intersection */
-        .corner-logo {
-            position: absolute;
-            left: 10mm;
-            top: 10mm;
-            width: 25mm;
-            height: 25mm;
-            background: white;
-            border-radius: 50%;
-            border: 3px solid #0c0784;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2mm;
-            z-index: 100; /* Always on top */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        /* 43.5mm blank space above content (matches SLC PAD) */
+        .top-spacer {
+            height: 43.5mm;
+            flex-shrink: 0;
         }
 
-        .logo-img { width: 100%; height: 100%; object-fit: contain; }
-
-        /* Left vertical blue stripe */
-        /* Left vertical blue stripe segment */
-        .left-stripe-bottom {
-            position: absolute;
-            left: 10mm;
-            top: 35mm;
-            bottom: 6.5mm;
-            width: 14mm;
-            background: #0c0784;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* 28.1mm blank space below signatures (matches SLC PAD) */
+        .bottom-spacer {
+            height: 28.1mm;
+            flex-shrink: 0;
         }
 
-        .vertical-text {
-            color: white;
-            font-size: 17pt;
-            font-weight: bold;
-            letter-spacing: 4px;
-            white-space: nowrap;
-            text-transform: uppercase;
-            font-family: 'Times New Roman', serif;
-            
-            /* PDF Compatible Rotation */
+        /* Watermark centered in page */
+        .watermark {
             position: absolute;
-            width: 250mm;
-            text-align: center;
-            top: calc(50% + 5mm); /* Shifted down slightly because top segment is missing text */
+            top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-90deg);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            transform: translate(-50%, -50%);
+            width: 60%;
+            opacity: 0.04;
+            z-index: 0;
+            pointer-events: none;
         }
-        
+
+        /* Main content area */
         .cert-container {
             position: relative;
             z-index: 2;
-            padding: 38mm 20mm 15mm 32mm; /* Increased padding-top to clear header-bar */
             flex: 1;
             display: flex;
             flex-direction: column;
+            padding: 5mm 20mm 5mm 20mm;
         }
 
-        .header-bar {
-            position: absolute;
-            left: 35mm;
-            right: 6.5mm;
-            top: 10mm;
-            background: #0c0784;
-            color: white;
-            padding: 4mm 5px; /* Fixed 5px inner margin */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 25mm;
-            z-index: 4;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .logo-box {
-            width: 20mm;
-            height: 20mm;
-            background: white;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1mm;
-        }
-        
-        .logo-img { width: 100%; height: 100%; object-fit: contain; }
-        
-        .school-name {
-            font-size: 18pt;
-            font-weight: bold;
-            letter-spacing: 6px;
-            margin-right: -6px; /* Negate the letter-spacing on the last character for true centering */
-            white-space: nowrap;
-            text-transform: uppercase;
-            font-family: 'Times New Roman', serif;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-        }
-        
         .city-name {
             text-align: center;
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #000;
-            margin-bottom: 4mm;
+            margin-bottom: 3mm;
             letter-spacing: 3px;
             text-transform: uppercase;
         }
-        
+
         .cert-title {
             text-align: center;
-            font-size: 24pt;
+            font-size: 20pt;
             font-weight: bold;
             color: #000;
             text-decoration: underline;
-            margin-bottom: 8mm;
+            margin-bottom: 6mm;
             letter-spacing: 2px;
         }
-        
+
         .enrolment {
             font-size: 12pt;
             font-weight: bold;
@@ -233,7 +164,7 @@ if (count($studentsToPrint) > 1) {
         .intro-text {
             font-size: 12pt;
             line-height: 2;
-            margin-bottom: 8mm;
+            margin-bottom: 6mm;
         }
 
         .underline-input {
@@ -259,18 +190,7 @@ if (count($studentsToPrint) > 1) {
             line-height: 1.5;
         }
 
-        .section-label {
-            font-weight: bold;
-        }
-
-        .dotted-line {
-            flex: 1;
-            border-bottom: 1px dotted #0c0784;
-            min-height: 6mm;
-            padding: 0 4mm;
-            font-weight: bold;
-            color: #333;
-        }
+        .section-label { font-weight: bold; }
 
         .date-input {
             min-width: 10mm;
@@ -292,7 +212,7 @@ if (count($studentsToPrint) > 1) {
             margin-top: auto;
             display: flex;
             justify-content: flex-end;
-            padding: 5mm 10mm 10mm;
+            padding: 5mm 0 0;
         }
 
         .principal-box {
@@ -307,146 +227,118 @@ if (count($studentsToPrint) > 1) {
             font-weight: bold;
             color: #0c0784;
         }
-
-        .watermark {
-            position: absolute;
-            top: 55%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            opacity: 0.04;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        /* Outer decorative border */
-        .outer-border {
-            position: absolute;
-            top: 5mm;
-            left: 5mm;
-            right: 5mm;
-            bottom: 5mm;
-            border: 1px solid #0c0784;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .inner-border {
-            position: absolute;
-            top: 6.5mm;
-            left: 6.5mm;
-            right: 6.5mm;
-            bottom: 6.5mm;
-            border: 2px solid #0c0784;
-            pointer-events: none;
-            z-index: 5;
-        }
     </style>
 </head>
 <body>
 
     <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
-        <button id="downloadPdfBtn" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+        <button id="downloadPdfBtn"
+            style="background: #1e40af; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             <i class="fas fa-download"></i> Download PDF
         </button>
-        <button onclick="window.print()" style="background: #059669; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+        <button onclick="window.print()"
+            style="background: #059669; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             <i class="fas fa-print"></i> Print Now
         </button>
-        <button onclick="window.close()" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+        <button onclick="window.close()"
+            style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
             Close
         </button>
     </div>
 
     <script>
+        function trimExtraBlankPages(worker, expectedPages) {
+            return worker.toPdf().get('pdf').then(function(pdf) {
+                let total = pdf.internal.getNumberOfPages();
+                while (total > expectedPages) {
+                    pdf.deletePage(total);
+                    total--;
+                }
+            });
+        }
+
         document.getElementById('downloadPdfBtn').addEventListener('click', function() {
             const btn = this;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
-            
+
             const certificates = document.querySelectorAll('.cert-page');
             const totalCerts = certificates.length;
-            
+
             let filename = '';
             if (totalCerts === 1) {
                 const firstCert = certificates[0];
                 const studentName = firstCert.getAttribute('data-student-name') || 'Student';
                 const grNo = firstCert.getAttribute('data-gr-no') || '000';
-                filename = `TC_${studentName}_GR_${grNo}.pdf`;
+                filename = `TC_PAD_${studentName}_GR_${grNo}.pdf`;
             } else {
                 const year = new URLSearchParams(window.location.search).get('year') || 'Bulk';
-                filename = `Transfer_Certificates_${year}.pdf`;
+                filename = `Transfer_Certificates_PAD_${year}.pdf`;
             }
 
             const opt = {
                 margin: 0,
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    letterRendering: true,
-                    scrollX: 0,
-                    scrollY: 0
-                },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Temporarily remove margins for clean capture
-            if (totalCerts > 1) {
-                certificates.forEach(cert => {
-                    cert.style.margin = '0';
-                    cert.style.marginBottom = '0';
-                    cert.classList.remove('page-break');
+            window.scrollTo(0, 0);
+            certificates.forEach(cert => {
+                cert.style.margin = '0';
+                cert.style.marginBottom = '0';
+                cert.classList.remove('page-break');
+            });
+
+            const finish = () => {
+                certificates.forEach((cert, idx) => {
+                    cert.style.margin = '0 auto 20px';
+                    if (idx < totalCerts - 1) cert.classList.add('page-break');
                 });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
+            };
+
+            const onError = (err) => {
+                console.error('PDF Error:', err);
+                alert('Failed to generate PDF. Please try again.');
+                finish();
+            };
+
+            if (totalCerts === 1) {
+                trimExtraBlankPages(html2pdf().set(opt).from(certificates[0]), 1)
+                    .save().then(finish).catch(onError);
+                return;
             }
 
             let worker = html2pdf().set(opt).from(certificates[0]).toPdf();
-            
             for (let i = 1; i < totalCerts; i++) {
-                (function(index) {
-                    worker = worker.from(certificates[index]).toContainer().toCanvas().toPdf();
-                })(i);
+                worker = worker.from(certificates[i]).toContainer().toCanvas().toPdf();
             }
-            
-            worker.save().then(() => {
-                if (totalCerts > 1) {
-                    certificates.forEach((cert, idx) => {
-                        cert.style.margin = '0 auto 20px';
-                        if (idx < totalCerts - 1) {
-                            cert.classList.add('page-break');
-                        }
-                    });
-                }
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-            }).catch(err => {
-                console.error('PDF Error:', err);
-                alert('Failed to generate PDF.');
-                btn.disabled = false;
-            });
+            trimExtraBlankPages(worker, totalCerts).save().then(finish).catch(onError);
         });
     </script>
 
     <div id="certificates-wrapper">
-        <?php foreach ($studentsToPrint as $index => $student): 
+        <?php foreach ($studentsToPrint as $index => $student):
             $studentName = strtoupper($student['student_name']);
-            $fatherName = strtoupper($student['father_name']);
-            $grNo = preg_replace('/[^0-9]/', '', $student['gr_no']);
-            $gradYear = $student['graduation_year'] ?? '';
-            
+            $fatherName  = strtoupper($student['father_name']);
+            $grNo        = preg_replace('/[^0-9]/', '', $student['gr_no']);
+
             // Gender detection
-            $isFemale = (isset($student['gender']) && stripos($student['gender'], 'f') === 0) || 
-                        stripos($studentName, 'MISS') !== false || 
+            $isFemale = (isset($student['gender']) && stripos($student['gender'], 'f') === 0) ||
+                        stripos($studentName, 'MISS') !== false ||
                         stripos($studentName, 'KUMARI') !== false;
-            
-            $prefix = $isFemale ? 'Miss' : 'Mr.';
-            $parentagePrefix = $isFemale ? 'D/O' : 'S/O';
-            $pronoun = $isFemale ? 'She' : 'He';
-            $possessivePronoun = $isFemale ? 'Her' : 'His';
-            $objectivePronoun = $isFemale ? 'her' : 'him';
+
+            $prefix              = $isFemale ? 'Miss' : 'Mr.';
+            $parentagePrefix     = $isFemale ? 'D/O' : 'S/O';
+            $pronoun             = $isFemale ? 'She' : 'He';
+            $possessivePronoun   = $isFemale ? 'Her' : 'His';
+            $objectivePronoun    = $isFemale ? 'her' : 'him';
 
             // Subject detection based on GR suffix
-            $subjectText = "PHYSICS, CHEMISTRY AND BIOLOGY / MATHS"; 
+            $subjectText = "PHYSICS, CHEMISTRY AND BIOLOGY / MATHS";
             if (!empty($student['gr_no'])) {
                 if (stripos($student['gr_no'], 'P.M') !== false) {
                     $subjectText = "PHYSICS, CHEMISTRY AND BIOLOGY";
@@ -454,32 +346,22 @@ if (count($studentsToPrint) > 1) {
                     $subjectText = "PHYSICS, CHEMISTRY AND MATHS";
                 }
             }
-            
-            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
-                ? '../' . $settings['school_logo'] 
+
+            $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo']))
+                ? '../' . $settings['school_logo']
                 : '../assets/branding/logo.png';
         ?>
-        <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>" 
+        <div class="cert-page <?php echo ($index < count($studentsToPrint) - 1) ? 'page-break' : ''; ?>"
              data-student-name="<?php echo htmlspecialchars($student['student_name']); ?>"
              data-gr-no="<?php echo htmlspecialchars($grNo); ?>">
-            
-            <div class="outer-border"></div>
-            <div class="inner-border"></div>
 
-            <div class="corner-logo">
-                <img src="<?= $logoPath ?>?v=<?= time() ?>" class="logo-img" alt="Logo">
-            </div>
+            <!-- Watermark only — no branding header -->
+            <img src="<?= $logoPath ?>?v=<?= time() ?>" class="watermark" alt="">
 
-            <div class="left-stripe-bottom">
-                <div class="vertical-text"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
-            </div>
-            
+            <!-- 43.5mm blank space above (for pre-printed PAD header) -->
+            <div class="top-spacer"></div>
+
             <div class="cert-container">
-                <div class="header-bar">
-                    <div class="school-name"><?php echo strtoupper(htmlspecialchars($settings['school_name'])); ?></div>
-                </div>
-
-                <div class="city-name"><?php echo strtoupper(htmlspecialchars($settings['address_tagline'])); ?></div>
 
                 <div class="cert-title">TRANSFER CERTIFICATE</div>
 
@@ -548,12 +430,16 @@ if (count($studentsToPrint) > 1) {
                     </div>
                 </div>
 
-                <div class="footer" style="margin-top: auto; display: flex; justify-content: flex-end; padding: 5mm 10mm 5mm; position: relative; z-index: 100;">
-                    <div class="principal-box" style="text-align: center; min-width: 50mm; border-top: 2px solid #0c0784; padding-top: 2mm;">
-                        <span style="font-size: 14pt; font-weight: bold; color: #0c0784; display: block; text-transform: none;">Principal</span>
+                <div class="footer">
+                    <div class="principal-box">
+                        <span class="principal-label">Principal</span>
                     </div>
                 </div>
+
             </div>
+
+            <!-- 28.1mm blank space below (for pre-printed PAD footer) -->
+            <div class="bottom-spacer"></div>
 
         </div>
         <?php endforeach; ?>
