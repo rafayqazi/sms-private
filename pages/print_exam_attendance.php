@@ -37,7 +37,7 @@ foreach ($allStudents as $student) {
 }
 
 usort($students, function($a, $b) {
-    return $a['gr_no'] - $b['gr_no'];
+    return intval($a['gr_no']) - intval($b['gr_no']);
 });
 
 $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 

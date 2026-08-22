@@ -340,28 +340,57 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
                 <!-- Examination Dropdown -->
                 <div class="flex flex-col w-full group-[.collapsed]:items-center">
-                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Examination">
+                    <button class="nav-dropdown-toggle w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-600 dark:text-gray-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group-[.collapsed]:px-2 group-[.collapsed]:justify-center <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php', 'award_list.php', 'print_award_list.php', 'marking_award_list.php', 'print_marking_award_list.php']) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' : ''; ?>" title="Examination">
                         <div class="flex items-center gap-3">
-                            <i class="fas fa-poll w-5 text-center"></i> <span class="group-[.collapsed]:hidden">Examination</span>
+                            <i class="fas fa-poll w-5 text-center shrink-0"></i> <span class="group-[.collapsed]:hidden whitespace-nowrap">Examination</span>
                         </div>
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden"></i>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-[.collapsed]:hidden shrink-0"></i>
                     </button>
-                    <div class="hidden flex-col pl-4 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php']) ? '!flex' : ''; ?>">
-                        <?php if (!isViewer()): ?>
-                        <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
-                            <i class="fas fa-edit w-4 text-center"></i> Enter Marks
-                        </a>
-                        <?php endif; ?>
-                        <a href="<?php echo $base_path; ?>pages/view_results.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'view_results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
-                            <i class="fas fa-eye w-4 text-center"></i> View Results
-                        </a>
+                    <div class="hidden flex-col pl-3 mt-1 space-y-1 w-full group-[.collapsed]:hidden <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php', 'exam_slips.php', 'exam_attendance.php', 'award_list.php', 'print_award_list.php', 'marking_award_list.php', 'print_marking_award_list.php']) ? '!flex' : ''; ?>">
+                        <!-- Marks Sub-dropdown -->
+                        <div class="flex flex-col w-full">
+                            <button type="button" class="nav-dropdown-toggle w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs md:text-[13px] text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php']) ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>" title="Marks">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
+                                    <i class="fas fa-file-signature w-4 text-center shrink-0"></i> <span class="whitespace-nowrap font-medium">Marks</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-[10px] transition-transform duration-200 shrink-0 ml-1"></i>
+                            </button>
+                            <div class="hidden flex-col pl-3 mt-1 space-y-1 w-full <?php echo in_array(basename($_SERVER['PHP_SELF']), ['results.php', 'view_results.php']) ? '!flex' : ''; ?>">
+                                <?php if (!isViewer()): ?>
+                                <a href="<?php echo $base_path; ?>pages/results.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo basename($_SERVER['PHP_SELF']) == 'results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-edit w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">Enter Marks</span>
+                                </a>
+                                <?php endif; ?>
+                                <a href="<?php echo $base_path; ?>pages/view_results.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo basename($_SERVER['PHP_SELF']) == 'view_results.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-eye w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">View Marks</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Print Examination Stuff Sub-dropdown -->
                         <?php if (!isViewer() && !isset($_SESSION['teacher_id'])): ?>
-                        <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
-                            <i class="fas fa-id-card w-4 text-center"></i> Print Exam Slips
-                        </a>
-                        <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-3 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800' : ''; ?>">
-                            <i class="fas fa-clipboard-list w-4 text-center"></i> Examination Attendance
-                        </a>
+                        <div class="flex flex-col w-full">
+                            <button type="button" class="nav-dropdown-toggle w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs md:text-[13px] text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo in_array(basename($_SERVER['PHP_SELF']), ['exam_slips.php', 'exam_attendance.php', 'award_list.php', 'print_award_list.php', 'marking_award_list.php', 'print_marking_award_list.php']) ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>" title="Print Examination Stuff">
+                                <div class="flex items-center gap-2 whitespace-nowrap">
+                                    <i class="fas fa-print w-4 text-center shrink-0"></i> <span class="whitespace-nowrap font-medium">Print Examination Stuff</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-[10px] transition-transform duration-200 shrink-0 ml-1"></i>
+                            </button>
+                            <div class="hidden flex-col pl-3 mt-1 space-y-1 w-full <?php echo in_array(basename($_SERVER['PHP_SELF']), ['exam_slips.php', 'exam_attendance.php', 'award_list.php', 'print_award_list.php', 'marking_award_list.php', 'print_marking_award_list.php']) ? '!flex' : ''; ?>">
+                                <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo basename($_SERVER['PHP_SELF']) == 'exam_slips.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-id-card w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">Print Exam Slips</span>
+                                </a>
+                                <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo basename($_SERVER['PHP_SELF']) == 'exam_attendance.php' ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-clipboard-list w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">Examination Attendance</span>
+                                </a>
+                                <a href="<?php echo $base_path; ?>pages/award_list.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo in_array(basename($_SERVER['PHP_SELF']), ['award_list.php', 'print_award_list.php']) ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-file-signature w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">Award List</span>
+                                </a>
+                                <a href="<?php echo $base_path; ?>pages/marking_award_list.php" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap <?php echo in_array(basename($_SERVER['PHP_SELF']), ['marking_award_list.php', 'print_marking_award_list.php']) ? 'text-indigo-600 bg-gray-50 dark:text-indigo-400 dark:bg-gray-800 font-semibold' : ''; ?>">
+                                    <i class="fas fa-table-list w-3.5 text-center shrink-0"></i> <span class="whitespace-nowrap">Marking Award List</span>
+                                </a>
+                            </div>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -622,32 +651,42 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             const toggles = document.querySelectorAll('.nav-dropdown-toggle');
             
             toggles.forEach(toggle => {
-                toggle.addEventListener('click', function() {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     // If sidebar is collapsed, expand it first
-                    if (sidebar.classList.contains('collapsed')) {
+                    if (sidebar && sidebar.classList.contains('collapsed')) {
                         setSidebarState(false);
                     }
 
                     const submenu = this.nextElementSibling;
                     const chevron = this.querySelector('.fa-chevron-down');
                     
-                    // Toggle visibility
-                    submenu.classList.toggle('hidden');
-                    submenu.classList.toggle('flex');
-                    
-                    // Rotate chevron
-                    if (submenu.classList.contains('flex')) {
-                        chevron.style.transform = 'rotate(180deg)';
-                    } else {
-                        chevron.style.transform = 'rotate(0deg)';
+                    if (submenu) {
+                        if (submenu.classList.contains('!flex')) {
+                            submenu.classList.remove('!flex');
+                            submenu.classList.add('hidden');
+                            submenu.classList.remove('flex');
+                        } else if (submenu.classList.contains('hidden')) {
+                            submenu.classList.remove('hidden');
+                            submenu.classList.add('flex');
+                        } else {
+                            submenu.classList.add('hidden');
+                            submenu.classList.remove('flex');
+                        }
+                        
+                        // Rotate chevron
+                        if (chevron) {
+                            const isOpen = submenu.classList.contains('flex') || submenu.classList.contains('!flex');
+                            chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                        }
                     }
                 });
                 
                 // Set initial chevron state
                 const submenu = toggle.nextElementSibling;
-                if (!submenu.classList.contains('hidden')) {
+                if (submenu && (!submenu.classList.contains('hidden') || submenu.classList.contains('!flex'))) {
                     const chevron = toggle.querySelector('.fa-chevron-down');
-                    if(chevron) chevron.style.transform = 'rotate(180deg)';
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
                 }
             });
 

@@ -37,8 +37,9 @@ include '../includes/header.php';
 
         <?php if ($selectedClass): ?>
             <div class="mt-8 border-t pt-6" id="generateSection">
-                <form action="print_slips.php" method="GET" target="_blank" class="space-y-6">
+                <form action="print_slips.php" method="GET" target="_blank" class="space-y-6" id="slipsFormMain">
                     <input type="hidden" name="class" value="<?php echo htmlspecialchars($selectedClass); ?>">
+                    <input type="hidden" name="slips_per_page" id="slipsPerPageInput" value="1">
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Examination Name</label>
@@ -184,6 +185,34 @@ include '../includes/header.php';
                                 DEFAULT_SUBJECTS.forEach(sub => addSubjectRow(sub));
                             }
                         });
+
+                        function triggerSlipGeneration() {
+                            const form = document.getElementById('slipsFormMain');
+                            if (!form.reportValidity()) {
+                                return;
+                            }
+                            openLayoutModal();
+                        }
+
+                        function openLayoutModal() {
+                            const modal = document.getElementById('printLayoutModal');
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                            document.body.style.overflow = 'hidden';
+                        }
+
+                        function closeLayoutModal() {
+                            const modal = document.getElementById('printLayoutModal');
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                            document.body.style.overflow = '';
+                        }
+
+                        function selectLayoutAndGenerate(slipsPerPage) {
+                            document.getElementById('slipsPerPageInput').value = slipsPerPage;
+                            closeLayoutModal();
+                            document.getElementById('slipsFormMain').submit();
+                        }
                     </script>
 
                     <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
@@ -191,19 +220,90 @@ include '../includes/header.php';
                         <div>
                             <h4 class="font-medium text-blue-800">Information</h4>
                             <p class="text-sm text-blue-600 mt-1">
-                                Clicking "Generate Slips" will open a printable PDF view for all students in 
+                                Clicking "Generate Slips" will open the layout selector (1 Slip or 2 Slips per page) for 
                                 <strong>Class <?php echo htmlspecialchars($selectedClass); ?></strong>.
                             </p>
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors shadow-md flex items-center justify-center gap-2">
-                        <i class="fas fa-id-card"></i> Generate Slips
+                    <button type="button" onclick="triggerSlipGeneration()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-indigo-200/50 hover:shadow-indigo-300 flex items-center justify-center gap-2 text-base">
+                        <i class="fas fa-id-card text-lg"></i> Generate Slips
                     </button>
                 </form>
+            </div>
+
+            <!-- Print Layout Selection Modal -->
+            <div id="printLayoutModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 text-left">
+                <div class="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-[scaleIn_0.25s_ease-out] border border-gray-100">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h3 class="text-xl font-extrabold text-gray-900 flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">
+                                    <i class="fas fa-print"></i>
+                                </span>
+                                Select Print Layout
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Choose how many slips to print per page</p>
+                        </div>
+                        <button type="button" onclick="closeLayoutModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition-colors">
+                            <i class="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Option 1: 1 Slip per page -->
+                        <button type="button" onclick="selectLayoutAndGenerate(1)" 
+                            class="group text-left p-5 rounded-2xl border-2 border-gray-200 hover:border-indigo-600 hover:bg-indigo-50/40 transition-all flex flex-col justify-between relative focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-file-lines"></i>
+                                    </div>
+                                    <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">Standard</span>
+                                </div>
+                                <h4 class="font-extrabold text-gray-900 text-base group-hover:text-indigo-600 transition-colors">1 Slip Per Page</h4>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    Full size A4 slip for each student with large tables & details.
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center text-xs font-bold text-indigo-600">
+                                <span>Select 1 Per Page</span>
+                                <i class="fas fa-arrow-right ml-auto group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </button>
+
+                        <!-- Option 2: 2 Slips per page -->
+                        <button type="button" onclick="selectLayoutAndGenerate(2)" 
+                            class="group text-left p-5 rounded-2xl border-2 border-emerald-200 hover:border-emerald-600 hover:bg-emerald-50/40 transition-all flex flex-col justify-between relative focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/20">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-copy"></i>
+                                    </div>
+                                    <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Paper Saver 🌿</span>
+                                </div>
+                                <h4 class="font-extrabold text-gray-900 text-base group-hover:text-emerald-700 transition-colors">2 Slips Per Page</h4>
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    2 student slips on 1 page with cut line. Saves 50% paper!
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-emerald-100 flex items-center text-xs font-bold text-emerald-700">
+                                <span>Select 2 Per Page</span>
+                                <i class="fas fa-arrow-right ml-auto group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+                        <button type="button" onclick="closeLayoutModal()" class="px-5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
     </div>
 </div>
 
 <?php include '../includes/footer.php'; ?>
+
