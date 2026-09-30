@@ -39,6 +39,25 @@ $times = $_GET['times'] ?? [];
 $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
     ? '../' . $settings['school_logo'] 
     : '../assets/branding/logo.png';
+
+function getStudentSlipPhoto($rawPath) {
+    if (empty($rawPath)) {
+        return null;
+    }
+    $cleanPath = preg_replace('/^(\.\.\/|\.\/|\/)+/', '', str_replace('\\', '/', trim($rawPath)));
+    $candidates = [
+        '../' . $cleanPath,
+        $cleanPath,
+        trim($rawPath),
+        '../uploads/students/' . basename($rawPath)
+    ];
+    foreach ($candidates as $candidate) {
+        if (!empty($candidate) && file_exists($candidate) && is_file($candidate)) {
+            return $candidate;
+        }
+    }
+    return null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -306,9 +325,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                         <!-- Profile Photo -->
                         <div class="w-32 h-36 border-4 school-color-border rounded-xl overflow-hidden bg-slate-50 shadow-xl relative flex-shrink-0">
                             <?php 
-                            $img = !empty($student['profile_image']) && file_exists('../' . $student['profile_image']) 
-                                   ? '../' . $student['profile_image'] 
-                                   : null;
+                            $img = getStudentSlipPhoto($student['profile_image'] ?? '');
                             if($img): ?>
                                 <img src="<?php echo $img; ?>?v=<?php echo time(); ?>" class="w-full h-full object-cover object-top">
                             <?php else: ?>
@@ -445,9 +462,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                             <!-- Student Photo Compact -->
                             <div class="w-16 h-18 border-2 school-color-border rounded-lg overflow-hidden bg-slate-50 relative flex-shrink-0 flex items-center justify-center">
                                 <?php 
-                                $img = !empty($student['profile_image']) && file_exists('../' . $student['profile_image']) 
-                                       ? '../' . $student['profile_image'] 
-                                       : null;
+                                $img = getStudentSlipPhoto($student['profile_image'] ?? '');
                                 if($img): ?>
                                     <img src="<?php echo $img; ?>?v=<?php echo time(); ?>" class="w-full h-full object-cover object-top">
                                 <?php else: ?>
@@ -577,9 +592,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                             <!-- Student Photo Compact -->
                             <div class="w-16 h-18 border-2 school-color-border rounded-lg overflow-hidden bg-slate-50 relative flex-shrink-0 flex items-center justify-center">
                                 <?php 
-                                $img = !empty($student['profile_image']) && file_exists('../' . $student['profile_image']) 
-                                       ? '../' . $student['profile_image'] 
-                                       : null;
+                                $img = getStudentSlipPhoto($student['profile_image'] ?? '');
                                 if($img): ?>
                                     <img src="<?php echo $img; ?>?v=<?php echo time(); ?>" class="w-full h-full object-cover object-top">
                                 <?php else: ?>
