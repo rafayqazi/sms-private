@@ -1,335 +1,278 @@
-# 🏫 Private School Management System (SMS)
-### Powered by AR Software Solutions
-**Lead Architect & Developer:** Abdul Rafay Qazi  
-**Version:** 2.5 (Enterprise Edition)  
-**Target Platform:** Private Schools, Academies, Colleges & Educational Institutes  
-
----
-
-## 📌 Executive Overview
-
-The **Private School Management System (SMS)** is an all-in-one digital ERP platform designed specifically for private schools and modern educational academies. Built by **AR Software Solutions**, this system completely replaces manual paper registers, physical ledgers, and fragmented spreadsheets with a unified, lightning-fast digital interface.
-
-From student admissions and monthly fee billing to examination roll slips, certificates, library book banking, staff payroll, and a dedicated parent portal—every single administrative workflow is automated with precision.
-
-> [!NOTE]
-> Designed for **100% offline capability** (local network / intranet via XAMPP/PHP) or online cloud deployment. Your school data remains completely secure and under your private control.
-
----
-
-## 🌟 Key Modules & Core Features
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       AR SOFTWARE SOLUTIONS - SMS ERP                       │
-├────────────────────┬────────────────────┬───────────────────────────────────┤
-│ 👨‍🎓 Students & Bio  │ 💰 Fees & Billing  │ 📝 Exams & Results                │
-│ 📅 Attendance Hub  │ 👨‍🏫 Staff & Payroll│ 📜 Certificates (Pad & Full)      │
-│ 📚 Book Bank / Lib │ 📦 Inventory/Assets│ 👪 Parent Portal & Messaging      │
-│ 🔐 RBAC & Security │ 💾 Encrypted Backup│ 🤖 AI School Assistant            │
-└────────────────────┴────────────────────┴───────────────────────────────────┘
-```
-
----
-
-### 👨‍🎓 1. Student Information System (SIS) & Lifecycle
-
-* **Standard & Bulk Admission (`bulk_admission.php`):**
-  * Individual admission with complete demographic data, contact info, emergency contacts, and past academic records.
-  * Rapid **Bulk Admission** mode to enroll entire batches or transfer students in minutes.
-  * Automated **General Register (GR) Number** allocation ensuring unique student identification.
-* **Digital Student Dossier & Document Repository:**
-  * Upload and archive student photos, B-Form scans, Father CNIC copies, and previous School Leaving Certificates (SLC).
-  * Auto image optimization and secure local file storage.
-* **Missing Documents Tracker (`missing_files.php`):**
-  * Instant filter and audit tool to identify students with missing B-Forms, CNIC copies, or photos.
-* **Dynamic Student Profile & Print Dossier:**
-  * One-click printable student profile card for institutional records or parent meetings.
-* **Academic Promotion & Repeater Tracking (`promote_students.php`):**
-  * Year-end batch promotion utility (Pass / Fail / Retain).
-  * Automatic repeater flagging with distinct badges and history tracking.
-* **Alumni Network Management (`alumni.php`):**
-  * Dedicated repository for graduated students.
-  * Preserves completion year, final class, and academic history.
-  * One-click or bulk restoration of alumni back to active classes if needed.
-* **Data Portability:**
-  * One-click CSV export of student databases for departmental or administrative submissions.
-
----
-
-### 🪪 2. Student ID Card Generator (`generate_id_card.php`)
-
-* **Automated Batch & Single ID Card Creation:**
-  * Generates high-resolution, print-ready student identity cards.
-  * Includes student photo, dynamic barcode / QR code, GR number, blood group, class, section, emergency contact, and authorized signature.
-* **Branded Templates:**
-  * Automatically applies institutional header, logo, and custom color themes from school settings.
-
----
-
-### 💰 3. Comprehensive Fees & Accounts Management (`fees.php`)
-
-* **Flexible Fee Structure Configuration:**
-  * Set baseline tuition fees per class or customize individual fee structures per student.
-  * Manage multiple fee heads: Monthly Tuition, Admission Fees, Examination Fees, Sports/Lab charges, and Miscellaneous.
-* **Instant Fee Collection & Challan Printing (`print_receipt.php`):**
-  * Single-click monthly fee collection with automatic balance / arrears calculation.
-  * Thermal and standard paper receipt generation with student & school copy.
-* **Arrears & Defaulters Management:**
-  * Real-time defaulters directory with filtered lists by class and pending duration.
-  * Automated arrears accumulation across billing cycles.
-  * Debt clearance and fee concession adjustments (`clear_debt.php`).
-* **Financial Ledgers & Reports:**
-  * Date-range fee collection summaries, class-wise payment status, and individual fee ledgers (`print_fee_history.php`).
-  * Dedicated Alumni Fee Clearing and settlement reports (`print_alumni_fees_report.php`).
-  * Live revenue analytics and collection stat counters on dashboard.
-
----
-
-### 📅 4. Student & Staff Attendance Engine
-
-* **Smart Daily Attendance (`attendance.php`):**
-  * Take daily student attendance in seconds with quick presets (**Mark All Present**, **Mark All Absent**, **Leave**).
-  * Color-coded statuses: 🟢 Present, 🔴 Absent, 🟡 Leave.
-* **Attendance Analytics & Drilldown (`attendance_view.php`):**
-  * Calendar-based and date-range attendance logs.
-  * Class-wise daily and monthly percentage metrics.
-  * Printable Attendance Registers and Official Sheets (`print_online_attendance.php`).
-* **Staff & Teacher Attendance (`teacher_attendance.php`):**
-  * Dedicated daily attendance tracking for academic and administrative staff.
-  * Staff-wise attendance logs, monthly duty percentages, and leave management.
-
----
+# Private School Management System (SMS)
+
+A complete school ERP and administrative platform designed for private schools, academies, colleges, and educational institutes. It helps manage admissions, fees, attendance, exams, certificates, books, inventory, parent communication, staff data, and reporting from a single local-first web application.
+
+Built and maintained by AR Software Solutions.
+
+## Overview
+
+The Private School Management System is a modern web-based ERP for school operations with a strong focus on offline-first deployment and private institutional control. It is designed to run efficiently in local environments such as XAMPP or similar PHP setups while remaining adaptable for cloud hosting when needed.
+
+This system covers the complete school lifecycle:
+
+- Student admission and records
+- Fee collection and financial reporting
+- Attendance tracking
+- Examinations and results
+- Certificates and official documents
+- Parent portal and messaging
+- Staff and payroll management
+- Book bank and inventory tools
+- School settings and backup/restore
+- Integrated AI assistant for operational queries
+
+## Why this project
+
+- Built specifically for private academic institutions
+- Works in fully offline/local-network environments
+- Focuses on practical administrative workflows rather than generic CRUD screens
+- Provides printable reports and certificates for real-world institutional use
+- Keeps data local and under institutional control
+
+## Key Modules
+
+| Module | Description |
+| --- | --- |
+| Student Information System | Admission, student records, bulk enrollment, profiles, sponsorship records, alumni tracking |
+| Fees & Billing | Tuition, arrears, fee collection, ledger reports, defaulters, receipts |
+| Attendance Management | Daily student and teacher attendance, reports, printable registers |
+| Exam & Results | Roll slips, marks entry, grading, result cards, tabulation sheets |
+| Certificates | Transfer, character, school leaving, testimonial, and print-pad options |
+| Parent Portal | Secure access for parents to view academic and fee-related data |
+| Staff Management | Teacher profiles, payroll, employee attendance, teacher dashboard |
+| Book Bank | Textbook issue/return tracking and library inventory |
+| Inventory & Assets | Asset registration, categories, dead stock tracking |
+| Expenses | School spending categories and ledger records |
+| Settings & School Profile | Branding, class setup, institution information, security preferences |
+| Backup & Restore | Encrypted backup creation and safe recovery |
+| AI School Assistant | Natural-language support queries for school operations |
 
-### 📝 5. Examination, Grading & Assessment Hub
+## Technology Stack
 
-* **Examination Roll Number Slips (`exam_slips.php`, `print_slips.php`):**
-  * Auto-generates formal exam admission slips with student photos, roll numbers, exam dates, subject schedules, and examination rules.
-* **Exam Hall Attendance Registers (`exam_attendance.php`):**
-  * Generates printable signature sheets for exam superintendents and invigilators.
-* **Teacher Marking Award Lists (`award_list.php`, `marking_award_list.php`):**
-  * Print blank evaluation award lists for teachers to enter marks manually.
-  * Print finalized marking sheets for institutional archives.
-* **Mark Entry & Tabulation (`results.php`):**
-  * Subject-wise marks recording with automatic calculation of total marks, percentages, grades, and class ranks/positions.
-* **Result Cards & Tabulation Sheets (`result_card.php`, `print_all_results.php`):**
-  * Beautiful student result cards with grade scales and teacher remarks.
-  * Full-class master tabulation sheets for annual result gazettes.
-
----
-
-### 📜 6. Official Certificates & Letterhead Pad Printing (`certificates.php`)
-
-* **Complete Certificate Suite:**
-  * 🎓 **School Leaving Certificate (SLC)**
-  * 📜 **Character Certificate**
-  * 🏅 **Testimonial / Achievement Certificate**
-  * 🔄 **Student Transfer Certificate**
-* **Exclusive Dual Printing Technology:**
-  * **Standard Full Print:** Generates complete ornate certificates including ornate borders, school headers, watermarks, and verification signatures.
-  * **Pre-Printed Letterhead Pad Mode (`print_*_pad.php`):** Suppresses background graphics and headers so you can feed pre-printed school stationery/letterhead pads directly into the printer with perfect text alignment!
-
----
-
-### 👨‍🏫 7. Staff & Teacher Management & Payroll
-
-* **Comprehensive Teacher Profiles (`teacher_profile.php`):**
-  * Detailed records: CNIC, qualifications, date of joining, designation, subject expertise, and bank account info.
-* **Teacher Self-Service Portal (`teacher_dashboard.php`):**
-  * Dedicated teacher login to view assigned classes, enter grades, and check attendance.
-* **Staff Payroll & Salary Disbursal (`pay_salary.php`):**
-  * Track monthly salary disbursements, advances, deductions, and payment records.
-
----
-
-### 📚 8. Book Bank & Library Management (`book_bank.php`)
-
-* **Book Stock Inventory:**
-  * Catalog textbooks, reference books, and instructional materials with quantity and status tracking.
-* **Student Book Distribution & Bulk Issue (`book_bank_bulk.php`):**
-  * Issue complete textbook sets to entire classes with a single click.
-  * Track returns, damages, and pending books.
-* **Teacher Allocations (`book_bank_teacher_actions.php`):**
-  * Record teaching curriculum sets and teacher reference copies.
-* **Audit & Inventory Reports (`book_bank_report.php`):**
-  * Real-time stock audit showing available, issued, and depleted book titles.
-
----
-
-### 📦 9. Inventory, Fixed Assets & Dead Stock Management
-
-* **School Assets Registry (`inventory.php`):**
-  * Track furniture, IT hardware, laboratory apparatus, sports gear, and office equipment.
-* **Category Management (`categories.php`):**
-  * Organize assets by department, room, and category.
-* **Dead Stock / Damaged Goods Registry (`dead_stock.php`):**
-  * Formal tracking of broken, expired, or written-off school property for annual audits.
-
----
-
-### 💸 10. School Expense Tracking (`expenses.php`)
-
-* **Daily Expense Ledger:**
-  * Log school expenditures (utilities, stationery, repairs, refreshments, maintenance).
-* **Expense Categories (`expense_categories.php`):**
-  * Categorize expenses for clean financial statements and monthly expenditure auditing.
-
----
-
-### 👪 11. Parent Portal & Multi-Channel Communication
-
-* **Parent Portal (`parent_portal.php`):**
-  * Parents log in securely using their Father's CNIC and account credentials.
-  * View real-time academic records, monthly fee status, attendance history, and report cards for all enrolled siblings in one dashboard.
-* **Communication & Notice Board (`messages.php`):**
-  * Broadcast administrative notices, fee reminders, exam circulars, and holiday alerts.
-  * Direct bidirectional communication between parents and school administration.
-* **Support Ticket Resolution (`resolve_ticket.php`):**
-  * Manage parent inquiries, grievances, and support requests.
-
----
-
-### ⚙️ 12. Academic Structure & Institutional Customization
-
-* **Dynamic Class & Section Manager (`manage_classes.php`):**
-  * Add, rename, remove, and sort custom classes (Playgroup, Nursery, KG, Class 1-10, O-Levels, etc.).
-  * Multi-section support per class.
-* **School Branding & Profile (`school_settings.php`):**
-  * Customize school name, branch/campus, registration number, SEMIS/Affiliation code, phone, email, and address.
-  * Upload custom institutional logo, header banner, and report card watermarks.
-
----
-
-### 🔐 13. Security, RBAC & Data Protection
-
-* **Role-Based Access Control (RBAC) (`assign_roles.php`):**
-  * Multi-tiered access levels: **Administrator**, **Staff / Teacher**, and **Viewer**.
-  * Restricts sensitive financial data and system configurations to authorized personnel.
-* **Encrypted Backups & One-Click Restore (`backup_restore.php`):**
-  * Create password-protected ZIP archives containing complete databases and uploaded documents.
-  * Automated scheduled backup engine.
-  * Seamless one-click data restoration.
-* **Secure Factory Reset (`reset_app.php`):**
-  * Protected with double-authenticated administrator password verification and mandatory pre-reset backup generation.
-* **Software Licensing & Live Update Engine (`license.php`):**
-  * Built-in cryptographic license verification and in-app system update installer.
-
----
-
-### 🤖 14. Integrated AI School Assistant
-
-* Floating intelligent assistant widget accessible across all pages.
-* Understands natural-language queries:
-  * *"Show me today's attendance summary"*
-  * *"How many fee defaulters are in Class 8?"*
-  * *"List all students admitted this month"*
-  * *"Show staff presence today"*
-
----
-
-## 🛠️ Technology Stack & Architecture
-
-| Layer | Technology | Details |
-|---|---|---|
-| **Backend** | PHP 7.4 / 8.0+ | Fast, lightweight procedural and object-oriented architecture |
-| **Data Engine** | Flat-File NoSQL / Structured CSV | Zero-configuration database, ultra-portable, easy backups |
-| **Frontend UI** | HTML5, TailwindCSS 3.4, Vanilla JS | Modern, responsive, high-contrast, clean UI |
-| **Charts & Analytics** | Chart.js | Interactive enrollment, fee, and attendance graphs |
-| **Icons & Typography** | FontAwesome 6.4, Inter / Roboto | Professional typography and iconography |
-| **Printing Engine** | Pure CSS `@media print` | High-fidelity pixel-perfect printing for certificates, ID cards, receipts, and slips |
-
----
-
-## 🚀 Installation & Quick Start
-
-### 📋 Prerequisites
-1. **Operating System:** Windows 7/8/10/11, Linux, or macOS
-2. **Server Environment:** [XAMPP](https://www.apachefriends.org/) (PHP 7.4 or PHP 8.x recommended)
-3. **Web Browser:** Google Chrome, Microsoft Edge, or Mozilla Firefox
-
----
-
-### ⚡ Installation Steps
-
-1. **Extract or Clone:**
-   Copy the project directory to your XAMPP web root:
-   ```text
-   C:\xampp\htdocs\sms-private\
-   ```
-
-2. **Start Apache Server:**
-   * Open the **XAMPP Control Panel**.
-   * Click **Start** on the **Apache** service.
-   *(Note: MySQL is NOT required as the system uses an optimized high-speed flat-file data engine).*
-
-3. **Open in Browser:**
-   Navigate to:
-   ```text
-   http://localhost/sms-private
-   ```
-   Or use the included one-click Windows desktop launcher: `start_system.vbs`.
-
-4. **Default Administrative Credentials:**
-   * **Username:** `admin`
-   * **Password:** Check your initial deployment credentials (or configured during installation via `install.php`).
-   * *Remember to update your administrative password immediately in Settings.*
-
----
-
-## 📖 Quick-Start Operational Workflows
-
-### 1️⃣ Admitting a Student
-1. Open **Students** → **Admission**.
-2. Complete demographic details (Name, Father Name, CNIC, Phone, Date of Birth).
-3. Select Class and Section.
-4. Attach photo and document scans.
-5. Click **Save Student**. System assigns the next consecutive GR number automatically.
-
-### 2️⃣ Collecting Monthly Fees
-1. Open **Fees** → **Collect Fees**.
-2. Search for student by GR Number, Name, or select Class.
-3. Verify current tuition fee and any previous arrears.
-4. Enter amount paid and click **Collect Fee**.
-5. Click **Print Receipt** for instant printable receipt.
-
-### 3️⃣ Generating Roll Number Slips
-1. Navigate to **Examinations** → **Exam Slips**.
-2. Choose class, exam term, and date schedule.
-3. Click **Generate Slips** → **Print All Slips**.
-
-### 4️⃣ Printing Certificates on Pre-Printed Letterhead Pads
-1. Navigate to **Certificates** → Choose Certificate Type (e.g., School Leaving).
-2. Select student to populate certificate records.
-3. Choose **Print on Letterhead Pad** to suppress template headers and print directly onto school letterhead paper.
-
-### 5️⃣ Creating a System Backup
-1. Go to **Settings** → **Backup & Restore**.
-2. Click **Create Encrypted Backup**.
-3. Save the downloaded `.zip` file to an external USB or secure storage.
-
----
-
-## 👨‍💻 Developer & Commercial Information
-
-```
-══════════════════════════════════════════════════════════════════════════════
-                      DEVELOPED BY AR SOFTWARE SOLUTIONS                      
-══════════════════════════════════════════════════════════════════════════════
-Lead Software Architect : Abdul Rafay Qazi (Full Stack Developer & Systems Designer)
-Company                 : AR Software Solutions
-Specialization          : School ERPs, Custom Web Applications & Enterprise Software
-Official Email          : abdulrafehqazi@gmail.com
-WhatsApp Support        : +92 300 0358189
-GitHub Portfolio        : https://github.com/rafayqazi
-LinkedIn                : https://www.linkedin.com/in/abdulrafayqazi
-══════════════════════════════════════════════════════════════════════════════
+- Backend: PHP 7.4+ / 8.x
+- Frontend: HTML5, JavaScript, CSS
+- Styling: Tailwind CSS
+- Charts: Chart.js
+- Icons: Font Awesome
+- Printing: CSS print media and print-specific templates
+- Deployment model: Local/offline-first web app, compatible with XAMPP and similar environments
+
+## Core Features
+
+### 1. Student Lifecycle Management
+
+- Individual and bulk admission workflows
+- Student photos and document archives
+- Missing file/document tracking
+- Student profile views and dossier generation
+- Academic promotion and repeater management
+- Alumni archive and restoration tools
+- CSV export and reporting support
+
+### 2. Fee and Accounts Management
+
+- Multi-head fee structures
+- Fee collection with real-time balance updates
+- Defaulter and arrears analysis
+- Financial reports by date, class, and individual student
+- Receipt printing and payment history
+- Alumni fee settlement reports
+
+### 3. Attendance Tracking
+
+- Student and staff attendance marking
+- Quick present/absent/leave actions
+- Attendance summary per class and date range
+- Printable attendance sheets
+
+### 4. Examination and Assessment
+
+- Roll number slips generation
+- Exam hall attendance registers
+- Teacher marking award lists
+- Grade and rank calculation
+- Result card printing and class-wise tabulation
+
+### 5. Certificates and Official Printing
+
+- School leaving certificate
+- Character certificate
+- Testimonial certificate
+- Transfer certificate
+- Full print version and letterhead-pad optimized mode
+
+### 6. Parent and Teacher Access
+
+- Parent login system
+- Teacher dashboards and access control
+- Messaging and notices
+- Viewable academic and fee records
+
+### 7. Book Bank and Inventory
+
+- Manage book stock and issue records
+- Bulk book assignment to classes
+- Teacher allocation tracking
+- Inventory and dead stock management
+
+### 8. Security, Roles, and Data Protection
+
+- Role-based access control
+- Secure admin verification workflows
+- Backup and restore management
+- License and update verification system
+- Controlled application reset process
+
+### 9. AI School Assistant
+
+The system includes an AI-style assistant widget that can respond to natural-language queries such as:
+
+- Show today's attendance summary
+- How many fee defaulters are in Class 8?
+- List students admitted this month
+- Show staff presence today
+
+## System Architecture
+
+This repository uses a classic server-rendered PHP layout:
+
+- `pages/` contains the main screen modules and management interfaces
+- `api/` contains backend handlers and data actions
+- `includes/` contains shared logic, session management, DB access, and utilities
+- `assets/` contains UI and static resources
+
+This structure allows the application to remain self-contained and easy to deploy in a lightweight local environment without a heavy framework.
+
+## Repository Structure
+
+```text
+sms-private/
+├── api/                  # AJAX/API endpoints for actions and reporting
+├── includes/             # shared PHP code, database logic, auth, headers/footers
+├── pages/                # user-facing admin, parent, and teacher screens
+├── assets/               # frontend static assets
+├── README.md             # project overview and setup guide
+├── DOCUMENTATION.md      # documentation and product details
+├── composer.json         # Composer metadata
+├── index.php             # application entry
+├── login.php             # login page
+├── install.php           # installation flow
+├── maintenance.php       # maintenance page
+├── logout.php            # logout handler
+├── parent_logout.php     # parent logout handler
+├── start_system.vbs      # Windows launcher helper
+├── splash.hta            # splash screen helper
+└── ...                   # other feature scripts and utilities
 ```
 
-For customized feature requests, school-specific branding modules, multi-branch network deployments, or technical inquiries, please reach out via the official contact channels above.
+## Installation
+
+### Prerequisites
+
+1. Windows, Linux, or macOS
+2. Apache/PHP environment such as XAMPP
+3. A browser such as Chrome, Edge, or Firefox
+
+### Setup Steps
+
+1. Clone or download the project into your web root.
+
+```bash
+git clone https://github.com/rafayqazi/sms-private.git
+```
+
+Example local path:
+
+```text
+C:\xampp\htdocs\sms-private\
+```
+
+2. Start Apache in XAMPP.
+
+3. Open the app in a browser:
+
+```text
+http://localhost/sms-private
+```
+
+4. If this is a fresh installation, open:
+
+```text
+http://localhost/sms-private/install.php
+```
+
+5. Complete setup and configure admin credentials.
+
+## Default Admin Access
+
+The project documentation states that the default admin login is:
+
+```text
+Username: admin
+Password: configured during installation
+```
+
+It is recommended to change the password immediately after setup.
+
+## Quick Start Workflows
+
+### Admitting a student
+1. Open Students > Admission
+2. Complete demographic and contact details
+3. Assign class and section
+4. Add photo and document files
+5. Save the record
+
+### Collecting fees
+1. Go to Fees > Collect Fees
+2. Search the student
+3. Confirm the due amount
+4. Record payment
+5. Print the receipt
+
+### Generating exam slips
+1. Open Examinations > Exam Slips
+2. Select the class and exam schedule
+3. Generate slips and print them
+
+### Creating a backup
+1. Open Settings > Backup & Restore
+2. Create encrypted system backup
+3. Store the archive securely
+
+## Security Notes
+
+- The app is intended for private institutional use.
+- Data is designed to remain under local or controlled deployment ownership.
+- Backup and restore features support secure recovery workflows.
+- Role restrictions are built into the application for sensitive administrative functions.
+
+## Developer and Ownership
+
+Developed by AR Software Solutions.
+
+Lead Architect & Developer: Abdul Rafay Qazi
+
+- GitHub: https://github.com/rafayqazi
+- LinkedIn: https://www.linkedin.com/in/abdulrafayqazi
+- Email: abdulrafehqazi@gmail.com
+
+## License
+
+This project is distributed for private institutional use. All rights are reserved by AR Software Solutions. Unauthorized redistribution, removal of attribution, or reuse outside the agreed usage scope is prohibited.
+
+## Support
+
+For customized feature requests, school-specific branding, multi-branch deployment requirements, or technical assistance, contact the project author through the channels listed above.
 
 ---
 
-## 📜 License & Copyright
+If you want, I can also help you turn this into a more premium README with:
+- a product-style landing page layout
+- screenshots placeholders
+- a changelog section
+- architecture diagrams
+- a contribution guide
+- a clearer installation troubleshooting section
 
-**Copyright &copy; 2025-2026 AR Software Solutions. All Rights Reserved.**  
-This software is licensed for private institutional use. Unauthorized redistribution, decompilation, or removal of developer attribution credits is strictly prohibited under applicable software licensing terms.
+I can update the file in the repository again with that version as well.
