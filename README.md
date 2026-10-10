@@ -1,597 +1,335 @@
-# 🏫 School Management System
-## Government Boys Primary School Ali Bux Jarwar
-
-A complete digital solution to manage all school activities - from student admissions to attendance tracking, everything in one place!
-
----
-
-## 📱 What is This System?
-
-Think of this as a **digital register** for your entire school. Instead of maintaining thick registers and files, everything is now on your computer - student records, attendance, teacher information, and much more. It's like having a smart assistant that remembers everything about your school!
+# 🏫 Private School Management System (SMS)
+### Powered by AR Software Solutions
+**Lead Architect & Developer:** Abdul Rafay Qazi  
+**Version:** 2.5 (Enterprise Edition)  
+**Target Platform:** Private Schools, Academies, Colleges & Educational Institutes  
 
 ---
 
-## ✨ Main Features (What Can You Do?)
+## 📌 Executive Overview
 
-### 👨‍🎓 **1. Student Management**
+The **Private School Management System (SMS)** is an all-in-one digital ERP platform designed specifically for private schools and modern educational academies. Built by **AR Software Solutions**, this system completely replaces manual paper registers, physical ledgers, and fragmented spreadsheets with a unified, lightning-fast digital interface.
 
-#### 📝 **Student Admission (New Student Entry)**
-When a new student joins your school, you can:
-- Fill in a simple form with student details (name, father name, age, class, etc.)
-- Upload their photo
-- Upload documents (B-Form, Father's CNIC, School Leaving Certificate)
-- System automatically gives them a GR Number
-- Everything is saved digitally - no more paper files!
+From student admissions and monthly fee billing to examination roll slips, certificates, library book banking, staff payroll, and a dedicated parent portal—every single administrative workflow is automated with precision.
 
-**How to do it:**
-1. Click on "Students" in the left menu
-2. Click "Admission" 
-3. Fill in the form (fields with * are required)
-4. Upload photos/documents
-5. Click "Save Student"
-6. Done! Student is now registered
-
-#### 📋 **Student List (View All Students)**
-See all your students in one place:
-- Search by name or GR number
-- Filter by class (Kachi, One, Two, etc.)
-- Filter by gender (Boys/Girls)
-- Sort by GR number
-- See profile pictures
-- Quickly find any student
-
-**How to use:**
-1. Click "Students" → "Student List"
-2. Use the filters at top to find students:
-   - Select class from dropdown
-   - Select gender if needed
-   - Or type student name/GR number in search box
-3. Click on student name to see full details
-
-#### 👤 **Student Profile (Complete Information)**
-Click on any student to see:
-- Personal details (name, age, class, contact)
-- Father's information
-- All uploaded documents (photos, CNIC, B-Form)
-- Which parent they are linked to
-- Current status (Active/Alumni/Repeater)
-
-**Special Feature - Print:**
-- Click the Print button
-- System creates a beautiful certificate-style document
-- Perfect for official records or sharing with parents
-
-#### 🎓 **Student Promotion (Year End Process)**
-At the end of the academic year, promote students to next class:
-
-**How it works:**
-1. Select a class (e.g., "Class One")
-2. See all students in that class
-3. For each student, decide:
-   - ✅ **Pass** → Student moves to next class (One → Two)
-   - ❌ **Fail** → Student repeats the class, marked as "Repeater"
-   - ⏸️ **Stay Same** → Student stays in class but not marked as repeater
-
-4. Click "Apply Promotions"
-5. All students updated at once!
-
-**Special Case - Class Five:**
-- When Class Five students pass, they become "Alumni"
-- They move to a special "Graduated Students" section
-- They won't appear in regular student lists anymore
-
-#### 🎖️ **Alumni (Passed Out Students)**
-- Separate section for all students who completed Class Five
-- See their graduation year
-- View their records anytime
-- Like a hall of fame for your school!
+> [!NOTE]
+> Designed for **100% offline capability** (local network / intranet via XAMPP/PHP) or online cloud deployment. Your school data remains completely secure and under your private control.
 
 ---
 
-### 📅 **2. Attendance System**
+## 🌟 Key Modules & Core Features
 
-#### ✍️ **Mark Attendance (Daily Process)**
-Take attendance in just 2 minutes:
-
-**Steps:**
-1. Click "Attendance" → "Mark Attendance"
-2. Select today's date
-3. Select the class
-4. You'll see all students of that class
-5. For each student, mark:
-   - 🟢 **P** = Present
-   - 🔴 **A** = Absent  
-   - 🟡 **L** = Leave
-
-6. Quick buttons:
-   - "Mark All Present" - if everyone is here
-   - "Mark All Absent" - easier to then mark only present ones
-
-7. Click "Save Attendance"
-8. Done!
-
-**Pro Tip:** You can go back and change attendance for previous dates if you made a mistake.
-
-#### 📊 **View Attendance (Check Records)**
-See attendance history:
-- Select any date
-- Select class
-- See who was present/absent/on leave
-- See percentages and statistics
-- Print attendance reports
-
-**Example Use:**
-- Parent asks about their child's attendance
-- Quickly check any date
-- Show them the record
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       AR SOFTWARE SOLUTIONS - SMS ERP                       │
+├────────────────────┬────────────────────┬───────────────────────────────────┤
+│ 👨‍🎓 Students & Bio  │ 💰 Fees & Billing  │ 📝 Exams & Results                │
+│ 📅 Attendance Hub  │ 👨‍🏫 Staff & Payroll│ 📜 Certificates (Pad & Full)      │
+│ 📚 Book Bank / Lib │ 📦 Inventory/Assets│ 👪 Parent Portal & Messaging      │
+│ 🔐 RBAC & Security │ 💾 Encrypted Backup│ 🤖 AI School Assistant            │
+└────────────────────┴────────────────────┴───────────────────────────────────┘
+```
 
 ---
 
-### 👨‍🏫 **3. Teacher Management & Attendance**
+### 👨‍🎓 1. Student Information System (SIS) & Lifecycle
 
-#### ➕ **Add New Teacher**
-When hiring a new teacher:
-1. Click "Teachers" → "Add Teacher"
-2. Fill in details:
-   - Name, Father Name, CNIC, Contact, Email
-   - Designation, BPS Scale, Bank details
-   - Upload photo
-
-#### ✍️ **Teacher Attendance (Daily)**
-Manage your staff's presence professionally:
-1. Click "Attendance" → "Mark Teacher"
-2. Select date and mark **Present**, **Absent**, or **Leave**
-3. Use "Mark All Present" for faster entry
-4. System calculates staff presence percentage automatically
-
-#### 📊 **Teacher Reports & Performance**
-Detailed insights into staff attendance:
-1. Click "Attendance" → "Teacher Reports"
-2. **Staff-wise Summary**: See a card for each teacher with their total Presents/Absents/Leaves for any date range.
-3. **Individual Drill-down**: Click any teacher's card to see their specific day-by-day attendance history.
-4. **Daily Logs**: See a summary of how many staff members were present each day.
-
----
-
-### 👪 **4. Parent Information**
-
-Link parents to their children:
-- When you add a student, system asks for Father's CNIC
-- If another child has same Father CNIC, they're automatically linked!
-- Click on "Parents" to see all parents
-- Click on parent to see all their enrolled children
-- Click on child's name to go to their profile
-
-**Example:**
-If Mr. Ahmed has 3 children in school:
-- All 3 will be linked under his CNIC
-- One click shows you all his children
-- Easy to contact about all kids together
+* **Standard & Bulk Admission (`bulk_admission.php`):**
+  * Individual admission with complete demographic data, contact info, emergency contacts, and past academic records.
+  * Rapid **Bulk Admission** mode to enroll entire batches or transfer students in minutes.
+  * Automated **General Register (GR) Number** allocation ensuring unique student identification.
+* **Digital Student Dossier & Document Repository:**
+  * Upload and archive student photos, B-Form scans, Father CNIC copies, and previous School Leaving Certificates (SLC).
+  * Auto image optimization and secure local file storage.
+* **Missing Documents Tracker (`missing_files.php`):**
+  * Instant filter and audit tool to identify students with missing B-Forms, CNIC copies, or photos.
+* **Dynamic Student Profile & Print Dossier:**
+  * One-click printable student profile card for institutional records or parent meetings.
+* **Academic Promotion & Repeater Tracking (`promote_students.php`):**
+  * Year-end batch promotion utility (Pass / Fail / Retain).
+  * Automatic repeater flagging with distinct badges and history tracking.
+* **Alumni Network Management (`alumni.php`):**
+  * Dedicated repository for graduated students.
+  * Preserves completion year, final class, and academic history.
+  * One-click or bulk restoration of alumni back to active classes if needed.
+* **Data Portability:**
+  * One-click CSV export of student databases for departmental or administrative submissions.
 
 ---
 
-### 📊 **5. Dashboard (Main Screen)**
+### 🪪 2. Student ID Card Generator (`generate_id_card.php`)
 
-When you log in, you see:
-
-#### 📈 **Statistics**
-- Total Students (how many active students)
-- Boys Count
-- Girls Count
-- Recent Admissions (last 10 students)
-
-**Interactive Cards:**
-- Click "Total Students" → See all students
-- Click "Boys" → See all male students  
-- Click "Girls" → See all female students
-
-#### 📊 **Attendance Chart**
-- Visual chart showing today's attendance
-- Bars for each class
-- Click on any bar → See that class's attendance details
-
-#### 📝 **Quick Actions**
-- All main features accessible from menu on left
-- Everything is just 1-2 clicks away!
+* **Automated Batch & Single ID Card Creation:**
+  * Generates high-resolution, print-ready student identity cards.
+  * Includes student photo, dynamic barcode / QR code, GR number, blood group, class, section, emergency contact, and authorized signature.
+* **Branded Templates:**
+  * Automatically applies institutional header, logo, and custom color themes from school settings.
 
 ---
 
-### 🤖 **6. AI Assistant (Your Smart Helper)**
+### 💰 3. Comprehensive Fees & Accounts Management (`fees.php`)
 
-**Location:** Small chat icon at bottom-right corner of every page
-
-**What it does:**
-Acts like a smart assistant who knows everything about your school!
-
-**You can ask things like:**
-- "How many students are there?"
-- "Show me today's attendance"
-- "List all students in Class Two"
-- "How many girls are in the school?"
-- "Show me absent students today"
-- "List all teachers"
-
-**How to use:**
-1. Click the chat icon (speech bubble at bottom-right)
-2. Either:
-   - Click on suggested questions, OR
-   - Type your own question
-3. Get instant answer!
-
-**Pre-loaded Questions:**
-- ✅ Check today's attendance
-- ✅ Total students count
-- ✅ List absent students
-- ✅ Recent admissions
-- ✅ Teacher list
-
-**Pro Tip:** Think of it as asking your experienced colleague. It has access to all records!
+* **Flexible Fee Structure Configuration:**
+  * Set baseline tuition fees per class or customize individual fee structures per student.
+  * Manage multiple fee heads: Monthly Tuition, Admission Fees, Examination Fees, Sports/Lab charges, and Miscellaneous.
+* **Instant Fee Collection & Challan Printing (`print_receipt.php`):**
+  * Single-click monthly fee collection with automatic balance / arrears calculation.
+  * Thermal and standard paper receipt generation with student & school copy.
+* **Arrears & Defaulters Management:**
+  * Real-time defaulters directory with filtered lists by class and pending duration.
+  * Automated arrears accumulation across billing cycles.
+  * Debt clearance and fee concession adjustments (`clear_debt.php`).
+* **Financial Ledgers & Reports:**
+  * Date-range fee collection summaries, class-wise payment status, and individual fee ledgers (`print_fee_history.php`).
+  * Dedicated Alumni Fee Clearing and settlement reports (`print_alumni_fees_report.php`).
+  * Live revenue analytics and collection stat counters on dashboard.
 
 ---
 
-## 🎯 Common Tasks (How-To Guide)
+### 📅 4. Student & Staff Attendance Engine
 
-### 📌 **Task 1: Admit a New Student**
-1. Go to Students → Admission
-2. Fill all required fields (marked with red *)
-3. Upload student photo (click "Choose File")
-4. Upload Father's CNIC (front and back)
-5. Upload B-Form image
-6. If student came from another school, add previous school name and SLC
-7. Click "Save Student"
-8. System shows success message
-9. Student appears in Student List
-
-**Time needed:** 3-5 minutes per student
+* **Smart Daily Attendance (`attendance.php`):**
+  * Take daily student attendance in seconds with quick presets (**Mark All Present**, **Mark All Absent**, **Leave**).
+  * Color-coded statuses: 🟢 Present, 🔴 Absent, 🟡 Leave.
+* **Attendance Analytics & Drilldown (`attendance_view.php`):**
+  * Calendar-based and date-range attendance logs.
+  * Class-wise daily and monthly percentage metrics.
+  * Printable Attendance Registers and Official Sheets (`print_online_attendance.php`).
+* **Staff & Teacher Attendance (`teacher_attendance.php`):**
+  * Dedicated daily attendance tracking for academic and administrative staff.
+  * Staff-wise attendance logs, monthly duty percentages, and leave management.
 
 ---
 
-### 📌 **Task 2: Take Daily Attendance**
-1. Click Attendance → Mark Attendance
-2. Select Class (e.g., "One")
-3. Mark each student:
-   - P = Present (green)
-   - A = Absent (red)
-   - L = Leave (yellow)
-4. Use "Mark All Present" if everyone is here
-5. Click "Save Attendance"
-6. Done!
+### 📝 5. Examination, Grading & Assessment Hub
 
-**Time needed:** 1-2 minutes per class
-
----
-
-### 📌 **Task 3: Search for a Student**
-**Method 1 - By Name:**
-1. Go to Students → Student List
-2. Type name in search box
-3. Press Enter
-4. See matching students
-
-**Method 2 - By Class:**
-1. Go to Students → Student List
-2. Select class from dropdown
-3. See all students in that class
-
-**Method 3 - Ask AI:**
-1. Click chat icon
-2. Type "Show me students in Class Three"
-3. Get instant list
+* **Examination Roll Number Slips (`exam_slips.php`, `print_slips.php`):**
+  * Auto-generates formal exam admission slips with student photos, roll numbers, exam dates, subject schedules, and examination rules.
+* **Exam Hall Attendance Registers (`exam_attendance.php`):**
+  * Generates printable signature sheets for exam superintendents and invigilators.
+* **Teacher Marking Award Lists (`award_list.php`, `marking_award_list.php`):**
+  * Print blank evaluation award lists for teachers to enter marks manually.
+  * Print finalized marking sheets for institutional archives.
+* **Mark Entry & Tabulation (`results.php`):**
+  * Subject-wise marks recording with automatic calculation of total marks, percentages, grades, and class ranks/positions.
+* **Result Cards & Tabulation Sheets (`result_card.php`, `print_all_results.php`):**
+  * Beautiful student result cards with grade scales and teacher remarks.
+  * Full-class master tabulation sheets for annual result gazettes.
 
 ---
 
-### 📌 **Task 4: Print Student Profile**
-1. Go to Students → Student List
-2. Find the student
-3. Click the eye icon 👁️ to view profile
-4. Click Print button OR press Ctrl+P
-5. Beautiful certificate-style document appears
-6. Print it!
+### 📜 6. Official Certificates & Letterhead Pad Printing (`certificates.php`)
 
-**Use Case:** Giving official record to parents, transfer certificate, etc.
-
----
-
-### 📌 **Task 5: Promote Students at Year End**
-1. Go to Students → Promote Students
-2. Select "Kachi" class first
-3. Review each student:
-   - Most will be "Pass" (default)
-   - Mark weak students as "Fail"
-4. Click "Apply Promotions"
-5. Confirm
-6. Repeat for each class (One, Two, Three, Four, Five)
-
-**Important Notes:**
-- Students marked "Fail" will repeat the class
-- They'll have a "Repeater" badge next year
-- Class Five students who pass become "Alumni"
-- Alumni students move to separate section
-
-**Time needed:** 5-10 minutes per class
+* **Complete Certificate Suite:**
+  * 🎓 **School Leaving Certificate (SLC)**
+  * 📜 **Character Certificate**
+  * 🏅 **Testimonial / Achievement Certificate**
+  * 🔄 **Student Transfer Certificate**
+* **Exclusive Dual Printing Technology:**
+  * **Standard Full Print:** Generates complete ornate certificates including ornate borders, school headers, watermarks, and verification signatures.
+  * **Pre-Printed Letterhead Pad Mode (`print_*_pad.php`):** Suppresses background graphics and headers so you can feed pre-printed school stationery/letterhead pads directly into the printer with perfect text alignment!
 
 ---
 
-### 📌 **Task 6: Check Attendance History**
-1. Go to Attendance → View Attendance
-2. Select the date you want to check
-3. Select the class
-4. Click "View Report"
-5. See:
-   - Who was present
-   - Who was absent
-   - Who was on leave
-   - Overall percentage
+### 👨‍🏫 7. Staff & Teacher Management & Payroll
 
-**Use Case:** Parent meeting, monthly reports, etc.
+* **Comprehensive Teacher Profiles (`teacher_profile.php`):**
+  * Detailed records: CNIC, qualifications, date of joining, designation, subject expertise, and bank account info.
+* **Teacher Self-Service Portal (`teacher_dashboard.php`):**
+  * Dedicated teacher login to view assigned classes, enter grades, and check attendance.
+* **Staff Payroll & Salary Disbursal (`pay_salary.php`):**
+  * Track monthly salary disbursements, advances, deductions, and payment records.
 
 ---
 
-## 🔐 Security & Privacy
+### 📚 8. Book Bank & Library Management (`book_bank.php`)
 
-### What's Protected:
-- ✅ All student data is kept private
-- ✅ Only authorized school staff can access
-- ✅ Documents are stored securely
-- ✅ Regular backups recommended
-
-### What's NOT Uploaded to Internet:
-- ❌ Student database
-- ❌ Teacher information
-- ❌ Attendance records
-- ❌ Uploaded documents
-
-**Note:** Only the software code is on GitHub, NOT your school's data!
+* **Book Stock Inventory:**
+  * Catalog textbooks, reference books, and instructional materials with quantity and status tracking.
+* **Student Book Distribution & Bulk Issue (`book_bank_bulk.php`):**
+  * Issue complete textbook sets to entire classes with a single click.
+  * Track returns, damages, and pending books.
+* **Teacher Allocations (`book_bank_teacher_actions.php`):**
+  * Record teaching curriculum sets and teacher reference copies.
+* **Audit & Inventory Reports (`book_bank_report.php`):**
+  * Real-time stock audit showing available, issued, and depleted book titles.
 
 ---
 
-## 💡 Tips for Best Use
+### 📦 9. Inventory, Fixed Assets & Dead Stock Management
 
-### ✅ **Do's:**
-1. **Daily Attendance:** Take attendance every day at same time
-2. **Regular Backups:** Copy the `data` folder weekly to external drive
-3. **Update Records:** Keep student information up to date
-4. **Use AI Assistant:** It saves time finding information
-5. **Print Profiles:** Keep paper backup of important students
-
-### ❌ **Don'ts:**
-1. Don't share login details
-2. Don't delete students unless really needed
-3. Don't forget to save after making changes
-4. Don't close browser while uploading files
-5. Don't skip taking attendance
+* **School Assets Registry (`inventory.php`):**
+  * Track furniture, IT hardware, laboratory apparatus, sports gear, and office equipment.
+* **Category Management (`categories.php`):**
+  * Organize assets by department, room, and category.
+* **Dead Stock / Damaged Goods Registry (`dead_stock.php`):**
+  * Formal tracking of broken, expired, or written-off school property for annual audits.
 
 ---
 
-## 📞 Need Help?
+### 💸 10. School Expense Tracking (`expenses.php`)
 
-### Common Questions:
-
-**Q: Can I edit a student's information after admission?**
-A: Yes! Click the edit icon (pencil) next to student name.
-
-**Q: What if I marked wrong attendance?**
-A: Go to Mark Attendance, select the date, select class, correct it, and save again.
-
-**Q: How to find students who failed last year?**
-A: They'll have a red "Repeater" badge in the student list.
-
-**Q: Can I undo a promotion?**
-A: Yes, go to student profile, edit their class and repeater status.
-
-**Q: Where are the files stored?**
-A: In your computer's `data` folder inside the application.
-
-**Q: Can multiple people use it at same time?**
-A: Yes, if it's installed on a server/network.
+* **Daily Expense Ledger:**
+  * Log school expenditures (utilities, stationery, repairs, refreshments, maintenance).
+* **Expense Categories (`expense_categories.php`):**
+  * Categorize expenses for clean financial statements and monthly expenditure auditing.
 
 ---
 
-## 🎓 Benefits of Using This System
+### 👪 11. Parent Portal & Multi-Channel Communication
 
-### For School Administration:
-- ✅ No more thick registers
-- ✅ Find any record in seconds
-- ✅ No lost files or documents
-- ✅ Professional-looking reports
-- ✅ Track everything digitally
-
-### For Teachers:
-- ✅ Easy attendance marking
-- ✅ Quick student lookup
-- ✅ See class performance
-- ✅ Less paperwork
-
-### For Parents:
-- ✅ Get printed profiles easily
-- ✅ Accurate attendance records
-- ✅ Quick information about their child
-
-### For Students:
-- ✅ Digital record always available
-- ✅ Clean, organized documentation
-- ✅ Easy transfers with printed profiles
+* **Parent Portal (`parent_portal.php`):**
+  * Parents log in securely using their Father's CNIC and account credentials.
+  * View real-time academic records, monthly fee status, attendance history, and report cards for all enrolled siblings in one dashboard.
+* **Communication & Notice Board (`messages.php`):**
+  * Broadcast administrative notices, fee reminders, exam circulars, and holiday alerts.
+  * Direct bidirectional communication between parents and school administration.
+* **Support Ticket Resolution (`resolve_ticket.php`):**
+  * Manage parent inquiries, grievances, and support requests.
 
 ---
 
-## 📚 Quick Reference Card
+### ⚙️ 12. Academic Structure & Institutional Customization
 
-| **What I Want to Do** | **Where to Go** | **How Long** |
-|-----------------------|-----------------|--------------|
-| Add new student | Students → Admission | 3-5 min |
-| View all students | Students → Student List | Instant |
-| Take attendance | Attendance → Mark Attendance | 1-2 min |
-| Check old attendance | Attendance → View Attendance | Instant |
-| Print student record | Student profile → Print | 1 min |
-| Promote students | Students → Promote Students | 5-10 min |
-| See graduates | Students → Alumni | Instant |
-| Add teacher | Teachers → Add Teacher | 3-5 min |
-| Find information | Click Chat icon → Ask | Instant |
+* **Dynamic Class & Section Manager (`manage_classes.php`):**
+  * Add, rename, remove, and sort custom classes (Playgroup, Nursery, KG, Class 1-10, O-Levels, etc.).
+  * Multi-section support per class.
+* **School Branding & Profile (`school_settings.php`):**
+  * Customize school name, branch/campus, registration number, SEMIS/Affiliation code, phone, email, and address.
+  * Upload custom institutional logo, header banner, and report card watermarks.
 
 ---
 
-## 🌟 Special Features
+### 🔐 13. Security, RBAC & Data Protection
 
-### 1. **Smart Badges**
-Students have colored badges showing their status:
-- 🟦 **Blue/Pink** = Gender (Boy/Girl)
-- 🟥 **Red "Repeater"** = Student repeating class
-- 🟩 **Green "Alumni"** = Graduated student
-
-### 2. **Interactive Dashboard**
-Everything on main screen is clickable:
-- Numbers → See detailed lists
-- Charts → See class details
-- Cards → Filter students
-
-### 3. **Photo Management**
-- Upload once, use everywhere
-- Automatic resizing
-- Shows in lists and profiles
-
-### 4. **Document Storage**
-All documents in one place:
-- CNIC copies
-- B-Form images
-- School Leaving Certificates
-- Student photos
-
-### 5. **Repeater Tracking**
-- Automatically marks failing students
-- Shows red badge
-- Tracks year-to-year performance
+* **Role-Based Access Control (RBAC) (`assign_roles.php`):**
+  * Multi-tiered access levels: **Administrator**, **Staff / Teacher**, and **Viewer**.
+  * Restricts sensitive financial data and system configurations to authorized personnel.
+* **Encrypted Backups & One-Click Restore (`backup_restore.php`):**
+  * Create password-protected ZIP archives containing complete databases and uploaded documents.
+  * Automated scheduled backup engine.
+  * Seamless one-click data restoration.
+* **Secure Factory Reset (`reset_app.php`):**
+  * Protected with double-authenticated administrator password verification and mandatory pre-reset backup generation.
+* **Software Licensing & Live Update Engine (`license.php`):**
+  * Built-in cryptographic license verification and in-app system update installer.
 
 ---
 
-## 🎉 Success Stories
+### 🤖 14. Integrated AI School Assistant
 
-**Before:** 
-- 30 minutes to find a student's record
-- Lost documents
-- Attendance mistakes
-- Difficult year-end promotions
-
-**After:**
-- ⚡ 5 seconds to find any record
-- 📁 All documents digitally stored
-- ✅ Accurate attendance tracking
-- 🎯 Smooth promotions in minutes
+* Floating intelligent assistant widget accessible across all pages.
+* Understands natural-language queries:
+  * *"Show me today's attendance summary"*
+  * *"How many fee defaulters are in Class 8?"*
+  * *"List all students admitted this month"*
+  * *"Show staff presence today"*
 
 ---
 
-## 📖 Glossary (Terms Explained)
+## 🛠️ Technology Stack & Architecture
 
-| **Term** | **Simple Meaning** |
-|----------|-------------------|
-| **GR Number** | General Register number - unique ID for each student |
-| **B-Form** | Birth certificate (computerized) |
-| **CNIC** | National ID card number |
-| **Alumni** | Students who passed Class Five (graduated) |
-| **Repeater** | Student who failed and is repeating the class |
-| **Dashboard** | Main screen showing overview |
-| **Filter** | Show only specific students (by class/gender) |
-| **SLC** | School Leaving Certificate |
+| Layer | Technology | Details |
+|---|---|---|
+| **Backend** | PHP 7.4 / 8.0+ | Fast, lightweight procedural and object-oriented architecture |
+| **Data Engine** | Flat-File NoSQL / Structured CSV | Zero-configuration database, ultra-portable, easy backups |
+| **Frontend UI** | HTML5, TailwindCSS 3.4, Vanilla JS | Modern, responsive, high-contrast, clean UI |
+| **Charts & Analytics** | Chart.js | Interactive enrollment, fee, and attendance graphs |
+| **Icons & Typography** | FontAwesome 6.4, Inter / Roboto | Professional typography and iconography |
+| **Printing Engine** | Pure CSS `@media print` | High-fidelity pixel-perfect printing for certificates, ID cards, receipts, and slips |
 
 ---
 
-## 🚀 Getting Started (First Time Users)
+## 🚀 Installation & Quick Start
 
-### Step 1: Open the System
-- Click on the application icon
-- Or visit: `http://localhost/school-management-system`
-
-### Step 2: Learn the Menu
-Left side has main sections:
-- 🏠 **Dashboard** (Home)
-- 👨‍🎓 **Students** (All student features)
-- 📅 **Attendance** (Mark/View attendance)
-- 👨‍🏫 **Teachers** (Teacher management)
-- 👪 **Parents** (Parent information)
-
-### Step 3: Try Basic Tasks
-1. Click Students → Student List (see all students)
-2. Click Attendance → Mark Attendance (mark today)
-3. Click chat icon → Ask a question
-
-### Step 4: Explore More
-- Try filters
-- Upload a photo
-- Print a profile
-- Use AI assistant
-
-**Tip:** Everything is designed to be simple. Don't worry about breaking anything - you can always fix it!
+### 📋 Prerequisites
+1. **Operating System:** Windows 7/8/10/11, Linux, or macOS
+2. **Server Environment:** [XAMPP](https://www.apachefriends.org/) (PHP 7.4 or PHP 8.x recommended)
+3. **Web Browser:** Google Chrome, Microsoft Edge, or Mozilla Firefox
 
 ---
 
-## 💻 System Requirements
+### ⚡ Installation Steps
 
-**What you need:**
-- Computer with Windows 7 or higher
-- XAMPP installed (free software)
-- Any modern browser (Chrome, Firefox, Edge)
-- Internet NOT required (works offline)
+1. **Extract or Clone:**
+   Copy the project directory to your XAMPP web root:
+   ```text
+   C:\xampp\htdocs\sms-private\
+   ```
 
-**Space needed:**
-- Application: ~50 MB
-- Data: Grows with number of students (~ 500 students = 20 MB)
+2. **Start Apache Server:**
+   * Open the **XAMPP Control Panel**.
+   * Click **Start** on the **Apache** service.
+   *(Note: MySQL is NOT required as the system uses an optimized high-speed flat-file data engine).*
 
----
+3. **Open in Browser:**
+   Navigate to:
+   ```text
+   http://localhost/sms-private
+   ```
+   Or use the included one-click Windows desktop launcher: `start_system.vbs`.
 
-## 🎯 Best Practices
-
-### Daily Routine:
-1. **Morning:** Take attendance for all classes (15-20 minutes)
-2. **During Day:** Admit new students if any
-3. **Evening:** Check AI assistant for quick stats
-
-### Weekly:
-1. Review attendance records
-2. Update any changed information
-3. Backup data folder to USB drive
-
-### Monthly:
-1. Print attendance reports
-2. Update teacher information if needed
-3. Check for any students needing attention
-
-### Yearly:
-1. Promote all students (end of year)
-2. Move Class Five passed students to Alumni
-3. Mark repeaters for next year
-4. Generate annual reports
+4. **Default Administrative Credentials:**
+   * **Username:** `admin`
+   * **Password:** Check your initial deployment credentials (or configured during installation via `install.php`).
+   * *Remember to update your administrative password immediately in Settings.*
 
 ---
 
-## ✉️ Contact & Support
+## 📖 Quick-Start Operational Workflows
 
-**For Government Boys Primary School Ali Bux Jarwar**
+### 1️⃣ Admitting a Student
+1. Open **Students** → **Admission**.
+2. Complete demographic details (Name, Father Name, CNIC, Phone, Date of Birth).
+3. Select Class and Section.
+4. Attach photo and document scans.
+5. Click **Save Student**. System assigns the next consecutive GR number automatically.
 
-If you need help:
-1. First check this README (most answers are here!)
-2. Try the AI Assistant in the system
-3. Contact school IT coordinator
-4. For technical issues: GitHub repository
+### 2️⃣ Collecting Monthly Fees
+1. Open **Fees** → **Collect Fees**.
+2. Search for student by GR Number, Name, or select Class.
+3. Verify current tuition fee and any previous arrears.
+4. Enter amount paid and click **Collect Fee**.
+5. Click **Print Receipt** for instant printable receipt.
+
+### 3️⃣ Generating Roll Number Slips
+1. Navigate to **Examinations** → **Exam Slips**.
+2. Choose class, exam term, and date schedule.
+3. Click **Generate Slips** → **Print All Slips**.
+
+### 4️⃣ Printing Certificates on Pre-Printed Letterhead Pads
+1. Navigate to **Certificates** → Choose Certificate Type (e.g., School Leaving).
+2. Select student to populate certificate records.
+3. Choose **Print on Letterhead Pad** to suppress template headers and print directly onto school letterhead paper.
+
+### 5️⃣ Creating a System Backup
+1. Go to **Settings** → **Backup & Restore**.
+2. Click **Create Encrypted Backup**.
+3. Save the downloaded `.zip` file to an external USB or secure storage.
 
 ---
 
-## 🏆 Credits
+## 👨‍💻 Developer & Commercial Information
 
-**Developed for:** Government Boys Primary School Ali Bux Jarwar  
-**Developer:** Rafay Qazi  
-**Version:** 1.5  
-**Last Updated:** January 2026
+```
+══════════════════════════════════════════════════════════════════════════════
+                      DEVELOPED BY AR SOFTWARE SOLUTIONS                      
+══════════════════════════════════════════════════════════════════════════════
+Lead Software Architect : Abdul Rafay Qazi (Full Stack Developer & Systems Designer)
+Company                 : AR Software Solutions
+Specialization          : School ERPs, Custom Web Applications & Enterprise Software
+Official Email          : abdulrafehqazi@gmail.com
+WhatsApp Support        : +92 300 0358189
+GitHub Portfolio        : https://github.com/rafayqazi
+LinkedIn                : https://www.linkedin.com/in/abdulrafayqazi
+══════════════════════════════════════════════════════════════════════════════
+```
+
+For customized feature requests, school-specific branding modules, multi-branch network deployments, or technical inquiries, please reach out via the official contact channels above.
 
 ---
 
-## 📜 License
+## 📜 License & Copyright
 
-Free to use for educational institutions.  
-Modify and customize as per your school's needs.
-
----
-
-*Remember: This system is here to make your life easier, not complicated. If something seems hard, you're probably overthinking it. Keep it simple!* 😊
-
----
-
-**🌟 Pro Tip:** Bookmark this page - it's your complete guide to using the School Management System!
+**Copyright &copy; 2025-2026 AR Software Solutions. All Rights Reserved.**  
+This software is licensed for private institutional use. Unauthorized redistribution, decompilation, or removal of developer attribution credits is strictly prohibited under applicable software licensing terms.

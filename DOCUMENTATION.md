@@ -17,7 +17,7 @@
 ## Project Overview
 
 ### Purpose
-A comprehensive web-based School Management System designed specifically for **Government Boys Primary School Ali Bux Jarwar** to manage student records, attendance, examinations, ID cards, and academic progression.
+A comprehensive, modern web-based School Management System engineered by **AR Software Solutions** for private schools, academies, and educational institutions to seamlessly manage student records, admissions, fee collections, examinations, attendance, staff, ID cards, certificates, and academic administration.
 
 ### Technology Stack
 - **Backend**: PHP 7.4+
