@@ -134,8 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $fileNameCmps = explode(".", $fileName);
                 $fileExtension = strtolower(end($fileNameCmps));
 
-                $allowedfileExtensions = array('jpg', 'gif', 'png', 'jpeg');
-                $allowedMimeTypes = array('image/jpeg', 'image/png', 'image/gif');
+                $allowedfileExtensions = array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif');
+                $allowedMimeTypes = array('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif');
                 
                 // Max file size 2MB
                 $maxFileSize = 2 * 1024 * 1024;
@@ -301,14 +301,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="relative group">
                 <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                     <?php if ($student && !empty($student['profile_image'])): ?>
-                        <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover">
+                        <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover" style="object-position: center top;">
                     <?php else: ?>
-                        <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400">
+                        <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400" style="object-position: center top;">
                     <?php endif; ?>
                 </div>
                 <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
                     <i class="fas fa-camera"></i>
-                    <input type="file" id="profile_image_input" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                    <input type="file" id="profile_image_input" name="profile_image" accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.avif,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif" class="hidden" onchange="previewImage(this)">
                 </label>
             </div>
             <p class="text-sm font-semibold text-gray-600 mt-2">Upload Student Photo</p>
