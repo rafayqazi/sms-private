@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let religionChart = null;
     let currentSortBy = '';
     let currentOrder = '';
+    let studentsRequestController = null;
+    let searchTimeout = null;
 
     const religionColorMap = {
         'Islam': '#10b981', // Green
@@ -173,13 +175,46 @@ document.addEventListener('DOMContentLoaded', function () {
             url += `&sort_by=${encodeURIComponent(currentSortBy)}&order=${encodeURIComponent(currentOrder)}`;
         }
 
-        fetch(url)
-            .then(response => response.json())
+        if (studentsRequestController) studentsRequestController.abort();
+        studentsRequestController = new AbortController();
+
+        fetch(url, { signal: studentsRequestController.signal })
+            .then(response => {
+                if (!response.ok) throw new Error(`Student search failed: ${response.status}`);
+                return response.json();
+            })
             .then(data => {
                 tableBody.innerHTML = data.html;
                 updateCharts(data.stats);
             })
-            .catch(error => console.error('Error fetching students:', error));
+            .catch(error => {
+                if (error.name !== 'AbortError') console.error('Error fetching students:', error);
+            });
+    }
+
+    function filterRowsImmediately() {
+        const query = filterSearch.value.trim().toLocaleLowerCase();
+        const existingEmptyRow = tableBody.querySelector('[data-local-search-empty]');
+        if (existingEmptyRow) existingEmptyRow.remove();
+
+        const rows = Array.from(tableBody.rows).filter(row => row.cells.length >= 9);
+        if (rows.length === 0) return;
+
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const matches = !query ||
+                row.cells[2].textContent.toLocaleLowerCase().includes(query) ||
+                row.cells[3].textContent.toLocaleLowerCase().includes(query);
+            row.hidden = !matches;
+            if (matches) visibleCount++;
+        });
+
+        if (visibleCount === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.dataset.localSearchEmpty = 'true';
+            emptyRow.innerHTML = '<td colspan="9" class="p-8 text-center text-gray-500"><div class="flex flex-col items-center gap-2"><i class="fas fa-search text-4xl text-gray-300"></i><p>No students found matching your criteria.</p></div></td>';
+            tableBody.appendChild(emptyRow);
+        }
     }
 
     // Initial load for charts
@@ -188,7 +223,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (filterClass) filterClass.addEventListener('change', updateTable);
     if (filterGender) filterGender.addEventListener('change', updateTable);
     if (filterReligion) filterReligion.addEventListener('change', updateTable);
-    if (filterSearch) filterSearch.addEventListener('input', updateTable);
+    if (filterSearch) {
+        filterSearch.addEventListener('input', function() {
+            if (studentsRequestController) studentsRequestController.abort();
+            filterRowsImmediately();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateTable, 150);
+        });
+    }
 
     if (sortHeader) {
         sortHeader.addEventListener('click', function () {

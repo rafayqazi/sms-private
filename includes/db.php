@@ -467,10 +467,17 @@ class Database {
         }
 
         // Search Filter (Name or GR No)
-        if ($match && !empty($filters['search'])) {
-            $searchTerm = strtolower($filters['search']);
-            $studentName = strtolower($student['student_name'] ?? '');
-            $grNo = strtolower($student['gr_no'] ?? '');
+        if ($match && isset($filters['search']) && trim((string)$filters['search']) !== '') {
+            $searchValue = trim((string)$filters['search']);
+            $searchTerm = function_exists('mb_strtolower')
+                ? mb_strtolower($searchValue, 'UTF-8')
+                : strtolower($searchValue);
+            $studentName = function_exists('mb_strtolower')
+                ? mb_strtolower($student['student_name'] ?? '', 'UTF-8')
+                : strtolower($student['student_name'] ?? '');
+            $grNo = function_exists('mb_strtolower')
+                ? mb_strtolower($student['gr_no'] ?? '', 'UTF-8')
+                : strtolower($student['gr_no'] ?? '');
             
             if (strpos($studentName, $searchTerm) === false && strpos($grNo, $searchTerm) === false) {
                 $match = false;
