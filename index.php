@@ -29,27 +29,17 @@ $activeStudents = array_filter($students, function ($student) {
 });
 
 $totalStudents = count($activeStudents);
-$maleCount = 0;
-$femaleCount = 0;
 $classes = [];
 
 foreach ($activeStudents as $student) {
-    if (isset($student['gender']) && $student['gender'] == 'Male')
-        $maleCount++;
-    elseif (isset($student['gender']) && $student['gender'] == 'Female')
-        $femaleCount++;
-
     $class = isset($student['current_class']) ? $student['current_class'] : 'Unknown';
     if (!isset($classes[$class]))
         $classes[$class] = 0;
     $classes[$class]++;
 }
-$alumniCount = 0;
-foreach ($students as $student) {
-    if (isset($student['student_status']) && $student['student_status'] === 'Alumni') {
-        $alumniCount++;
-    }
-}
+$alumniCount = count(array_filter($students, function ($student) {
+    return isset($student['student_status']) && $student['student_status'] === 'Alumni';
+}));
 
 $teachers = $db->getAllTeachers();
 $teacherCount = count($teachers);
@@ -58,7 +48,26 @@ $attendanceStats = $db->getAttendanceStats();
 $overallStats = $attendanceStats['overall'];
 $classStats = $attendanceStats['class_wise'];
 $presentCount = $overallStats['Present'];
-$attendancePercentage = ($totalStudents > 0) ? round(($presentCount / $totalStudents) * 100, 1) : 0;
+$attendanceMarkedCount = 0;
+$attendanceIncompleteClasses = [];
+$attendanceMissingStudents = 0;
+if ($attendanceStats['is_today']) {
+    foreach ($classStats as $classAttendance) {
+        $attendanceMarkedCount += (int)($classAttendance['Total'] ?? 0);
+    }
+
+    foreach ($classes as $className => $studentCount) {
+        $classMarkedCount = (int)($classStats[$className]['Total'] ?? 0);
+        if ($classMarkedCount < $studentCount) {
+            $missingCount = $studentCount - $classMarkedCount;
+            $attendanceIncompleteClasses[$className] = $missingCount;
+            $attendanceMissingStudents += $missingCount;
+        }
+    }
+}
+$attendanceCoverage = ($totalStudents > 0)
+    ? min(100, round(($attendanceMarkedCount / $totalStudents) * 100, 1))
+    : 0;
 
 // New Dashboard Features Data
 $toppers = $db->getToppers(3);
@@ -66,10 +75,23 @@ $attendanceToppers = $db->getTopAttendancePerformers(3);
 $classPerfStats = $db->getClassPerformanceStats(3);
 $birthdays = $db->getBirthdaysToday();
 
+$feeStats = $db->getFeeStats();
+$feeDefaulters = $db->getDefaulters();
+$pendingFeeTotal = array_sum(array_map(function ($student) {
+    return (float)($student['debt'] ?? 0);
+}, $feeDefaulters));
+
 $allInventory = $db->getInventory(['status' => 'Active']);
 $lowStockItems = array_filter($allInventory, function ($item) {
     return (int)$item['quantity'] < 5;
 });
+$recentStudents = array_values($activeStudents);
+usort($recentStudents, function ($a, $b) {
+    $aDate = !empty($a['admission_date']) ? strtotime($a['admission_date']) : false;
+    $bDate = !empty($b['admission_date']) ? strtotime($b['admission_date']) : false;
+    return ($bDate ?: 0) <=> ($aDate ?: 0);
+});
+$recentStudents = array_slice($recentStudents, 0, 5);
 
 
 ?>
@@ -177,22 +199,18 @@ endif; ?>
         </p>
     </div>
     
-    <div class="flex flex-wrap justify-center gap-3 relative z-10">
-        <a href="pages/attendance.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
-            <i class="fas fa-calendar-check group-hover:scale-110 transition-transform"></i> Attendance
-        </a>
-        <a href="pages/results.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
-            <i class="fas fa-poll-h group-hover:scale-110 transition-transform"></i> Add Marks
-        </a>
-        <a href="pages/settings.php" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-white/20 group">
-            <i class="fas fa-cog group-hover:scale-110 transition-transform"></i> Settings
-        </a>
+    <div class="relative z-10 flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3">
+        <i class="fas fa-calendar-day text-xl text-green-100"></i>
+        <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-green-100">Today</div>
+            <div class="font-bold"><?php echo date('l, d M Y'); ?></div>
+        </div>
     </div>
 </div>
 
 <!-- Quick Actions Section -->
 <div class="mb-8 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-    <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-5">
+    <div class="flex gap-4 min-w-max md:min-w-0 md:grid md:grid-cols-2 xl:grid-cols-5">
         <button onclick="openAdmissionModal()" class="flex-1 bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4 text-left">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-user-plus"></i>
@@ -211,71 +229,141 @@ endif; ?>
                 <div class="text-xs text-emerald-100">Mark Today</div>
             </div>
         </a>
-        <a href="pages/settings.php" class="flex-1 bg-gradient-to-br from-slate-600 to-slate-700 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+        <a href="pages/fees.php" class="flex-1 bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-                <i class="fas fa-cog"></i>
+                <i class="fas fa-money-bill-wave"></i>
             </div>
             <div>
-                <div class="font-bold">Settings</div>
-                <div class="text-xs text-slate-100">System Config</div>
+                <div class="font-bold">Fee Management</div>
+                <div class="text-xs text-amber-100">Collection &amp; dues</div>
             </div>
         </a>
-        <a href="pages/results.php" class="flex-1 bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+        <a href="pages/results.php" class="flex-1 bg-gradient-to-br from-sky-500 to-sky-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
                 <i class="fas fa-file-invoice"></i>
             </div>
             <div>
-                <div class="font-bold">Exam Result</div>
-                <div class="text-xs text-amber-100">Add Marks</div>
+                <div class="font-bold">Exam Results</div>
+                <div class="text-xs text-sky-100">Enter marks</div>
             </div>
         </a>
-        <a href="pages/inventory.php" class="flex-1 bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
+        <a href="pages/parents.php" class="flex-1 bg-gradient-to-br from-violet-500 to-violet-600 p-4 rounded-xl text-white shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-4">
             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-                <i class="fas fa-boxes"></i>
+                <i class="fas fa-bullhorn"></i>
             </div>
             <div>
-                <div class="font-bold">Inventory</div>
-                <div class="text-xs text-purple-100">Manage Stock</div>
+                <div class="font-bold">Parent Notices</div>
+                <div class="text-xs text-violet-100">Send announcements</div>
             </div>
         </a>
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-    <a href="pages/students.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-primary hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Total Students</div>
-        <div class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo $totalStudents; ?></div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+    <a href="pages/students.php" class="group bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 border-l-4 border-l-primary hover:shadow-md transition-shadow block">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Enrolled Students</div>
+                <div class="text-3xl font-bold text-gray-800 dark:text-gray-100"><?php echo number_format($totalStudents); ?></div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-2"><?php echo number_format(count($classes)); ?> classes · <?php echo number_format($alumniCount); ?> alumni</div>
+            </div>
+            <span class="w-11 h-11 rounded-xl bg-green-50 dark:bg-green-950/40 text-primary flex items-center justify-center text-lg"><i class="fas fa-user-graduate"></i></span>
+        </div>
     </a>
 
-    <a href="pages/students.php?gender=Male" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-blue-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Male</div>
-        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400"><?php echo $maleCount; ?></div>
-    </a>
-    <a href="pages/students.php?gender=Female" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-pink-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Female</div>
-        <div class="text-3xl font-bold text-pink-600 dark:text-pink-400"><?php echo $femaleCount; ?></div>
-    </a>
-    
-    <!-- Row 2 -->
-    <a href="pages/alumni.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-purple-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Alumni Students</div>
-        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400"><?php echo $alumniCount; ?></div>
+    <div class="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 border-l-4 border-l-blue-500">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Teachers</div>
+                <div class="text-3xl font-bold text-blue-600 dark:text-blue-400"><?php echo number_format($teacherCount); ?></div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Teaching staff</div>
+            </div>
+            <span class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg"><i class="fas fa-chalkboard-teacher"></i></span>
+        </div>
+    </div>
+
+    <a href="pages/attendance.php" class="group bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 border-l-4 border-l-teal-500 hover:shadow-md transition-shadow block">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Today's Attendance</div>
+                <?php if ($attendanceStats['is_today']): ?>
+                    <div class="text-3xl font-bold text-teal-600 dark:text-teal-400"><?php echo number_format($presentCount); ?><span class="text-base font-medium text-gray-400"> / <?php echo number_format($attendanceMarkedCount); ?></span></div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-2"><?php echo $attendanceCoverage; ?>% coverage · <?php echo number_format($overallStats['Absent']); ?> absent</div>
+                <?php else: ?>
+                    <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">Not marked</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">No attendance recorded today</div>
+                <?php endif; ?>
+            </div>
+            <span class="w-11 h-11 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg"><i class="fas fa-calendar-check"></i></span>
+        </div>
     </a>
 
-    <a href="pages/attendance.php" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border-l-4 border-teal-500 hover:scale-105 transition-transform duration-300 cursor-pointer block">
-        <div class="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Today's Attendance</div>
-        <div class="text-3xl font-bold text-teal-600 dark:text-teal-400">
-            <?php if ($attendanceStats['is_today']): ?>
-                <?php echo $presentCount; ?> <span class="text-lg text-gray-400 dark:text-gray-500 font-normal">(<?php echo $attendancePercentage; ?>%)</span>
-            <?php
-else: ?>
-                <span class="text-2xl text-gray-400 dark:text-gray-500">Unmarked</span>
-            <?php
-endif; ?>
+    <a href="pages/fees.php" class="group bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow block">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Fees Collected This Month</div>
+                <div class="text-3xl font-bold text-amber-600 dark:text-amber-400">Rs. <?php echo number_format((float)$feeStats['this_month']); ?></div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Today: Rs. <?php echo number_format((float)$feeStats['today']); ?></div>
+            </div>
+            <span class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg"><i class="fas fa-wallet"></i></span>
         </div>
     </a>
 </div>
+
+<section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 md:p-6 mb-8" aria-labelledby="attention-heading">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+            <h2 id="attention-heading" class="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2"><i class="fas fa-clipboard-check text-primary"></i> Attention Needed</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Items that may need follow-up today</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <?php if (!$attendanceStats['is_today']): ?>
+            <a href="pages/attendance.php" class="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 hover:shadow-sm transition-shadow">
+                <span class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i class="fas fa-calendar-times"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-amber-900 dark:text-amber-200">Attendance not marked</span><span class="block text-xs text-amber-800 dark:text-amber-300">Record today's attendance</span></span>
+                <i class="fas fa-arrow-right text-amber-600 ml-auto"></i>
+            </a>
+        <?php elseif (!empty($attendanceIncompleteClasses)): ?>
+            <a href="pages/attendance.php" class="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 hover:shadow-sm transition-shadow">
+                <span class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i class="fas fa-user-clock"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-amber-900 dark:text-amber-200">Attendance incomplete</span><span class="block text-xs text-amber-800 dark:text-amber-300"><?php echo number_format($attendanceMissingStudents); ?> students across <?php echo count($attendanceIncompleteClasses); ?> classes not recorded</span></span>
+                <i class="fas fa-arrow-right text-amber-600 ml-auto"></i>
+            </a>
+        <?php else: ?>
+            <div class="flex items-center gap-3 p-4 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+                <span class="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center shrink-0"><i class="fas fa-check"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-green-900 dark:text-green-200">Attendance complete</span><span class="block text-xs text-green-800 dark:text-green-300"><?php echo number_format($attendanceMarkedCount); ?> students recorded today</span></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($feeDefaulters)): ?>
+            <a href="pages/fees.php" class="flex items-center gap-3 p-4 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 hover:shadow-sm transition-shadow">
+                <span class="w-10 h-10 rounded-full bg-red-100 text-red-700 flex items-center justify-center shrink-0"><i class="fas fa-hand-holding-usd"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-red-900 dark:text-red-200">Pending fee dues</span><span class="block text-xs text-red-800 dark:text-red-300"><?php echo number_format(count($feeDefaulters)); ?> students · Rs. <?php echo number_format($pendingFeeTotal); ?> outstanding</span></span>
+                <i class="fas fa-arrow-right text-red-600 ml-auto"></i>
+            </a>
+        <?php else: ?>
+            <div class="flex items-center gap-3 p-4 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+                <span class="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center shrink-0"><i class="fas fa-check"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-green-900 dark:text-green-200">No fee dues listed</span><span class="block text-xs text-green-800 dark:text-green-300">No current-month defaulters found</span></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($lowStockItems)): ?>
+            <a href="pages/inventory.php" class="flex items-center gap-3 p-4 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900 hover:shadow-sm transition-shadow">
+                <span class="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center shrink-0"><i class="fas fa-box-open"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-orange-900 dark:text-orange-200">Low inventory stock</span><span class="block text-xs text-orange-800 dark:text-orange-300"><?php echo number_format(count($lowStockItems)); ?> items have fewer than 5 units</span></span>
+                <i class="fas fa-arrow-right text-orange-600 ml-auto"></i>
+            </a>
+        <?php else: ?>
+            <div class="flex items-center gap-3 p-4 rounded-lg border border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+                <span class="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center shrink-0"><i class="fas fa-check"></i></span>
+                <span class="min-w-0"><span class="block font-semibold text-green-900 dark:text-green-200">Stock levels look good</span><span class="block text-xs text-green-800 dark:text-green-300">No active items below 5 units</span></span>
+            </div>
+        <?php endif; ?>
+    </div>
+</section>
 
 <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 md:p-6 mt-8 border border-gray-100 dark:border-gray-800">
     <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b dark:border-gray-800 pb-2">Attendance Insights</h2>
@@ -337,7 +425,7 @@ endif; ?>
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
     <!-- Top 3 Toppers Card -->
     <div class="bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden border border-indigo-100 dark:border-gray-800 flex flex-col">
         <div class="bg-indigo-600 dark:bg-indigo-900 p-4 flex items-center justify-between">
@@ -480,41 +568,6 @@ else: ?>
                 <?php
 endif; ?>
             </div>
-        </div>
-    </div>
-
-    <!-- Inventory Alert Card -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-red-100">
-        <div class="bg-red-500 p-4 flex items-center justify-between">
-            <h2 class="text-white font-bold flex items-center gap-2">
-                <i class="fas fa-exclamation-triangle"></i> Low Stock Alerts
-            </h2>
-            <span class="bg-white/20 text-white px-2 py-0.5 rounded-full text-xs"><?php echo count($lowStockItems); ?></span>
-        </div>
-        <div class="p-4">
-            <?php if (empty($lowStockItems)): ?>
-                <div class="text-center py-6">
-                    <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
-                    <p class="text-gray-500 text-sm">All inventory is well-stocked</p>
-                </div>
-            <?php
-else: ?>
-                <div class="space-y-3">
-                    <?php foreach ($lowStockItems as $item): ?>
-                        <div class="flex items-center justify-between p-2 rounded-lg bg-red-50 border border-red-100">
-                            <div>
-                                <div class="font-semibold text-gray-800 text-sm"><?php echo htmlspecialchars($item['item_name']); ?></div>
-                                <div class="text-[10px] text-gray-500">Remaining Qty: <span class="text-red-600 font-bold"><?php echo $item['quantity']; ?></span></div>
-                            </div>
-                            <a href="pages/inventory.php" class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-arrow-right text-sm"></i>
-                            </a>
-                        </div>
-                    <?php
-    endforeach; ?>
-                </div>
-            <?php
-endif; ?>
         </div>
     </div>
 
@@ -721,9 +774,6 @@ endif; ?>
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Admissions</h2>
         <a href="pages/students.php" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium text-sm border border-indigo-600 dark:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950 px-4 py-2 rounded-md transition-colors w-full sm:w-auto text-center">View All</a>
     </div>
-    <?php
-$recentStudents = array_slice(array_reverse($students), 0, 5);
-?>
     <!-- Mobile Card View (Visible on small screens) -->
     <div class="md:hidden space-y-4">
         <?php foreach ($recentStudents as $student): ?>

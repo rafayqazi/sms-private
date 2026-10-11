@@ -2,6 +2,69 @@
 class License {
     private static $license_file = __DIR__ . '/../data/license.php';
     private static $secret_salt = 'AR_S0ftware_S0lution_@2026_Secure_Salt!#'; // Secret salt for hashing
+    private static $license_machine_keys_cache = null;
+    private static $license_machine_keys_cache_ttl = 300;
+
+    private static function getMachineKeyCacheFile() {
+        return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sms-private-license-machine-keys-' . hash('sha256', __DIR__) . '.json';
+    }
+
+    private static function clearMachineKeyCache() {
+        $cacheFile = self::getMachineKeyCacheFile();
+        if (file_exists($cacheFile) && !unlink($cacheFile)) {
+            error_log('Unable to clear the license machine-key cache.');
+        }
+        self::$license_machine_keys_cache = null;
+    }
+
+    private static function getLicensedMachineKeys() {
+        if (self::$license_machine_keys_cache !== null) {
+            return self::$license_machine_keys_cache;
+        }
+
+        $cacheFile = self::getMachineKeyCacheFile();
+        if (is_readable($cacheFile)) {
+            $cacheContents = file_get_contents($cacheFile);
+            $cache = $cacheContents !== false ? json_decode($cacheContents, true) : null;
+            $cachedAt = is_array($cache) ? (int)($cache['cached_at'] ?? 0) : 0;
+            $cachedKeys = is_array($cache) ? ($cache['machine_keys'] ?? null) : null;
+
+            if (
+                $cachedAt > 0 &&
+                time() >= $cachedAt &&
+                time() - $cachedAt < self::$license_machine_keys_cache_ttl &&
+                is_array($cachedKeys)
+            ) {
+                $validKeys = array_values(array_unique(array_filter($cachedKeys, function ($key) {
+                    return is_string($key) && preg_match('/^[a-f0-9]{64}$/i', $key);
+                })));
+
+                if (!empty($validKeys)) {
+                    self::$license_machine_keys_cache = $validKeys;
+                    return self::$license_machine_keys_cache;
+                }
+            }
+        }
+
+        $machineKeys = [];
+        foreach (self::getAllMacAddresses() as $mac) {
+            $machineKeys[] = self::generateLicenseKey($mac);
+        }
+        $machineKeys = array_values(array_unique($machineKeys));
+        self::$license_machine_keys_cache = $machineKeys;
+
+        if (!empty($machineKeys)) {
+            $cacheContents = json_encode([
+                'cached_at' => time(),
+                'machine_keys' => $machineKeys
+            ]);
+            if ($cacheContents === false || file_put_contents($cacheFile, $cacheContents, LOCK_EX) === false) {
+                error_log('Unable to write the license machine-key cache.');
+            }
+        }
+
+        return $machineKeys;
+    }
 
     /**
      * Get all MAC addresses of the current machine
@@ -30,7 +93,8 @@ class License {
                 }
             }
         } catch (Exception $e) {}
-        return array_unique($macs);
+
+        return array_values(array_unique($macs));
     }
 
     /**
@@ -60,26 +124,27 @@ class License {
         }
 
         $license_data = include self::$license_file;
+        if (!isset($license_data['license_key']) && !isset($license_data['allowed_mac'])) {
+            return false;
+        }
+
+        $machineKeys = self::getLicensedMachineKeys();
+        if (empty($machineKeys)) return false;
+
         if (!isset($license_data['license_key'])) {
             // Handle legacy plain-text MAC if it exists (for migration)
             if (isset($license_data['allowed_mac'])) {
-                $current_macs = self::getAllMacAddresses();
-                $allowed_mac = str_replace('-', ':', strtoupper($license_data['allowed_mac']));
-                foreach ($current_macs as $mac) {
-                    if (str_replace('-', ':', $mac) === $allowed_mac) return true;
+                $allowed_key = self::generateLicenseKey($license_data['allowed_mac']);
+                foreach ($machineKeys as $machineKey) {
+                    if ($machineKey === $allowed_key) return true;
                 }
             }
             return false;
         }
 
-        $current_macs = self::getAllMacAddresses();
-        if (empty($current_macs)) return false;
-
         $authorized_key = $license_data['license_key'];
 
-        foreach ($current_macs as $mac) {
-            // Generate hash for the current machine's MAC
-            $test_key = self::generateLicenseKey($mac);
+        foreach ($machineKeys as $test_key) {
             if ($test_key === $authorized_key) {
                 return true;
             }
@@ -106,7 +171,11 @@ class License {
         ];
         
         $content = "<?php\nreturn " . var_export($data, true) . ";\n?>";
-        return file_put_contents(self::$license_file, $content) !== false;
+        $saved = file_put_contents(self::$license_file, $content) !== false;
+        if ($saved) {
+            self::clearMachineKeyCache();
+        }
+        return $saved;
     }
 
     /**

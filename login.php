@@ -140,11 +140,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <!-- Right Side: Login Form (40% or 100% on mobile) -->
-        <div class="w-full lg:w-2/5 flex flex-col items-center justify-center bg-white p-6 md:p-10 relative min-h-screen lg:min-h-0">
+        <div class="w-full lg:w-2/5 flex flex-col items-center justify-center bg-slate-50 p-6 md:p-10 relative min-h-screen lg:min-h-0">
             <div class="w-full max-w-md mx-auto animate-slideUp">
                 
                 <div class="mb-6 text-center flex flex-col items-center">
-                    <div class="mb-6 flex flex-col items-center">
+                    <div class="mb-5 flex flex-col items-center">
                         <div class="relative group p-3 mb-4">
                             <!-- Background card for logo -->
                             <div class="absolute inset-0 bg-white rounded-2xl shadow-lg border border-slate-100 transition-all duration-500 group-hover:shadow-indigo-100/50"></div>
@@ -153,36 +153,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         
                         <div class="space-y-0.5">
-                            <p class="text-[9px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-0.5">Welcome To</p>
-                            <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tighter leading-tight uppercase">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-[0.2em] mb-1">Welcome to</p>
+                            <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight uppercase">
                                 <?php echo htmlspecialchars($settings['school_name']); ?>
-                                <span class="block text-indigo-600 text-[11px] mt-0.5 normal-case font-bold tracking-normal italic opacity-80">Management System</span>
+                                <span class="block text-indigo-600 text-sm mt-1 normal-case font-semibold tracking-normal">Management System</span>
                             </h1>
                         </div>
                         
                         <?php if (!empty($settings['address_tagline'])): ?>
-                            <p class="text-[8px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-3 px-4 opacity-60">
+                            <p class="text-xs font-medium text-slate-500 tracking-wide mt-3 px-4">
                                 <?php echo htmlspecialchars($settings['address_tagline']); ?>
                             </p>
                         <?php endif; ?>
                     </div>
 
-                    <div class="w-12 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-6"></div>
+                    <div class="w-12 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-5"></div>
 
                     <!-- Login Mode Toggle -->
-                    <div class="flex p-1 bg-slate-100 rounded-2xl mb-6 w-full max-w-[320px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20">
-                        <button type="button" id="staffModeBtn" onclick="setLoginMode('staff')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100">
+                    <div class="flex p-1 bg-slate-200/70 rounded-2xl mb-5 w-full max-w-[360px] mx-auto overflow-hidden border border-slate-200 shadow-sm relative z-20" role="group" aria-label="Choose login portal">
+                        <button type="button" id="staffModeBtn" aria-pressed="true" onclick="setLoginMode('staff')" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 bg-white text-indigo-700 shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                             <i class="fas fa-user-shield mr-1"></i> Admin
                         </button>
-                        <button type="button" id="teacherModeBtn" onclick="setLoginMode('teacher')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
+                        <button type="button" id="teacherModeBtn" aria-pressed="false" onclick="setLoginMode('teacher')" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                             <i class="fas fa-chalkboard-teacher mr-1"></i> Teacher
                         </button>
-                        <button type="button" id="parentModeBtn" onclick="setLoginMode('parent')" class="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600">
+                        <button type="button" id="parentModeBtn" aria-pressed="false" onclick="setLoginMode('parent')" class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                             <i class="fas fa-user-friends mr-1"></i> Parent
                         </button>
                     </div>
 
-                    <div class="text-[9px] font-black text-indigo-400 uppercase tracking-[0.25em] mb-1 flex items-center gap-2" id="greetingArea">
+                    <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1 flex items-center gap-2" id="greetingArea">
                         <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
                         <span id="greetingText">
                             <?php 
@@ -193,52 +193,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             ?>
                         </span>
                     </div>
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tighter mb-1" id="loginTitle">Secure Space</h2>
-                    <p class="text-slate-500 font-medium text-xs" id="loginSubtitle">Please verify your identity to access the portal.</p>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mb-1" id="loginTitle">Secure Login</h2>
+                    <p class="text-slate-600 font-medium text-sm" id="loginSubtitle">Authorized personnel only. Please verify your identity.</p>
                 </div>
 
                 <?php if ($error): ?>
-                    <div class="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl mb-8 flex items-center gap-3 text-sm animate-shake">
+                    <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-5 flex items-center gap-3 text-sm animate-shake" role="alert">
                         <i class="fas fa-exclamation-circle text-lg"></i>
-                        <span class="font-black uppercase tracking-tight"><?php echo htmlspecialchars($error); ?></span>
+                        <span class="font-semibold"><?php echo htmlspecialchars($error); ?></span>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($_GET['update']) && $_GET['update'] === 'success'): ?>
-                    <div class="bg-emerald-50 border border-emerald-100 text-emerald-600 p-4 rounded-2xl mb-8 flex items-center gap-3 text-sm animate-fade">
+                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-2xl mb-5 flex items-center gap-3 text-sm animate-fade" role="status">
                         <i class="fas fa-check-circle text-lg"></i>
-                        <span class="font-black uppercase tracking-tight">Software Updated Successfully! Please login.</span>
+                        <span class="font-semibold">Software updated successfully. Please sign in.</span>
                     </div>
                 <?php endif; ?>
 
-                <form id="loginForm" action="" method="POST" class="space-y-4">
+                <div id="loginAsyncError" class="hidden bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-4 flex items-center gap-3 text-sm" role="alert" aria-live="assertive"></div>
+
+                <form id="loginForm" action="" method="POST" autocomplete="on" class="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60 sm:p-6">
                     <?php echo csrfInput(); ?>
                     <input type="hidden" name="login_mode" id="login_mode" value="staff">
                     
                     <div class="group">
-                        <label id="usernameLabel" class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1 group-focus-within:text-indigo-600 transition-colors">Access Username</label>
+                        <label id="usernameLabel" for="username" class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2 pl-1 group-focus-within:text-indigo-700 transition-colors">Username</label>
                         <div class="relative">
-                            <input type="text" name="username" id="username" required 
-                                class="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10 text-sm" 
+                            <input type="text" name="username" id="username" required autocomplete="username" aria-label="Username or CNIC"
+                                class="w-full px-5 py-4 bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-900 font-medium placeholder-slate-400 transition-all outline-none shadow-sm focus:ring-4 focus:ring-indigo-100 text-base"
                                 placeholder="Username">
-                            <i id="usernameIcon" class="fas fa-id-badge absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"></i>
+                            <i id="usernameIcon" class="fas fa-id-badge absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" aria-hidden="true"></i>
                         </div>
                     </div>
 
                     <div class="group">
-                        <label id="passwordLabel" class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1 group-focus-within:text-indigo-600 transition-colors">Security Token</label>
+                        <label id="passwordLabel" for="password" class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2 pl-1 group-focus-within:text-indigo-700 transition-colors">Password</label>
                         <div class="relative">
-                            <input type="password" name="password" id="password" required 
-                                class="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-800 font-bold placeholder-slate-300 transition-all outline-none shadow-sm focus:shadow-indigo-500/10 text-sm" 
-                                placeholder="••••••••">
-                            <button type="button" id="togglePassword" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors">
+                            <input type="password" name="password" id="password" required autocomplete="current-password"
+                                class="w-full px-5 py-4 bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl text-slate-900 font-medium placeholder-slate-400 transition-all outline-none shadow-sm focus:ring-4 focus:ring-indigo-100 text-base"
+                                placeholder="Enter your password">
+                            <button type="button" id="togglePassword" class="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded" aria-label="Show password" aria-pressed="false">
                                 <i class="fas fa-eye-slash"></i>
                             </button>
                         </div>
                     </div>
 
 
-                    <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-black py-4 rounded-xl shadow-xl shadow-slate-200/50 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-2">
+                    <button type="submit" id="loginBtn" class="group relative w-full bg-slate-900 overflow-hidden text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-200/70 hover:shadow-indigo-500/30 active:scale-[0.98] transition-all mt-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200">
                         <!-- Liquid Gooey Component -->
                         <div class="absolute inset-0 liquid-goo-container pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                             <div class="blob blob-1"></div>
@@ -249,11 +251,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                         
                         <div id="btnContent" class="relative flex items-center justify-center gap-2">
-                            <span class="uppercase tracking-[0.2em] drop-shadow-sm text-xs">Authorize Access</span>
+                            <span class="uppercase tracking-[0.15em] drop-shadow-sm text-sm">Sign in</span>
                             <i class="fas fa-shield-alt text-[10px] animate-pulse"></i>
                         </div>
                         <div id="btnLoading" class="relative hidden items-center justify-center gap-2">
-                            <span class="uppercase tracking-[0.2em] text-xs">Authorizing...</span>
+                            <span class="uppercase tracking-[0.15em] text-sm">Signing in...</span>
                             <i class="fas fa-circle-notch fa-spin text-xs"></i>
                         </div>
 
@@ -284,6 +286,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { alpha: false });
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         let particles = [];
         let mouse = { x: null, y: null, radius: 150 };
 
@@ -438,7 +441,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         window.addEventListener('resize', init);
         init();
-        animate();
+        if (!prefersReducedMotion) {
+            animate();
+        }
 
         // Mode Handling
         const loginForm = document.getElementById('loginForm');
@@ -457,25 +462,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         const btnContent = document.getElementById('btnContent');
         const btnLoading = document.getElementById('btnLoading');
         const loginBtn = document.getElementById('loginBtn');
+        const loginAsyncError = document.getElementById('loginAsyncError');
 
         function setLoginMode(mode) {
             loginModeInput.value = mode;
+            loginAsyncError.textContent = '';
+            loginAsyncError.classList.add('hidden');
             
             // Reset all buttons
             [staffModeBtn, teacherModeBtn, parentModeBtn].forEach(btn => {
-                btn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 text-slate-400 hover:text-slate-600';
+                btn.setAttribute('aria-pressed', 'false');
+                btn.className = 'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
             });
 
             if (mode === 'parent') {
-                parentModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-emerald-600 shadow-sm border border-emerald-100';
+                parentModeBtn.setAttribute('aria-pressed', 'true');
+                parentModeBtn.className = 'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 bg-white text-emerald-700 shadow-sm border border-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500';
                 
                 loginTitle.textContent = 'Parent Portal';
                 loginSubtitle.textContent = 'Track your child\'s progress and activities.';
-                usernameLabel.textContent = 'Father\'s CNIC Number';
-                passwordLabel.textContent = 'Child\'s Date of Birth';
+                usernameLabel.textContent = 'Parent CNIC Number';
+                passwordLabel.textContent = 'Password / Child\'s Date of Birth';
                 usernameInput.placeholder = 'XXXXX-XXXXXXX-X';
                 passwordInput.placeholder = 'YYYY-MM-DD';
-                usernameIcon.className = 'fas fa-id-card absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors';
+                usernameIcon.className = 'fas fa-id-card absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors';
                 
                 btnContent.querySelector('span').textContent = 'Access Portal';
                 btnContent.querySelector('i').className = 'fas fa-user-graduate text-xs animate-pulse';
@@ -489,23 +499,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 passwordLabel.textContent = 'Your Date of Birth';
                 usernameInput.placeholder = 'XXXXX-XXXXXXX-X';
                 passwordInput.placeholder = 'YYYY-MM-DD';
-                usernameIcon.className = 'fas fa-id-card absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-500 transition-colors';
+                usernameIcon.className = 'fas fa-id-card absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 transition-colors';
                 
                 btnContent.querySelector('span').textContent = 'Teacher Access';
                 btnContent.querySelector('i').className = 'fas fa-chalkboard-teacher text-xs animate-pulse';
                 loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
             } else {
-                staffModeBtn.className = 'flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 z-10 bg-white text-indigo-600 shadow-sm border border-indigo-100';
+                staffModeBtn.setAttribute('aria-pressed', 'true');
+                staffModeBtn.className = 'flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wide transition-all duration-300 z-10 bg-white text-indigo-700 shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
                 
                 loginTitle.textContent = 'Secure Login';
-                loginSubtitle.textContent = 'Authorized personnel only. Please verify your identity.';
-                usernameLabel.textContent = 'Access Username';
-                passwordLabel.textContent = 'Security Token';
+                loginSubtitle.textContent = 'Authorized personnel only. Please sign in.';
+                usernameLabel.textContent = 'Username';
+                passwordLabel.textContent = 'Password';
                 usernameInput.placeholder = 'Username';
-                passwordInput.placeholder = '••••••••';
-                usernameIcon.className = 'fas fa-id-badge absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors';
+                passwordInput.placeholder = 'Enter your password';
+                usernameIcon.className = 'fas fa-id-badge absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors';
                 
-                btnContent.querySelector('span').textContent = 'Authorize Access';
+                btnContent.querySelector('span').textContent = 'Sign in';
                 btnContent.querySelector('i').className = 'fas fa-shield-alt text-xs animate-pulse';
                 loginBtn.querySelector('.absolute').className = 'absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300';
             }
@@ -521,13 +532,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             passwordInput.setAttribute('type', type);
             this.querySelector('i').classList.toggle('fa-eye');
             this.querySelector('i').classList.toggle('fa-eye-slash');
+            this.setAttribute('aria-pressed', type === 'text' ? 'true' : 'false');
+            this.setAttribute('aria-label', type === 'text' ? 'Hide password' : 'Show password');
         });
 
         // Form Handling
+        function resetLoginButton() {
+            btnContent.classList.remove('hidden');
+            btnLoading.classList.add('hidden');
+            btnLoading.classList.remove('flex');
+            loginBtn.disabled = false;
+            loginBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+        }
+
+        function showLoginError(message) {
+            loginAsyncError.textContent = message;
+            loginAsyncError.classList.remove('hidden');
+            resetLoginButton();
+            passwordInput.focus();
+        }
+
         loginForm.addEventListener('submit', function(e) {
             const mode = loginModeInput.value;
             if (mode === 'parent' || mode === 'teacher') {
                 e.preventDefault();
+                loginAsyncError.textContent = '';
+                loginAsyncError.classList.add('hidden');
                 
                 // Show loading state
                 btnContent.classList.add('hidden');
@@ -542,28 +572,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => response.json().then(data => ({ response, data })))
                 .then(data => {
-                    if (data.success) {
-                        window.location.href = data.redirect;
+                    if (data.response.ok && data.data.success && data.data.redirect) {
+                        window.location.assign(data.data.redirect);
                     } else {
-                        // Show error
-                        alert(data.message);
-                        btnContent.classList.remove('hidden');
-                        btnLoading.classList.add('hidden');
-                        btnLoading.classList.remove('flex');
-                        loginBtn.disabled = false;
+                        showLoginError(data.data.message || 'Unable to sign in. Please check your details and try again.');
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                    btnContent.classList.remove('hidden');
-                    btnLoading.classList.add('hidden');
-                    btnLoading.classList.remove('flex');
-                    loginBtn.disabled = false;
+                    console.error('Login request failed:', error);
+                    showLoginError('Unable to connect to the server. Please try again.');
                 });
             } else {
+                loginAsyncError.textContent = '';
+                loginAsyncError.classList.add('hidden');
                 // Staff mode: Normal submit but show loading
                 btnContent.classList.add('hidden');
                 btnLoading.classList.remove('hidden');
@@ -645,6 +668,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             0% { transform: translate(0, 0) scale(0.9); }
             50% { transform: translate(40px, -20px) scale(1.2); }
             100% { transform: translate(-10px, 30px) scale(1); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </body>
