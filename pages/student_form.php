@@ -117,51 +117,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Error is already set, just fall through to display it
     } else {
         // Handle File Uploads
-        $uploadDir = '../uploads/students/';
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+        $uploadDir = __DIR__ . '/../uploads/students';
+        $uploadPathPrefix = '../uploads/students/';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            $error = 'Error: Could not create the student uploads folder. Check folder permissions.';
         }
 
         $fileFields = ['profile_image', 'father_cnic_front', 'father_cnic_back', 'b_form_img', 'slc_img'];
         $uploadedFiles = [];
 
         foreach ($fileFields as $field) {
-            if (isset($_FILES[$field]) && $_FILES[$field]['error'] == 0) {
-                $fileTmpPath = $_FILES[$field]['tmp_name'];
-                $fileName = $_FILES[$field]['name'];
-                $fileSize = $_FILES[$field]['size'];
-                $fileType = $_FILES[$field]['type'];
-                $fileNameCmps = explode(".", $fileName);
-                $fileExtension = strtolower(end($fileNameCmps));
-
-                $allowedfileExtensions = array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif');
-                $allowedMimeTypes = array('image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif');
-                
-                // Max file size 2MB
-                $maxFileSize = 2 * 1024 * 1024;
-
-                if (in_array($fileExtension, $allowedfileExtensions) && $fileSize <= $maxFileSize) {
-                    // Double check MIME type for security
-                    $check = getimagesize($fileTmpPath);
-                    if ($check !== false && in_array($check['mime'], $allowedMimeTypes)) {
-                        // Create unique filename: GR-123-field_name-HEX.jpg
-                        $newFileName = 'GR-' . preg_replace('/[^a-zA-Z0-9]/', '', $grNo) .'-' . $field . '-' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
-                        $dest_path = $uploadDir . $newFileName;
-
-                        if(move_uploaded_file($fileTmpPath, $dest_path)) {
-                            $uploadedFiles[$field] = $dest_path;
-                        }
-                    } else {
-                        $error = "Error: Invalid image file type for $field.";
-                        break;
-                    }
-                } elseif ($fileSize > $maxFileSize) {
-                    $error = "Error: File size too large for $field. Max limit is 2MB.";
-                    break;
-                }
+            if (!empty($error) || !isset($_FILES[$field])) {
+                break;
             }
+
+            $file = $_FILES[$field];
+            if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds upload_max_filesize in PHP configuration.',
+                    UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the form upload size limit.',
+                    UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'PHP is missing its temporary upload folder.',
+                    UPLOAD_ERR_CANT_WRITE => 'PHP could not write the uploaded file to disk. Check disk space and folder permissions.',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
+                ];
+                $error = 'Error uploading ' . $field . ': ' . ($uploadErrors[$file['error']] ?? 'Unknown upload error.');
+                break;
+            }
+
+            $fileTmpPath = $file['tmp_name'];
+            $fileName = $file['name'];
+            $fileSize = $file['size'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            $allowedfileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'];
+            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'];
+            $maxFileSize = 2 * 1024 * 1024;
+
+            if (!in_array($fileExtension, $allowedfileExtensions, true)) {
+                $error = "Error: Invalid image file type for $field.";
+                break;
+            }
+            if ($fileSize > $maxFileSize) {
+                $error = "Error: File size too large for $field. Max limit is 2MB.";
+                break;
+            }
+
+            $check = getimagesize($fileTmpPath);
+            if ($check === false || !in_array($check['mime'], $allowedMimeTypes, true)) {
+                $error = "Error: Invalid image file type for $field.";
+                break;
+            }
+
+            $newFileName = 'GR-' . preg_replace('/[^a-zA-Z0-9]/', '', $grNo) . '-' . $field . '-' . bin2hex(random_bytes(4)) . '.' . $fileExtension;
+            $destinationPath = $uploadDir . DIRECTORY_SEPARATOR . $newFileName;
+            if (!move_uploaded_file($fileTmpPath, $destinationPath)) {
+                $error = "Error: Could not save $field. Check that the uploads folder is writable.";
+                break;
+            }
+            $uploadedFiles[$field] = $uploadPathPrefix . $newFileName;
         }
 
+        if (!empty($error)) {
+            $student = $_POST;
+            if ($id) $student['id'] = $id;
+        } else {
         // Handle Existing Parent Images (Autofill)
         if (isset($_POST['existing_father_cnic_front']) && !isset($uploadedFiles['father_cnic_front'])) {
             $uploadedFiles['father_cnic_front'] = $_POST['existing_father_cnic_front'];
@@ -215,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Redirect back to the form page with a flag to show the admission popup
             header("Location: student_form.php?admission_success=1&new_id=" . intval($newStudentId));
             exit;
+        }
         }
     }
 }
@@ -301,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="relative group">
                 <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                     <?php if ($student && !empty($student['profile_image'])): ?>
-                        <img id="profile_preview" src="<?php echo $student['profile_image']; ?>" alt="Profile Preview" class="w-full h-full object-cover" style="object-position: center top;">
+                        <img id="profile_preview" src="<?php echo htmlspecialchars($student['profile_image'], ENT_QUOTES, 'UTF-8'); ?>" alt="Profile Preview" class="w-full h-full object-cover" style="object-position: center top;">
                     <?php else: ?>
                         <img id="profile_preview" src="../assets/default_avatar.png" onerror="this.src='https://via.placeholder.com/150?text=No+Image'" alt="Profile Preview" class="w-full h-full object-cover text-gray-400" style="object-position: center top;">
                     <?php endif; ?>

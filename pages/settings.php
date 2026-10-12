@@ -34,18 +34,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Create unique filename to avoid browser caching issues
                     $new_filename = 'school_logo_' . time() . '.' . $ext;
                     $target_rel = 'uploads/' . $new_filename;
-                    $target_abs = '../' . $target_rel;
+                    $target_abs = __DIR__ . '/../' . $target_rel;
                     
                     $upload_dir = dirname($target_abs);
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0755, true);
+                    if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true) && !is_dir($upload_dir)) {
+                        $errorMsg = "Settings updated, but the uploads folder could not be created.";
                     }
 
-                    if (move_uploaded_file($_FILES['school_logo']['tmp_name'], $target_abs)) {
+                    if (empty($errorMsg) && move_uploaded_file($_FILES['school_logo']['tmp_name'], $target_abs)) {
                         // Update the logo path in the database settings
-                        $db->updateSchoolSettings(['school_logo' => $target_rel]);
-                        $logoUpdated = true;
-                    } else {
+                        if ($db->updateSchoolSettings(['school_logo' => $target_rel])) {
+                            $logoUpdated = true;
+                        } else {
+                            $errorMsg = "Settings updated, but the logo path could not be saved.";
+                        }
+                    } elseif (empty($errorMsg)) {
                         $errorMsg = "Settings updated, but Logo upload failed.";
                     }
                 } else {
@@ -247,7 +250,7 @@ $settings = $db->getSchoolSettings();
                                 <div class="flex items-center gap-4">
                                     <div class="w-16 h-16 border rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
                                         <?php 
-                                        $logoUrl = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo'])) 
+                                        $logoUrl = (!empty($settings['school_logo']) && file_exists(__DIR__ . '/../' . $settings['school_logo']))
                                                    ? '../' . $settings['school_logo'] 
                                                    : '../assets/img/logo.jpg'; 
                                         ?>

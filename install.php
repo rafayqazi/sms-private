@@ -184,7 +184,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">School Name</label>
-                                    <input type="text" id="sch-name" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. GBPS Ali Bux Jarwar">
+                                    <input type="text" id="sch-name" value="AR SOFTWARE SOLUTIONS" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="e.g. GBPS Ali Bux Jarwar">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">SEMIS Code</label>
@@ -192,7 +192,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">PRINCIPAL Name</label>
-                                    <input type="text" id="sch-hm" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="PRINCIPAL Name">
+                                    <input type="text" id="sch-hm" value="Abdul Rafay" required class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary text-slate-800 font-bold" placeholder="PRINCIPAL Name">
                                 </div>
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 pl-1">School Address</label>

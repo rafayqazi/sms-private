@@ -1,13 +1,8 @@
 <?php
 session_start();
-// We don't include db.php here to avoid circular redirect if db.php handles the check
-// But we might need settings to show school name
-$settingsFile = __DIR__ . '/data/settings.json';
-$school_name = "School Management System";
-if (file_exists($settingsFile)) {
-    $settings = json_decode(file_get_contents($settingsFile), true);
-    $school_name = $settings['school_name'] ?? $school_name;
-}
+require_once __DIR__ . '/includes/db.php';
+$settings = (new Database())->getSchoolSettings();
+$school_name = $settings['school_name'] ?? 'School Management System';
 ?>
 <!DOCTYPE html>
 <html lang="en">

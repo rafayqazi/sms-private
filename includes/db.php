@@ -7,17 +7,34 @@ License::checkAndRedirect();
 
 // Maintenance Mode Check
 $settingsFile = __DIR__ . '/../data/settings.json';
-if (file_exists($settingsFile)) {
-    $settings = json_decode(file_get_contents($settingsFile), true);
-    if (isset($settings['maintenance_mode']) && $settings['maintenance_mode'] === true) {
-        $currentPage = basename($_SERVER['PHP_SELF']);
-        
-        // Redirect ALL users (including admins) to maintenance.php if maintenance mode is active
-        // EXCEPT if they are on the maintenance page itself or the login page
-        if ($currentPage !== 'maintenance.php' && $currentPage !== 'login.php') {
-            header('Location: maintenance.php');
-            exit();
+$settingsCsvFile = __DIR__ . '/../data/settings.csv';
+$settings = [];
+$settingsLoaded = false;
+if (file_exists($settingsCsvFile) && ($handle = fopen($settingsCsvFile, 'r')) !== false) {
+    $headers = fgetcsv($handle, 0, ',');
+    $values = fgetcsv($handle, 0, ',');
+    fclose($handle);
+    if (is_array($headers) && count($headers) > 0 && is_array($values)) {
+        $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
+        $values = array_slice(array_pad($values, count($headers), ''), 0, count($headers));
+        $combinedSettings = array_combine($headers, $values);
+        if (is_array($combinedSettings)) {
+            $settings = $combinedSettings;
+            $settingsLoaded = true;
         }
+    }
+}
+if (!$settingsLoaded && file_exists($settingsFile)) {
+    $settings = json_decode(file_get_contents($settingsFile), true);
+}
+if (is_array($settings) && in_array($settings['maintenance_mode'] ?? false, [true, 1, '1', 'true'], true)) {
+    $currentPage = basename($_SERVER['PHP_SELF']);
+
+    // Redirect ALL users (including admins) to maintenance.php if maintenance mode is active
+    // EXCEPT if they are on the maintenance page itself or the login page
+    if ($currentPage !== 'maintenance.php' && $currentPage !== 'login.php') {
+        header('Location: maintenance.php');
+        exit();
     }
 }
 
@@ -2752,42 +2769,96 @@ class Database {
         return $attendance;
     }
     public function getSchoolSettings() {
-        $file = __DIR__ . '/../data/settings.json';
+        $file = __DIR__ . '/../data/settings.csv';
+        $legacyFile = __DIR__ . '/../data/settings.json';
         $defaults = [
-            "school_name" => "Government Boys Primary School Ali Bux Jarwar",
-            "address_tagline" => "District Ghotki",
-        "school_address" => "Ali Bux Jarwar, Ghotki",
-        "school_contact" => "0300-0000000",
-        "headmaster_name" => "Signature PRINCIPAL____________",
-            "semis_code" => "424010147",
+            "school_name" => "AR SOFTWARE SOLUTIONS",
+            "address_tagline" => "",
+            "school_address" => "TDY",
+            "school_contact" => "0371-0273699",
+            "headmaster_name" => "Abdul Rafay",
+            "semis_code" => "",
+            "school_logo" => "",
+            "address" => "",
             "admin_username" => "GBPSalibuxjarwar",
             "admin_password_hash" => '$2y$10$/pdBSPF3.tIje1liRt5pw.bMBGIPzYA07tgV4raAyO1Qx4XSDGOrW'
         ];
 
         if (file_exists($file)) {
-            $json = file_get_contents($file);
-            $data = json_decode($json, true);
-            if (is_array($data)) {
-                return array_merge($defaults, $data);
+            $handle = fopen($file, 'r');
+            if ($handle !== false) {
+                $headers = fgetcsv($handle, 0, ',');
+                $values = fgetcsv($handle, 0, ',');
+                fclose($handle);
+                if (is_array($headers) && count($headers) > 0 && is_array($values)) {
+                    $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
+                    $values = array_slice(array_pad($values, count($headers), ''), 0, count($headers));
+                    $data = array_combine($headers, $values);
+                    if (is_array($data)) {
+                        return array_merge($defaults, $data);
+                    }
+                }
+            }
+            error_log('Could not read school settings CSV: ' . $file);
+            return $defaults;
+        }
+
+        $data = $defaults;
+        if (file_exists($legacyFile)) {
+            $legacyData = json_decode(file_get_contents($legacyFile), true);
+            if (is_array($legacyData)) {
+                $data = array_merge($data, $legacyData);
+            } else {
+                error_log('Could not decode legacy school settings JSON: ' . $legacyFile);
             }
         }
-        return $defaults;
+
+        if (!$this->writeSchoolSettingsCsv($file, $data)) {
+            error_log('Could not initialize school settings CSV: ' . $file);
+        }
+        return $data;
     }
 
     public function updateSchoolSettings($data) {
-        $file = __DIR__ . '/../data/settings.json';
-        $current = $this->getSchoolSettings();
-        
-        // Update general fields
-        if (isset($data['school_name'])) $current['school_name'] = $data['school_name'];
-        if (isset($data['headmaster_name'])) $current['headmaster_name'] = $data['headmaster_name'];
-        if (isset($data['address_tagline'])) $current['address_tagline'] = $data['address_tagline'];
-    if (isset($data['school_address'])) $current['school_address'] = $data['school_address'];
-    if (isset($data['school_contact'])) $current['school_contact'] = $data['school_contact'];
-    if (isset($data['semis_code'])) $current['semis_code'] = $data['semis_code'];
-        if (isset($data['school_logo'])) $current['school_logo'] = $data['school_logo'];
-        
-        return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
+        $file = __DIR__ . '/../data/settings.csv';
+        $current = array_merge($this->getSchoolSettings(), $data);
+        return $this->writeSchoolSettingsCsv($file, $current);
+    }
+
+    private function writeSchoolSettingsCsv($file, $settings) {
+        $directory = dirname($file);
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            error_log('Could not create school settings directory: ' . $directory);
+            return false;
+        }
+
+        $handle = fopen($file, 'c+');
+        if ($handle === false) {
+            error_log('Could not open school settings CSV for writing: ' . $file);
+            return false;
+        }
+        if (!flock($handle, LOCK_EX)) {
+            fclose($handle);
+            error_log('Could not lock school settings CSV: ' . $file);
+            return false;
+        }
+
+        $headers = array_keys($settings);
+        $values = array_map(function ($header) use ($settings) {
+            $value = $settings[$header];
+            return is_scalar($value) || $value === null ? (string)($value ?? '') : json_encode($value);
+        }, $headers);
+
+        $success = ftruncate($handle, 0) && rewind($handle)
+            && fputcsv($handle, $headers) !== false
+            && fputcsv($handle, $values) !== false
+            && fflush($handle);
+        flock($handle, LOCK_UN);
+        fclose($handle);
+        if (!$success) {
+            error_log('Could not write school settings CSV: ' . $file);
+        }
+        return $success;
     }
 
     public function verifyAdmin($username, $password) {
@@ -2819,12 +2890,9 @@ class Database {
     }
 
     public function updateAdminPassword($newPassword) {
-        $file = __DIR__ . '/../data/settings.json';
-        $current = $this->getSchoolSettings();
-        
-        $current['admin_password_hash'] = password_hash($newPassword, PASSWORD_DEFAULT);
-        
-        return file_put_contents($file, json_encode($current, JSON_PRETTY_PRINT)) !== false;
+        return $this->updateSchoolSettings([
+            'admin_password_hash' => password_hash($newPassword, PASSWORD_DEFAULT)
+        ]);
     }
 
 

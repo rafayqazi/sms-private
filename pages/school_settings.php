@@ -10,15 +10,10 @@ if (!canAccessPage(basename(__FILE__))) {
 
 require_once '../includes/header.php';
 
-$settingsFile = __DIR__ . '/../data/settings.json';
 $successMsg = '';
 $errorMsg = '';
-
-// Load current settings
-$settings = [];
-if (file_exists($settingsFile)) {
-    $settings = json_decode(file_get_contents($settingsFile), true);
-}
+$db = new Database();
+$settings = $db->getSchoolSettings();
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,17 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (isset($_POST['update_settings'])) {
-        $settings['school_name'] = $_POST['school_name'];
-        $settings['address_tagline'] = $_POST['address_tagline'];
-        $settings['headmaster_name'] = $_POST['headmaster_name'];
-        $settings['semis_code'] = $_POST['semis_code'];
-        $settings['address'] = $_POST['address'] ?? ''; // Added for consistency with print templates
-// Maintenance mode toggle removed from UI, controlled via settings.json only
+        $updatedSettings = [
+            'school_name' => $_POST['school_name'],
+            'address_tagline' => $_POST['address_tagline'],
+            'headmaster_name' => $_POST['headmaster_name'],
+            'semis_code' => $_POST['semis_code'],
+            'school_address' => $_POST['address'] ?? '',
+            'address' => $_POST['address'] ?? ''
+        ];
 
-        if (file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT))) {
+        if ($db->updateSchoolSettings($updatedSettings)) {
+            $settings = array_merge($settings, $updatedSettings);
             $successMsg = "Settings updated successfully!";
         } else {
-            $errorMsg = "Failed to update settings. Check file permissions.";
+            $errorMsg = "Failed to update settings. Check data folder permissions.";
         }
     }
 }
