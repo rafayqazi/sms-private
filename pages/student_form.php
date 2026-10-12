@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $fileSize = $file['size'];
             $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-            $allowedfileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'];
+            $allowedfileExtensions = ['jpg', 'jpeg', 'jfif', 'png', 'gif', 'webp', 'bmp', 'avif'];
             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'];
             $maxFileSize = 2 * 1024 * 1024;
 
@@ -332,7 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <label for="profile_image_input" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-md cursor-pointer hover:bg-indigo-700 transition-colors" title="Upload Photo">
                     <i class="fas fa-camera"></i>
-                    <input type="file" id="profile_image_input" name="profile_image" accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.avif,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif" class="hidden" onchange="previewImage(this)">
+                    <input type="file" id="profile_image_input" name="profile_image" accept=".jpg,.jpeg,.jfif,.png,.gif,.webp,.bmp,.avif,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif" class="hidden" onchange="previewImage(this)">
                 </label>
             </div>
             <p class="text-sm font-semibold text-gray-600 mt-2">Upload Student Photo</p>
