@@ -230,11 +230,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         if ($id) {
-            $db->updateStudent($id, $data);
-            header("Location: students.php");
-            exit;
+            if ($db->updateStudent($id, $data)) {
+                $_SESSION['flash_toast'] = [
+                    'type' => 'success',
+                    'message' => 'Student record updated successfully.'
+                ];
+                header("Location: students.php");
+                exit;
+            }
+            $error = 'Failed to update student record.';
+            $student = array_merge($student ?? [], $_POST);
+            $student['id'] = $id;
         } else {
             $newStudentId = $db->addStudent($data);
+            $_SESSION['flash_toast'] = [
+                'type' => 'success',
+                'message' => 'Student admission completed successfully.'
+            ];
             // Redirect back to the form page with a flag to show the admission popup
             header("Location: student_form.php?admission_success=1&new_id=" . intval($newStudentId));
             exit;

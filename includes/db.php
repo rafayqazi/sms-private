@@ -3202,6 +3202,33 @@ class Database {
     public function getClasses() {
         $file = __DIR__ . '/../data/classes.csv';
         $classes = [];
+        if (!file_exists($file)) {
+            $defaultClassNames = [
+                'Pre-Primary' => ['NURSERY', 'KG'],
+                'Elementary' => ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'MATRIC'],
+                'College' => ['FIRST YEAR', 'INTERMEDIATE']
+            ];
+            $defaultClasses = [];
+            $id = 1;
+            foreach ($defaultClassNames as $stage => $classNames) {
+                foreach ($classNames as $sortOrder => $className) {
+                    $defaultClasses[] = [
+                        'id' => $id++,
+                        'class_name' => $className,
+                        'sort_order' => $sortOrder + 1,
+                        'is_gr_required' => 1,
+                        'has_group' => $stage === 'College' ? 1 : 0,
+                        'stage' => $stage
+                    ];
+                }
+            }
+
+            if (!$this->updateClasses($defaultClasses)) {
+                error_log('Could not create default school classes: ' . $file);
+                return [];
+            }
+        }
+
         if (file_exists($file)) {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 $headers = fgetcsv($handle); // Skip header
@@ -3303,7 +3330,16 @@ class Database {
             $updatedClasses[$i]['sort_order'] = $stageCounters[$s]++;
         }
         
+        $directory = dirname($file);
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            error_log('Could not create classes directory: ' . $directory);
+            return false;
+        }
         $fp = fopen($file, 'w');
+        if ($fp === false) {
+            error_log('Could not open classes CSV for writing: ' . $file);
+            return false;
+        }
         fputcsv($fp, ['id', 'class_name', 'sort_order', 'is_gr_required', 'has_group', 'stage']);
         foreach ($updatedClasses as $c) {
             fputcsv($fp, [

@@ -122,37 +122,88 @@
     </div>
 
     <script>
-        function showModal(type, title, message) {
-            const modal = document.getElementById('globalModal');
-            const iconBg = document.getElementById('modalIconBg');
-            const icon = document.getElementById('modalIcon');
-            const titleEl = document.getElementById('modalTitle');
-            const messageEl = document.getElementById('modalMessage');
-
-            // Reset classes
-            iconBg.className = 'mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10';
-            icon.className = 'fas';
-
-            if (type === 'success') {
-                iconBg.classList.add('bg-green-100');
-                icon.classList.add('fa-check', 'text-green-600');
-            } else if (type === 'error') {
-                iconBg.classList.add('bg-red-100');
-                icon.classList.add('fa-times', 'text-red-600');
-            } else if (type === 'warning') {
-                iconBg.classList.add('bg-yellow-100');
-                icon.classList.add('fa-exclamation-triangle', 'text-yellow-600');
+        function showToast(type, message) {
+            let container = document.getElementById('app-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'app-toast-container';
+                container.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 z-[300] flex w-[calc(100%-2rem)] max-w-md flex-col gap-3 pointer-events-none';
+                container.setAttribute('aria-live', 'polite');
+                container.setAttribute('aria-atomic', 'false');
+                document.body.appendChild(container);
             }
 
-            titleEl.textContent = title;
-            messageEl.textContent = message;
+            const styles = {
+                success: { icon: 'fa-check-circle', classes: 'bg-green-600 border-green-700' },
+                error: { icon: 'fa-times-circle', classes: 'bg-red-600 border-red-700' },
+                warning: { icon: 'fa-exclamation-triangle', classes: 'bg-amber-500 border-amber-600' }
+            };
+            const style = styles[type] || styles.success;
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-white shadow-xl opacity-0 translate-y-3 transition-all duration-300 ${style.classes}`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
-            modal.classList.remove('hidden');
+            const icon = document.createElement('i');
+            icon.className = `fas ${style.icon} text-lg`;
+            icon.setAttribute('aria-hidden', 'true');
+
+            const text = document.createElement('span');
+            text.className = 'min-w-0 flex-1';
+            text.textContent = message;
+
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'ml-2 rounded p-1 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-white';
+            close.setAttribute('aria-label', 'Dismiss notification');
+            close.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+            close.addEventListener('click', () => dismissToast(toast));
+
+            toast.append(icon, text, close);
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-3');
+            });
+            window.setTimeout(() => dismissToast(toast), 5000);
+        }
+
+        function dismissToast(toast) {
+            if (!toast || !toast.isConnected) return;
+            toast.classList.add('opacity-0', 'translate-y-3');
+            window.setTimeout(() => toast.remove(), 300);
+        }
+
+        function showModal(type, title, message) {
+            showToast(type, title ? `${title}: ${message}` : message);
         }
 
         function closeModal() {
-            document.getElementById('globalModal').classList.add('hidden');
+            const modal = document.getElementById('globalModal');
+            if (modal) modal.classList.add('hidden');
         }
+
+        <?php
+        $flashToast = $_SESSION['flash_toast'] ?? null;
+        unset($_SESSION['flash_toast']);
+        ?>
+        const initialFlashToast = <?php echo json_encode($flashToast, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+        document.addEventListener('DOMContentLoaded', function() {
+            if (initialFlashToast && initialFlashToast.message) {
+                showToast(initialFlashToast.type || 'success', initialFlashToast.message);
+            }
+
+            document.querySelectorAll('[role="alert"], .border-l-4').forEach(function(alert) {
+                if (alert.closest('[role="dialog"]')) return;
+                const classes = alert.className.toString();
+                const isError = /(?:bg|border|text)-(?:red|rose)-\d/.test(classes);
+                const isSuccess = /(?:bg|border|text)-(?:green|emerald)-\d/.test(classes);
+                if (!isError && !isSuccess) return;
+
+                const message = alert.textContent.trim();
+                if (!message) return;
+                showToast(isError ? 'error' : 'success', message);
+                alert.classList.add('hidden');
+            });
+        });
 
         let confirmCallback = null;
 

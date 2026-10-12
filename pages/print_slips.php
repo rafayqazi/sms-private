@@ -348,8 +348,7 @@ function getStudentSlipPhoto($rawPath)
                                         </div>
                                     </div>
                                     <div class="flex items-end gap-3">
-                                        <span class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">GR
-                                            No:</span>
+                                        <span class="font-black text-sm school-color-text uppercase tracking-widest shrink-0 whitespace-nowrap">GR No:</span>
                                         <div
                                             class="flex-1 border-b-2 border-slate-100 font-black text-xl text-indigo-600 px-2 pb-0.5">
                                             #<?php echo htmlspecialchars($student['gr_no']); ?>
@@ -517,8 +516,7 @@ function getStudentSlipPhoto($rawPath)
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span
-                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">GR
-                                            No:</span>
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">GR No:</span>
                                         <span
                                             class="font-black text-indigo-600 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
                                             #<?php echo htmlspecialchars($student['gr_no']); ?>
@@ -590,9 +588,12 @@ function getStudentSlipPhoto($rawPath)
                                     <span><i class="fas fa-check-circle text-emerald-600"></i> Bring Slip Daily</span>
                                     <span><i class="fas fa-clock text-indigo-600"></i> Reach 15 Mins Before</span>
                                 </div>
-                                <div class="text-center flex items-center gap-3">
-                                    <span class="font-black uppercase tracking-widest text-slate-600">Principal Sign:</span>
-                                    <div class="w-24 border-b-2 school-color-border"></div>
+                                <div class="flex items-center gap-1 whitespace-nowrap text-[7px]">
+                                    <span class="font-black uppercase text-slate-600">Principal Sign:</span>
+                                    <div class="w-10 border-b-2 school-color-border"></div>
+                                    <span class="font-bold text-slate-500">/</span>
+                                    <span class="font-black uppercase text-slate-600">Vice Principal Sign:</span>
+                                    <div class="w-10 border-b-2 school-color-border"></div>
                                 </div>
                             </div>
                             <!-- Developer Credit -->
@@ -675,8 +676,7 @@ function getStudentSlipPhoto($rawPath)
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">GR
-                                                No:</span>
+                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">GR No:</span>
                                             <span
                                                 class="font-black text-indigo-600 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
                                                 #<?php echo htmlspecialchars($student['gr_no']); ?>
@@ -748,9 +748,12 @@ function getStudentSlipPhoto($rawPath)
                                         <span><i class="fas fa-check-circle text-emerald-600"></i> Bring Slip Daily</span>
                                         <span><i class="fas fa-clock text-indigo-600"></i> Reach 15 Mins Before</span>
                                     </div>
-                                    <div class="text-center flex items-center gap-3">
-                                        <span class="font-black uppercase tracking-widest text-slate-600">Principal Sign:</span>
-                                        <div class="w-24 border-b-2 school-color-border"></div>
+                                    <div class="flex items-center gap-1 whitespace-nowrap text-[7px]">
+                                        <span class="font-black uppercase text-slate-600">Principal Sign:</span>
+                                        <div class="w-10 border-b-2 school-color-border"></div>
+                                        <span class="font-bold text-slate-500">/</span>
+                                        <span class="font-black uppercase text-slate-600">Vice Principal Sign:</span>
+                                        <div class="w-10 border-b-2 school-color-border"></div>
                                     </div>
                                 </div>
                                 <!-- Developer Credit -->

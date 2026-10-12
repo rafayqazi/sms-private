@@ -94,7 +94,6 @@ function canAccessPage($page) {
             'backup_restore.php',
             'manage_classes.php',
             'bulk_admission.php',
-            'school_settings.php',
             'certificates.php',
             'certificate_character.php',
             'certificate_school_leaving.php',

@@ -12,6 +12,56 @@ if (isset($_SESSION['teacher_name'])) {
 
 // Determine if we're in a subdirectory
 $base_path = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false) ? '../' : '';
+$isTeacherMenu = isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'teacher';
+
+// Searchable shortcuts mirror the pages available in the main navigation.
+$featureSearchItems = [
+    ['label' => 'Dashboard', 'keywords' => 'home overview', 'url' => $base_path . ($isTeacherMenu ? 'pages/teacher_dashboard.php' : 'index.php'), 'icon' => 'fa-home'],
+    ['label' => 'Messages', 'keywords' => 'inbox notifications', 'url' => $base_path . 'pages/messages.php', 'icon' => 'fa-envelope'],
+    ['label' => 'Student List', 'keywords' => 'students records search', 'url' => $base_path . 'pages/students.php', 'icon' => 'fa-user-graduate'],
+    ['label' => 'Admission', 'keywords' => 'add new student enroll', 'url' => $base_path . 'pages/student_form.php', 'icon' => 'fa-user-plus'],
+    ['label' => 'Promote Students', 'keywords' => 'promotion next class', 'url' => $base_path . 'pages/promote_students.php', 'icon' => 'fa-arrow-up'],
+    ['label' => 'Alumni', 'keywords' => 'former graduates', 'url' => $base_path . 'pages/alumni.php', 'icon' => 'fa-user-check'],
+    ['label' => 'Print Identity Card', 'keywords' => 'student id card print', 'url' => $base_path . 'pages/print_id_card.php', 'icon' => 'fa-id-badge'],
+    ['label' => 'Print Slips', 'keywords' => 'exam examination result card', 'url' => $base_path . 'pages/print_slips.php', 'permission_page' => 'students.php', 'icon' => 'fa-print'],
+    ['label' => 'Print Exam Slips', 'keywords' => 'exam admit card', 'url' => $base_path . 'pages/exam_slips.php', 'icon' => 'fa-id-card'],
+    ['label' => 'Print All Results', 'keywords' => 'marksheets result cards', 'url' => $base_path . 'pages/print_all_results.php', 'icon' => 'fa-file-lines'],
+    ['label' => 'Attendance', 'keywords' => 'mark daily presence', 'url' => $base_path . 'pages/attendance.php', 'icon' => 'fa-clipboard-check'],
+    ['label' => 'Attendance Records', 'keywords' => 'attendance report history', 'url' => $base_path . 'pages/attendance_view.php', 'icon' => 'fa-clipboard-list'],
+    ['label' => 'Fees & Payments', 'keywords' => 'fee collection dues', 'url' => $base_path . 'pages/fees.php', 'icon' => 'fa-file-invoice-dollar'],
+    ['label' => 'Certificates', 'keywords' => 'student documents transfer', 'url' => $base_path . 'pages/certificates.php', 'icon' => 'fa-certificate'],
+    ['label' => 'Manage Classes', 'keywords' => 'class sections', 'url' => $base_path . 'pages/manage_classes.php', 'icon' => 'fa-chalkboard'],
+    ['label' => 'Add Teacher', 'keywords' => 'staff teacher form', 'url' => $base_path . 'pages/teacher_form.php', 'icon' => 'fa-chalkboard-user'],
+    ['label' => 'Parents', 'keywords' => 'guardian list', 'url' => $base_path . 'pages/parents.php', 'icon' => 'fa-people-roof'],
+    ['label' => 'Backup & Restore', 'keywords' => 'backup data restore', 'url' => $base_path . 'pages/backup_restore.php', 'icon' => 'fa-database'],
+    ['label' => 'Settings', 'keywords' => 'school configuration users', 'url' => $base_path . 'pages/settings.php', 'icon' => 'fa-cog'],
+    ['label' => 'Inventory', 'keywords' => 'stock supplies assets', 'url' => $base_path . 'pages/inventory.php', 'icon' => 'fa-boxes-stacked'],
+    ['label' => 'Expenses', 'keywords' => 'accounts spending', 'url' => $base_path . 'pages/expenses.php', 'icon' => 'fa-receipt'],
+    ['label' => 'Results', 'keywords' => 'exam marks grades', 'url' => $base_path . 'pages/results.php', 'icon' => 'fa-chart-column']
+];
+
+if (isset($_SESSION['teacher_id'])) {
+    $featureSearchItems[] = [
+        'label' => 'My Profile',
+        'keywords' => 'teacher account',
+        'url' => $base_path . 'pages/teacher_profile.php?id=' . rawurlencode((string)$_SESSION['teacher_id']),
+        'icon' => 'fa-user'
+    ];
+}
+
+if (isParent()) {
+    $featureSearchItems = [[
+        'label' => 'Parent Portal',
+        'keywords' => 'children attendance results notices',
+        'url' => $base_path . 'pages/parent_portal.php',
+        'icon' => 'fa-people-roof'
+    ]];
+}
+
+$featureSearchItems = array_values(array_filter($featureSearchItems, function ($item) {
+    $page = basename(parse_url($item['url'], PHP_URL_PATH));
+    return canAccessPage($item['permission_page'] ?? $page);
+}));
 
 // Message Count & Profile Image Logic
 $db_for_messages = new Database();
@@ -492,6 +542,17 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                     <button id="mobile-menu-btn" class="md:hidden text-gray-600 hover:text-indigo-600 transition-colors p-1">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
+                    <div id="feature-search" class="relative w-36 sm:w-56 md:w-64">
+                        <label for="feature-search-input" class="sr-only">Search application features</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <input id="feature-search-input" type="search" autocomplete="off" role="combobox"
+                                aria-autocomplete="list" aria-expanded="false" aria-controls="feature-search-results"
+                                placeholder="Search features..." class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:bg-gray-900">
+                        </div>
+                        <div id="feature-search-results" role="listbox" class="absolute left-0 right-0 top-full mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-gray-100 bg-white p-1 shadow-xl dark:border-gray-700 dark:bg-gray-800"></div>
+                        <script type="application/json" id="feature-search-data"><?php echo json_encode($featureSearchItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?></script>
+                    </div>
                     <?php endif; ?>
                 </div>
 
@@ -557,28 +618,18 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                                     <span class="ml-auto text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full"><?php echo $unreadCount; ?></span>
                                 <?php endif; ?>
                             </a>
-                            <a href="<?php echo $base_path; ?>pages/manage_classes.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-graduation-cap mr-2 w-4"></i> Manage Classes
+                            <a href="<?php echo $base_path; ?>pages/students.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-user-graduate mr-2 w-4"></i> Student List
                             </a>
-                            <a href="<?php echo $base_path; ?>pages/print_slips.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-print mr-2 w-4"></i> Print Result Card
+                            <a href="<?php echo $base_path; ?>pages/attendance.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-clipboard-check mr-2 w-4"></i> Attendance
                             </a>
-                            <a href="<?php echo $base_path; ?>pages/print_all_results.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-print mr-2 w-4"></i> Print All Marksheets
-                            </a>
-                            <a href="<?php echo $base_path; ?>pages/exam_slips.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-id-card mr-2 w-4"></i> Print Exam Slips
-                            </a>
-                            <a href="<?php echo $base_path; ?>pages/exam_attendance.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-clipboard-list mr-2 w-4"></i> Examination Attendance
+                            <a href="<?php echo $base_path; ?>pages/backup_restore.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <i class="fas fa-database mr-2 w-4"></i> Backup &amp; Restore
                             </a>
                             
                             <a href="<?php echo $base_path; ?>pages/settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
                                 <i class="fas fa-cog mr-2 w-4"></i> Settings
-                            </a>
-                            
-                            <a href="<?php echo $base_path; ?>pages/school_settings.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600">
-                                <i class="fas fa-school mr-2 w-4"></i> School Settings
                             </a>
                             
                             <div class="border-t border-gray-100 my-1"></div>
@@ -603,6 +654,107 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const featureSearchInput = document.getElementById('feature-search-input');
+            const featureSearchResults = document.getElementById('feature-search-results');
+            const featureSearchData = document.getElementById('feature-search-data');
+            if (featureSearchInput && featureSearchResults && featureSearchData) {
+                const features = JSON.parse(featureSearchData.textContent);
+                let activeResultIndex = -1;
+
+                function renderFeatureResults() {
+                    const query = featureSearchInput.value.trim().toLocaleLowerCase();
+                    const matches = features
+                        .filter(feature => {
+                            if (!query) return true;
+                            const searchableText = `${feature.label} ${feature.keywords}`.toLocaleLowerCase();
+                            return query.split(/\s+/).every(term => searchableText.includes(term));
+                        })
+                        .slice(0, 8);
+                    featureSearchResults.replaceChildren();
+                    activeResultIndex = -1;
+
+                    if (matches.length === 0) {
+                        const emptyMessage = document.createElement('div');
+                        emptyMessage.className = 'px-3 py-3 text-sm text-gray-500 dark:text-gray-400';
+                        emptyMessage.textContent = 'No matching features found.';
+                        featureSearchResults.appendChild(emptyMessage);
+                    } else {
+                        matches.forEach((feature, index) => {
+                            const link = document.createElement('a');
+                            link.href = feature.url;
+                            link.id = `feature-search-option-${index}`;
+                            link.setAttribute('role', 'option');
+                            link.setAttribute('aria-selected', 'false');
+                            link.className = 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 focus:bg-indigo-50 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-indigo-300';
+
+                            const icon = document.createElement('i');
+                            icon.className = `fas ${feature.icon} w-4 text-center text-indigo-500`;
+                            icon.setAttribute('aria-hidden', 'true');
+
+                            const label = document.createElement('span');
+                            label.textContent = feature.label;
+                            link.append(icon, label);
+                            link.addEventListener('mouseenter', () => setActiveResult(index));
+                            featureSearchResults.appendChild(link);
+                        });
+                    }
+
+                    featureSearchResults.classList.remove('hidden');
+                    featureSearchInput.setAttribute('aria-expanded', 'true');
+                }
+
+                function setActiveResult(index) {
+                    const options = featureSearchResults.querySelectorAll('[role="option"]');
+                    options.forEach((option, optionIndex) => {
+                        const isActive = optionIndex === index;
+                        option.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                        option.classList.toggle('bg-indigo-50', isActive);
+                        option.classList.toggle('dark:bg-gray-700', isActive);
+                    });
+                    activeResultIndex = index;
+                    if (options[index]) {
+                        featureSearchInput.setAttribute('aria-activedescendant', options[index].id);
+                    } else {
+                        featureSearchInput.removeAttribute('aria-activedescendant');
+                    }
+                }
+
+                function closeFeatureResults() {
+                    featureSearchResults.classList.add('hidden');
+                    featureSearchInput.setAttribute('aria-expanded', 'false');
+                    featureSearchInput.removeAttribute('aria-activedescendant');
+                    activeResultIndex = -1;
+                }
+
+                featureSearchInput.addEventListener('focus', renderFeatureResults);
+                featureSearchInput.addEventListener('input', renderFeatureResults);
+                featureSearchInput.addEventListener('keydown', function(event) {
+                    const options = featureSearchResults.querySelectorAll('[role="option"]');
+                    if (event.key === 'ArrowDown' && !featureSearchResults.classList.contains('hidden')) {
+                        event.preventDefault();
+                        setActiveResult(Math.min(activeResultIndex + 1, options.length - 1));
+                    } else if (event.key === 'ArrowUp' && !featureSearchResults.classList.contains('hidden')) {
+                        event.preventDefault();
+                        setActiveResult(Math.max(activeResultIndex - 1, 0));
+                    } else if (event.key === 'Enter' && !featureSearchResults.classList.contains('hidden')) {
+                        const destination = options[activeResultIndex >= 0 ? activeResultIndex : 0];
+                        if (destination) {
+                            event.preventDefault();
+                            window.location.href = destination.href;
+                        }
+                    } else if (event.key === 'Escape') {
+                        closeFeatureResults();
+                        featureSearchInput.blur();
+                    }
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!document.getElementById('feature-search').contains(event.target)) {
+                        closeFeatureResults();
+                    }
+                });
+            }
+
             // Sidebar Collapse Logic
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.querySelector('.main-content');
@@ -736,4 +888,3 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             }
         });
     </script>
-
