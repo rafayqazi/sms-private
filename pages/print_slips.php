@@ -20,16 +20,73 @@ $db = new Database();
 $settings = $db->getSchoolSettings();
 $allStudents = $db->readData();
 
-// Filter students by class
-$students = array_filter($allStudents, function ($student) use ($class) {
+// Filter students by class (excluding Alumni)
+$studentsFiltered = array_filter($allStudents, function ($student) use ($class) {
     $isAlumni = isset($student['student_status']) && $student['student_status'] === 'Alumni';
-    return !$isAlumni && isset($student['current_class']) && $student['current_class'] === $class;
+    return !$isAlumni && isset($student['current_class']) && ($class === 'All' || $student['current_class'] === $class);
 });
 
-// Sort by GR No
-usort($students, function ($a, $b) {
-    return intval($a['gr_no']) - intval($b['gr_no']);
-});
+// Natural comparison helper for GR No, with student name fallback
+$studentSort = function ($a, $b) {
+    $grA = trim((string)($a['gr_no'] ?? ''));
+    $grB = trim((string)($b['gr_no'] ?? ''));
+    if ($grA !== '' && $grB !== '' && is_numeric($grA) && is_numeric($grB)) {
+        $diff = intval($grA) - intval($grB);
+        if ($diff !== 0) {
+            return $diff;
+        }
+    } else {
+        $cmp = strnatcasecmp($grA, $grB);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+    }
+    return strcasecmp(trim($a['student_name'] ?? ''), trim($b['student_name'] ?? ''));
+};
+
+// Group by class to ensure proper class prefix and seat numbering sequence
+$classesGrouped = [];
+foreach ($studentsFiltered as $student) {
+    $c = trim($student['current_class'] ?? $class);
+    $classesGrouped[$c][] = $student;
+}
+ksort($classesGrouped, SORT_NATURAL | SORT_FLAG_CASE);
+
+$students = [];
+foreach ($classesGrouped as $clsName => $clsStudents) {
+    $boys = [];
+    $girls = [];
+    $others = [];
+
+    foreach ($clsStudents as $st) {
+        $gender = strtolower(trim($st['gender'] ?? ''));
+        if (in_array($gender, ['male', 'm', 'boy', 'boys'])) {
+            $boys[] = $st;
+        } elseif (in_array($gender, ['female', 'f', 'girl', 'girls'])) {
+            $girls[] = $st;
+        } else {
+            $others[] = $st;
+        }
+    }
+
+    // Sort boys by GR No
+    usort($boys, $studentSort);
+    // Sort girls by GR No
+    usort($girls, $studentSort);
+    // Sort others by GR No
+    usort($others, $studentSort);
+
+    // Merge in order: Boys first, then Girls continue, then others
+    $orderedStudents = array_merge($boys, $girls, $others);
+
+    // Allot seat numbers sequentially: {Class}-{1}, {Class}-{2}, etc.
+    $seatCounter = 1;
+    foreach ($orderedStudents as $st) {
+        $st['seat_no'] = $clsName . '-' . $seatCounter;
+        $students[] = $st;
+        $seatCounter++;
+    }
+}
 
 $subjects = $_GET['subjects'] ?? [];
 $dates = $_GET['dates'] ?? [];
@@ -207,11 +264,19 @@ function getStudentSlipPhoto($rawPath)
             user-select: none;
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
         @media print {
-            body {
-                background: white;
-                padding: 0;
-                margin: 0;
+            html, body {
+                width: 210mm !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .no-print {
@@ -221,23 +286,37 @@ function getStudentSlipPhoto($rawPath)
             .page-container {
                 width: 210mm !important;
                 height: 296.5mm !important;
-                margin: 0 !important;
+                max-height: 297mm !important;
+                margin: 0 auto !important;
                 padding: 10mm !important;
                 border: none !important;
                 box-shadow: none !important;
                 page-break-after: always;
+                break-after: page;
                 page-break-inside: avoid;
+                break-inside: avoid;
+                overflow: hidden !important;
             }
 
             .page-container-two {
                 width: 210mm !important;
                 height: 296.5mm !important;
-                margin: 0 !important;
+                max-height: 297mm !important;
+                margin: 0 auto !important;
                 padding: 6mm 8mm !important;
                 border: none !important;
                 box-shadow: none !important;
                 page-break-after: always;
+                break-after: page;
                 page-break-inside: avoid;
+                break-inside: avoid;
+                overflow: hidden !important;
+            }
+
+            .page-container:last-child,
+            .page-container-two:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
             }
         }
 
@@ -322,23 +401,36 @@ function getStudentSlipPhoto($rawPath)
                         <!-- Student Info Row -->
                         <div class="flex gap-8 mb-6 relative z-10">
                             <div class="flex-1 space-y-4">
-                                <div class="flex items-end gap-3">
-                                    <span
-                                        class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">Name:</span>
-                                    <div
-                                        class="flex-1 border-b-2 border-slate-100 font-black text-xl uppercase text-slate-800 px-2 pb-0.5">
-                                        <?php echo htmlspecialchars($student['student_name']); ?>
+                                <div class="grid grid-cols-3 gap-6">
+                                    <div class="flex items-end gap-3">
+                                        <span
+                                            class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">Name:</span>
+                                        <div
+                                            class="flex-1 border-b-2 border-slate-100 font-black text-xl uppercase text-slate-800 px-2 pb-0.5 truncate">
+                                            <?php echo htmlspecialchars($student['student_name']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end gap-3">
+                                        <span
+                                            class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">Father:</span>
+                                        <div
+                                            class="flex-1 border-b-2 border-slate-100 font-bold text-xl uppercase text-slate-800 px-2 pb-0.5 truncate">
+                                            <?php echo htmlspecialchars($student['father_name']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end gap-3">
+                                        <span
+                                            class="font-black text-sm school-color-text uppercase tracking-widest shrink-0 whitespace-nowrap">Gender:</span>
+                                        <div
+                                            class="flex-1 border-b-2 border-slate-100 font-black text-xl uppercase text-slate-900 px-2 pb-0.5">
+                                            <?php 
+                                            $g = strtolower(trim($student['gender'] ?? ''));
+                                            echo in_array($g, ['male', 'm', 'boy', 'boys']) ? 'BOY' : (in_array($g, ['female', 'f', 'girl', 'girls']) ? 'GIRL' : htmlspecialchars(strtoupper($student['gender'] ?? '')));
+                                            ?>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="flex items-end gap-3">
-                                    <span
-                                        class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">Father:</span>
-                                    <div
-                                        class="flex-1 border-b-2 border-slate-100 font-bold text-xl uppercase text-slate-800 px-2 pb-0.5">
-                                        <?php echo htmlspecialchars($student['father_name']); ?>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-8">
+                                <div class="grid grid-cols-3 gap-6">
                                     <div class="flex items-end gap-3">
                                         <span
                                             class="font-black text-sm school-color-text uppercase tracking-widest shrink-0">Class:</span>
@@ -348,10 +440,18 @@ function getStudentSlipPhoto($rawPath)
                                         </div>
                                     </div>
                                     <div class="flex items-end gap-3">
+                                        <span
+                                            class="font-black text-sm school-color-text uppercase tracking-widest shrink-0 whitespace-nowrap">Seat No:</span>
+                                        <div
+                                            class="flex-1 border-b-2 border-slate-100 font-black text-xl uppercase text-slate-900 px-2 pb-0.5">
+                                            <?php echo htmlspecialchars($student['seat_no']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end gap-3">
                                         <span class="font-black text-sm school-color-text uppercase tracking-widest shrink-0 whitespace-nowrap">GR No:</span>
                                         <div
-                                            class="flex-1 border-b-2 border-slate-100 font-black text-xl text-indigo-600 px-2 pb-0.5">
-                                            #<?php echo htmlspecialchars($student['gr_no']); ?>
+                                            class="flex-1 border-b-2 border-slate-100 font-black text-xl text-slate-900 px-2 pb-0.5">
+                                            <?php echo htmlspecialchars(ltrim(trim($student['gr_no']), '# ')); ?>
                                         </div>
                                     </div>
                                 </div>
@@ -488,13 +588,14 @@ function getStudentSlipPhoto($rawPath)
                             </div>
 
                             <!-- Student Info & Photo Row -->
-                            <div class="flex items-center gap-4 my-1.5 relative z-10">
-                                <div class="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <div class="flex items-center gap-4 my-2.5 relative z-10">
+                                <div class="flex-1 grid grid-cols-3 gap-x-4 gap-y-3 text-xs">
+                                    <!-- Row 1: Name, Father, Gender -->
                                     <div class="flex items-center gap-2">
                                         <span
                                             class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Name:</span>
                                         <span
-                                            class="font-black uppercase text-slate-900 truncate border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
+                                            class="font-black uppercase text-slate-900 truncate border-b border-slate-200 flex-1 pb-1 text-[11px]">
                                             <?php echo htmlspecialchars($student['student_name']); ?>
                                         </span>
                                     </div>
@@ -502,24 +603,45 @@ function getStudentSlipPhoto($rawPath)
                                         <span
                                             class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Father:</span>
                                         <span
-                                            class="font-bold uppercase text-slate-800 truncate border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
+                                            class="font-bold uppercase text-slate-800 truncate border-b border-slate-200 flex-1 pb-1 text-[11px]">
                                             <?php echo htmlspecialchars($student['father_name']); ?>
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">Gender:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php 
+                                            $g = strtolower(trim($student['gender'] ?? ''));
+                                            echo in_array($g, ['male', 'm', 'boy', 'boys']) ? 'BOY' : (in_array($g, ['female', 'f', 'girl', 'girls']) ? 'GIRL' : htmlspecialchars(strtoupper($student['gender'] ?? '')));
+                                            ?>
+                                        </span>
+                                    </div>
+
+                                    <!-- Row 2: Class, Seat No, GR No -->
+                                    <div class="flex items-center gap-2">
+                                        <span
                                             class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Class:</span>
                                         <span
-                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
                                             <?php echo htmlspecialchars($student['current_class']); ?>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">Seat No:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars($student['seat_no']); ?>
                                         </span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span
                                             class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">GR No:</span>
                                         <span
-                                            class="font-black text-indigo-600 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
-                                            #<?php echo htmlspecialchars($student['gr_no']); ?>
+                                            class="font-black text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars(ltrim(trim($student['gr_no']), '# ')); ?>
                                         </span>
                                     </div>
                                 </div>
@@ -648,41 +770,63 @@ function getStudentSlipPhoto($rawPath)
                                 </div>
 
                                 <!-- Student Info & Photo Row -->
-                                <div class="flex items-center gap-4 my-1.5 relative z-10">
-                                    <div class="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Name:</span>
-                                            <span
-                                                class="font-black uppercase text-slate-900 truncate border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
-                                                <?php echo htmlspecialchars($student['student_name']); ?>
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Father:</span>
-                                            <span
-                                                class="font-bold uppercase text-slate-800 truncate border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
-                                                <?php echo htmlspecialchars($student['father_name']); ?>
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Class:</span>
-                                            <span
-                                                class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
-                                                <?php echo htmlspecialchars($student['current_class']); ?>
-                                            </span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">GR No:</span>
-                                            <span
-                                                class="font-black text-indigo-600 border-b border-slate-200 flex-1 pb-0.5 text-[11px]">
-                                                #<?php echo htmlspecialchars($student['gr_no']); ?>
-                                            </span>
-                                        </div>
+                                <div class="flex items-center gap-4 my-2.5 relative z-10">
+                                    <div class="flex-1 grid grid-cols-3 gap-x-4 gap-y-3 text-xs">
+                                    <!-- Row 1: Name, Father, Gender -->
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Name:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 truncate border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars($student['student_name']); ?>
+                                        </span>
                                     </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Father:</span>
+                                        <span
+                                            class="font-bold uppercase text-slate-800 truncate border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars($student['father_name']); ?>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">Gender:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php 
+                                            $g = strtolower(trim($student['gender'] ?? ''));
+                                            echo in_array($g, ['male', 'm', 'boy', 'boys']) ? 'BOY' : (in_array($g, ['female', 'f', 'girl', 'girls']) ? 'GIRL' : htmlspecialchars(strtoupper($student['gender'] ?? '')));
+                                            ?>
+                                        </span>
+                                    </div>
+
+                                    <!-- Row 2: Class, Seat No, GR No -->
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0">Class:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars($student['current_class']); ?>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">Seat No:</span>
+                                        <span
+                                            class="font-black uppercase text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars($student['seat_no']); ?>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-black text-[10px] school-color-text uppercase tracking-wider shrink-0 whitespace-nowrap">GR No:</span>
+                                        <span
+                                            class="font-black text-slate-900 border-b border-slate-200 flex-1 pb-1 text-[11px]">
+                                            <?php echo htmlspecialchars(ltrim(trim($student['gr_no']), '# ')); ?>
+                                        </span>
+                                    </div>
+                                </div>
 
                                     <!-- Student Photo Compact -->
                                     <div
