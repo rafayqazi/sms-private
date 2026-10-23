@@ -18,16 +18,61 @@ $db = new Database();
 $settings = $db->getSchoolSettings();
 $allStudents = $db->readData();
 
-// Filter students for the selected class
-$students = array_filter($allStudents, function ($student) use ($class) {
+// Filter students for the selected class (excluding Alumni)
+$studentsFiltered = array_filter($allStudents, function ($student) use ($class) {
     $isAlumni = isset($student['student_status']) && $student['student_status'] === 'Alumni';
-    return !$isAlumni && isset($student['current_class']) && $student['current_class'] == $class;
+    return !$isAlumni && isset($student['current_class']) && ($class === 'All' || $student['current_class'] === $class);
 });
 
-// Sort students alphabetically by Name (A to Z)
-usort($students, function ($a, $b) {
+// Natural comparison helper for GR No, with student name fallback (matching print_slips.php)
+$studentSort = function ($a, $b) {
+    $grA = trim((string)($a['gr_no'] ?? ''));
+    $grB = trim((string)($b['gr_no'] ?? ''));
+    if ($grA !== '' && $grB !== '' && is_numeric($grA) && is_numeric($grB)) {
+        $diff = intval($grA) - intval($grB);
+        if ($diff !== 0) {
+            return $diff;
+        }
+    } else {
+        $cmp = strnatcasecmp($grA, $grB);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+    }
     return strcasecmp(trim($a['student_name'] ?? ''), trim($b['student_name'] ?? ''));
-});
+};
+
+$boys = [];
+$girls = [];
+$others = [];
+
+foreach ($studentsFiltered as $st) {
+    $gender = strtolower(trim($st['gender'] ?? ''));
+    if (in_array($gender, ['male', 'm', 'boy', 'boys'])) {
+        $boys[] = $st;
+    } elseif (in_array($gender, ['female', 'f', 'girl', 'girls'])) {
+        $girls[] = $st;
+    } else {
+        $others[] = $st;
+    }
+}
+
+// Sort boys by GR No, then girls by GR No (matching print_slips.php)
+usort($boys, $studentSort);
+usort($girls, $studentSort);
+usort($others, $studentSort);
+
+$orderedStudents = array_merge($boys, $girls, $others);
+
+// Allot seat numbers sequentially: {CLASS}-{1}, {CLASS}-{2}, etc. (matching print_slips.php)
+$classPrefix = strtoupper(trim($class));
+$seatCounter = ($startingSeatNo !== null && $startingSeatNo > 0) ? $startingSeatNo : 1;
+$students = [];
+foreach ($orderedStudents as $st) {
+    $st['seat_no'] = $classPrefix . '-' . $seatCounter;
+    $students[] = $st;
+    $seatCounter++;
+}
 
 $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['school_logo']))
     ? '../' . $settings['school_logo']
@@ -154,6 +199,11 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <a href="../api/export_award_list_csv.php?<?= htmlspecialchars(http_build_query($_GET)) ?>"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">
+                <i class="fas fa-file-excel text-sm"></i>
+                Export Excel / CSV
+            </a>
             <button onclick="window.print()"
                 class="bg-slate-900 hover:bg-black text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">
                 <i class="fas fa-print"></i>
@@ -234,12 +284,7 @@ $logoPath = (!empty($settings['school_logo']) && file_exists('../' . $settings['
                     foreach ($students as $student):
                         $sNoFormatted = str_pad($counter, 2, '0', STR_PAD_LEFT);
 
-                        // Seat Number Calculation
-                        if ($startingSeatNo !== null) {
-                            $seatNoDisplay = $startingSeatNo + ($counter - 1);
-                        } else {
-                            $seatNoDisplay = !empty($student['gr_no']) ? $student['gr_no'] : $counter;
-                        }
+                        $seatNoDisplay = $student['seat_no'] ?? ($counter);
                         ?>
                         <tr>
                             <td style="text-align: center; font-weight: 700;"><?= $sNoFormatted ?></td>

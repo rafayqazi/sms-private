@@ -146,18 +146,18 @@ include '../includes/header.php';
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                             <i class="fas fa-id-badge"></i>
                         </div>
-                        <input type="number" name="starting_seat_no" placeholder="e.g. 901 (Leave empty to use GR No / Roll No)" min="1"
+                        <input type="number" name="starting_seat_no" placeholder="e.g. 1 (Default: starts at 1, e.g. CLASS-1, CLASS-2...)" min="1"
                             class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium">
                     </div>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                        If entered (e.g. 901), students will get sequential seat numbers 901, 902, 903... Otherwise, their GR numbers will be used.
+                        Seat numbers match Exam Slips format (e.g. CLASS-1, CLASS-2...) sorted with Boys first, then Girls by GR#.
                     </p>
                 </div>
 
                 <!-- Submit Button -->
                 <div class="pt-4">
                     <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-3 transition-all transform active:scale-[0.99]">
-                        <i class="fas fa-print text-lg"></i>
+                        <i class="fas fa-file-export text-lg"></i>
                         <span>Generate Award List</span>
                     </button>
                 </div>
@@ -165,5 +165,159 @@ include '../includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- Hidden Iframe for Silent CSV Downloads -->
+<iframe id="csvDownloadFrame" name="csvDownloadFrame" class="hidden" style="display:none;"></iframe>
+
+<!-- Format Selection Modal -->
+<div id="exportFormatModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 text-left transition-opacity duration-300">
+    <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 dark:border-gray-800 transform transition-all scale-95 duration-200" id="exportModalContent">
+        <!-- Modal Header -->
+        <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/40">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg shadow-inner">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+                        Select Export Format
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Choose whether to view printable PDF or download Excel / CSV sheet
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Options Grid -->
+        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- PDF Option -->
+            <button type="button" onclick="submitAwardList('pdf')" class="group text-left p-5 bg-gradient-to-br from-indigo-50/60 to-white dark:from-indigo-950/30 dark:to-gray-800/60 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/50 hover:border-indigo-600 dark:hover:border-indigo-500 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-xl shadow-md shadow-indigo-500/30 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                            Printable
+                        </span>
+                    </div>
+                    <h4 class="font-black text-gray-900 dark:text-gray-100 text-base mb-1">
+                        PDF Document
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        Official award list layout with school branding & signatures ready for printing.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-indigo-100/60 dark:border-indigo-900/40 flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:gap-2.5 transition-all">
+                    <span>Open PDF View</span>
+                    <i class="fas fa-arrow-right text-[11px]"></i>
+                </div>
+            </button>
+
+            <!-- Excel / CSV Option -->
+            <button type="button" onclick="submitAwardList('csv')" class="group text-left p-5 bg-gradient-to-br from-emerald-50/60 to-white dark:from-emerald-950/30 dark:to-gray-800/60 rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/50 hover:border-emerald-600 dark:hover:border-emerald-500 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 flex flex-col justify-between cursor-pointer">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center text-xl shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                            Spreadsheet
+                        </span>
+                    </div>
+                    <h4 class="font-black text-gray-900 dark:text-gray-100 text-base mb-1">
+                        Excel / CSV
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        Editable spreadsheet with student names, seat numbers & blank marks column.
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-emerald-100/60 dark:border-emerald-900/40 flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:gap-2.5 transition-all">
+                    <span>Download CSV</span>
+                    <i class="fas fa-download text-[11px]"></i>
+                </div>
+            </button>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800 text-right">
+            <button type="button" onclick="closeExportModal()" class="px-5 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const awardForm = document.getElementById('awardListForm');
+
+    awardForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!awardForm.checkValidity()) {
+            awardForm.reportValidity();
+            return;
+        }
+        openExportModal();
+    });
+
+    function openExportModal() {
+        const modal = document.getElementById('exportFormatModal');
+        const content = document.getElementById('exportModalContent');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        requestAnimationFrame(() => {
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        });
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeExportModal() {
+        const modal = document.getElementById('exportFormatModal');
+        const content = document.getElementById('exportModalContent');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }, 150);
+    }
+
+    function submitAwardList(format) {
+        closeExportModal();
+
+        if (format === 'pdf') {
+            awardForm.action = 'print_award_list.php';
+            awardForm.target = '_blank';
+            awardForm.submit();
+        } else if (format === 'csv') {
+            awardForm.action = '../api/export_award_list_csv.php';
+            awardForm.target = 'csvDownloadFrame';
+            awardForm.submit();
+
+            // Revert back default action/target for any subsequent direct actions
+            setTimeout(() => {
+                awardForm.action = 'print_award_list.php';
+                awardForm.target = '_blank';
+            }, 300);
+
+            if (typeof showToast === 'function') {
+                showToast('success', 'Award list Excel/CSV download started.');
+            }
+        }
+    }
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('exportFormatModal');
+        if (e.target === modal) {
+            closeExportModal();
+        }
+    });
+</script>
 
 <?php include '../includes/footer.php'; ?>
